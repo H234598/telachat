@@ -44,6 +44,9 @@ class _FakeText:
     def set(self, value: str) -> None:
         self.value = value
 
+    def set_text(self, value: str) -> None:
+        self.value = value
+
 
 class _FakeCombo:
     def __init__(self) -> None:
@@ -62,6 +65,20 @@ class _FakeSpin:
 
     def get_value_as_int(self) -> int:
         return int(self.value)
+
+
+class _FakeDialog:
+    def __init__(self, title: str, body: str) -> None:
+        self.title = title
+        self.body = body
+        self.responses: list[tuple[str, str]] = []
+        self.presented = False
+
+    def add_response(self, response_id: str, label: str) -> None:
+        self.responses.append((response_id, label))
+
+    def present(self) -> None:
+        self.presented = True
 
 
 class GuiImportTests(unittest.TestCase):
@@ -216,6 +233,41 @@ class GuiImportTests(unittest.TestCase):
         )
 
         self.assertEqual(status, "Antwort in 2.0s")
+
+    def test_gtk_stats_command_shows_summary_without_database_path(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        created: list[_FakeDialog] = []
+
+        class FakeMessageDialog:
+            @staticmethod
+            def new(_parent: object, title: str, body: str) -> _FakeDialog:
+                dialog = _FakeDialog(title, body)
+                created.append(dialog)
+                return dialog
+
+        app = SimpleNamespace(
+            controller=_FakeController(),
+            window=object(),
+            status=_FakeText(""),
+        )
+
+        with mock.patch.object(module.Adw, "MessageDialog", FakeMessageDialog):
+            module.GtkTelachatApp.handle_command(app, "/stats")
+
+        self.assertEqual(len(created), 1)
+        self.assertEqual(created[0].title, "Telachat Statistik")
+        self.assertIn("Sessions: 2 gesamt", created[0].body)
+        self.assertNotIn("SQLite:", created[0].body)
+        self.assertEqual(created[0].responses, [("ok", "OK")])
+        self.assertTrue(created[0].presented)
+        self.assertEqual(app.status.get_text(), "Sessions 2 | Nachrichten 4 | Ordner 1 | Tags 1")
 
 
 def _fake_stats() -> object:

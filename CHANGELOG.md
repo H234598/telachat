@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.37.1 - 2026-05-25
+
+- Add GTK regression coverage for the `/stats` prompt dialog.
+
 ## 0.37.0 - 2026-05-25
 
 - Add `/stats` to interactive CLI, Tk, and GTK prompt command paths.

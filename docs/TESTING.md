@@ -96,7 +96,7 @@ candidates, offline config checks with secret redaction, and documented
 terminal slash-command actions, including `/theme` and `/find`. Theme tests
 cover config persistence, env overrides, system-palette detection, CLI setting,
 and controller persistence. `/stats` tests cover the shared content-free
-formatter plus terminal and Tk prompt paths.
+formatter plus terminal, Tk, and GTK prompt paths.
 Backup tests inspect the ZIP bundle and verify that envfile secret values and
 secret-like header values are not included. GUI smoke and regression tests also
 cover construction of the slash-command autocomplete widgets, visible

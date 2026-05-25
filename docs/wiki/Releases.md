@@ -1,5 +1,9 @@
 # Releases
 
+## 0.37.1 - 2026-05-25
+
+- Ergaenzt GTK-Regressionstests fuer den `/stats`-Promptdialog.
+
 ## 0.37.0 - 2026-05-25
 
 - `/stats` funktioniert jetzt im interaktiven CLI-Prompt sowie in Tk und GTK.
