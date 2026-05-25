@@ -20,8 +20,8 @@
   - SQLite-backed session and message history.
   - Enables folders, session listing, search, loading, and Markdown export.
 - `telachat.cli`
-  - `init`, `profiles`, `config-check`, `theme`, `ask`, `chat`, `sessions`,
-    `export`, `export-folder`, `backup`, `restore`, `doctor`.
+  - `init`, `profiles`, `models`, `config-check`, `theme`, `ask`, `chat`,
+    `sessions`, `export`, `export-folder`, `backup`, `restore`, `doctor`.
   - Interactive `chat` installs optional Readline completion for slash commands
     and context values when stdin is a TTY.
 - `telachat.commands`
@@ -120,6 +120,9 @@ api_key = "env:PROVIDER_API_KEY"
 telachat init
 telachat profiles
 telachat profiles --json
+telachat models
+telachat models --live -p tki
+telachat models --json
 telachat config-check
 telachat config-check --strict
 telachat config-check --json
@@ -158,19 +161,22 @@ telachat restore [--dry-run] FILE.zip
 telachat import-backup [--dry-run] FILE.zip
 ```
 
-`config-check` is intentionally offline: it validates the loaded TOML shape,
-profile modes, model metadata, and whether configured secret sources resolve to
-a value. It prints only redacted secret references. `doctor` remains the live
-network/API check.
+`models` lists configured model IDs for all profiles without network access by
+default; `models --live [-p PROFILE]` queries `/models` only for one target
+profile. `config-check` is intentionally offline: it validates the loaded TOML
+shape, profile modes, model metadata, and whether configured secret sources
+resolve to a value. It prints only redacted secret references. `doctor` remains
+the fuller live network/API check.
 The generated default config includes non-default local OpenAI-compatible
 presets for LM Studio, Ollama, and Jan. They are normal profiles and may fail
 `doctor` until the corresponding local server and model are running.
 `config-check --profile NAME --strict` narrows strict secret validation to one
 profile, which is useful when optional provider presets are intentionally not
 configured.
-`profiles`, `config-check`, `sessions`, `folders`, `export`, `export-folder`,
-and `doctor` also support `--json` for agent/script consumption. JSON output is
-redacted where it contains provider configuration; folder system prompts are
+`profiles`, `models`, `config-check`, `sessions`, `folders`, `export`,
+`export-folder`, and `doctor` also support `--json` for agent/script
+consumption. JSON output is redacted where it contains provider configuration;
+folder system prompts are
 included only when `folders --show-system --json` is requested or when exporting
 that folder as a portable data bundle.
 
@@ -222,8 +228,9 @@ GUI slash commands:
 - Config parsing and secret redaction.
 - Theme config parsing, env overrides, CLI setting, and GUI controller
   persistence.
+- Configured and live model inventory output.
 - Offline config-check behavior and strict missing-secret handling.
-- Redacted JSON output for profiles, config-check, sessions, folders, and
+- Redacted JSON output for profiles, models, config-check, sessions, folders, and
   doctor.
 - API client against a local fake OpenAI-compatible HTTP server.
 - Non-streaming and streaming SSE responses.

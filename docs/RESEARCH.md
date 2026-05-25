@@ -17,6 +17,13 @@ archives and Markdown for readable exports; imports should add copies rather
 than overwriting existing history. That makes Telachat's single-session JSON
 export/import and folder JSON export worth keeping first-class.
 
+Open WebUI, LibreChat and Msty also treat model visibility as its own workflow,
+not as an incidental config detail. Open WebUI has a model workspace with
+presets, hiding, import/export, bulk management and model switching. LibreChat
+uses model specs to define curated model entries and defaults. Msty separates
+local model management from online provider setup. Telachat should keep its
+model inventory scriptable first, then reuse the same shape for GUI refreshes.
+
 Jan and LM Studio validate the native-desktop/local-first direction. Jan exposes
 a desktop app with local models and cloud providers configured by user-owned API
 keys. LM Studio's server path is OpenAI-compatible and keeps tool/function-use
@@ -64,6 +71,8 @@ and local state under `$XDG_STATE_HOME`.
 
 - Use OpenAI-compatible `/v1/chat/completions` and `/v1/models`.
 - Keep provider profiles in `~/.config/telachat/config.toml`.
+- Expose configured and live model lists through `telachat models` before
+  adding heavier GUI model-management flows.
 - Resolve real secrets from `env:VARIABLE` or `file:/path` when desired.
 - Store history in SQLite at `~/.local/share/telachat/history.sqlite3`.
 - Provide both machine-friendly one-shot `ask` and human interactive `chat`.
@@ -107,7 +116,9 @@ and local state under `$XDG_STATE_HOME`.
 - Open WebUI chat features overview: https://docs.openwebui.com/features/chat-conversations/chat-features/
 - Open WebUI folders/projects: https://docs.openwebui.com/features/chat-conversations/chat-features/conversation-organization
 - Open WebUI prompts/slash commands: https://docs.openwebui.com/features/workspace/prompts/
+- Open WebUI model workspace: https://docs.openwebui.com/features/workspace/models/
 - LibreChat custom endpoints: https://www.librechat.ai/docs/quick_start/custom_endpoints
+- LibreChat model specs: https://www.librechat.ai/docs/configuration/librechat_yaml/object_structure/model_specs
 - LibreChat import conversations: https://www.librechat.ai/docs/features/import_convos
 - LibreChat resumable streams: https://www.librechat.ai/docs/features/resumable_streams
 - Jan model/provider management: https://www.jan.ai/docs/desktop/manage-models
@@ -117,6 +128,7 @@ and local state under `$XDG_STATE_HOME`.
 - LM Studio tool use/server API: https://www.lmstudio.ai/docs/advanced/tool-use
 - LM Studio OpenAI compatibility endpoints: https://lmstudio.ai/docs/developer/openai-compat/
 - Msty export chat: https://docs.msty.app/features/export-chat
+- Msty local models: https://docs.msty.studio/managing-models/local-models
 - Msty Turnstiles/regeneration: https://docs.msty.studio/features/turnstiles
 - OpenAI Help retry/regenerate note: https://help.openai.com/en/articles/11909943-gpt-53-and-gpt-54-in-chatgpt
 - LLM OpenAI-compatible models: https://llm.datasette.io/en/stable/other-models.html

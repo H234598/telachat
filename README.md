@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.26.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.27.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -27,6 +27,7 @@ stehen in `VERSIONING.md`.
 cd /home/teladi/telachat
 make install
 telachat init
+telachat models
 telachat config-check
 telachat config-check --json
 telachat theme
@@ -133,8 +134,8 @@ Nuetzliche Chat-Befehle:
 Im interaktiven Terminal-Chat nutzt Telachat Readline-Completion: `Tab`
 vervollstaendigt Slash-Befehle und passende Kontextwerte wie Profile, Modelle,
 Templates, Ordner, Session-IDs, Session-Titel und Sortiermodi.
-Fuer Skripte und Agenten liefern `profiles --json`, `config-check --json`,
-`sessions --json`, `folders --json`, `export --json`,
+Fuer Skripte und Agenten liefern `profiles --json`, `models --json`,
+`config-check --json`, `sessions --json`, `folders --json`, `export --json`,
 `export-folder --json` und `doctor --json` strukturierte Daten;
 Provider-/Secret-Konfiguration bleibt redaktiert.
 
@@ -207,6 +208,8 @@ per CLI oder GUI eingesetzt werden:
 
 ```sh
 telachat templates
+telachat models
+telachat models --live -p tki --json
 telachat config-check
 telachat config-check --strict
 telachat config-check --profile tki --strict
@@ -215,7 +218,9 @@ telachat doctor --json --chat
 telachat ask --template summarize "Langer Text..."
 ```
 
-`config-check` prueft lokale Provider, Modelle und Secret-Quellen ohne
+`models` zeigt konfigurierte Modelle pro Profil; mit `--live -p PROFILE` fragt
+es `/models` fuer ein Zielprofil ab. `config-check` prueft lokale Provider,
+Modelle und Secret-Quellen ohne
 Netzwerk/API-Anfrage. Secret-Werte werden nicht ausgegeben; `--strict` gibt
 einen Fehlercode zurueck, wenn eine nicht-lokale Secret-Quelle fehlt.
 

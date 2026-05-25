@@ -81,6 +81,23 @@ def build_parser() -> argparse.ArgumentParser:
     p_profiles.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_profiles.set_defaults(func=cmd_profiles)
 
+    p_models = sub.add_parser(
+        "models",
+        help="Konfigurierte oder live gemeldete Modelle anzeigen",
+    )
+    p_models.add_argument("-p", "--profile", help="Profil auswaehlen")
+    p_models.add_argument(
+        "--live",
+        action="store_true",
+        help="Live /models fuer das Zielprofil abfragen",
+    )
+    p_models.add_argument(
+        "--json",
+        action="store_true",
+        help="Maschinenlesbares JSON ausgeben",
+    )
+    p_models.set_defaults(func=cmd_models)
+
     p_config = sub.add_parser(
         "config-check",
         aliases=["config"],
@@ -317,6 +334,62 @@ def cmd_profiles(args: argparse.Namespace) -> int:
         if profile.reasoning_effort:
             print(f"    reasoning: {profile.reasoning_effort}")
         print(f"    api_key:  {redact_secret(profile.api_key)}")
+    return 0
+
+
+def cmd_models(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    if args.live:
+        profiles = [cfg.profile(args.profile)]
+    elif args.profile:
+        profiles = [cfg.profile(args.profile)]
+    else:
+        profiles = [cfg.profiles[name] for name in sorted(cfg.profiles)]
+
+    rows = []
+    for profile in profiles:
+        row = _model_record(
+            profile,
+            is_default=profile.name == cfg.default_profile,
+            live_models=OpenAICompatClient(profile, retries=1).list_models()
+            if args.live
+            else None,
+        )
+        rows.append(row)
+
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "app": APP_TITLE,
+                    "config": str(cfg.path),
+                    "default_profile": cfg.default_profile,
+                    "live": args.live,
+                    "profile_filter": args.profile
+                    if args.profile
+                    else (cfg.default_profile if args.live else None),
+                    "profiles": rows,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+
+    print(f"{APP_TITLE} models")
+    print(f"Config: {cfg.path}")
+    print(f"Source: {'live /models' if args.live else 'configured'}")
+    if args.profile or args.live:
+        print(f"Profile filter: {rows[0]['name']}")
+    for row in rows:
+        marker = "*" if row["default"] else " "
+        print(f"{marker} {row['name']} ({row['label']})")
+        print(f"    selected:   {row['selected_model']}")
+        print(f"    configured: {', '.join(row['configured_models'])}")
+        if args.live:
+            live_models = row.get("live_models") or []
+            detail = ", ".join(live_models) if live_models else "keine IDs gemeldet"
+            print(f"    live:       {detail}")
     return 0
 
 
@@ -593,6 +666,26 @@ def _profile_record(name: str, profile: Profile, *, is_default: bool) -> dict[st
         "timeout_seconds": profile.timeout_seconds,
         "stream": profile.stream,
     }
+
+
+def _model_record(
+    profile: Profile,
+    *,
+    is_default: bool,
+    live_models: list[str] | None,
+) -> dict[str, object]:
+    record: dict[str, object] = {
+        "name": profile.name,
+        "label": profile.display_name,
+        "default": is_default,
+        "base_url": profile.base_url,
+        "api_mode": profile.api_mode,
+        "selected_model": profile.model,
+        "configured_models": profile.models or [profile.model],
+    }
+    if live_models is not None:
+        record["live_models"] = live_models
+    return record
 
 
 def _session_record(session: Session) -> dict[str, object]:

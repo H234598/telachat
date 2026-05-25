@@ -6,6 +6,7 @@
 cd /home/teladi/telachat
 PYTHONPATH=src python3 -m telachat config-check
 PYTHONPATH=src python3 -m telachat config-check --json
+PYTHONPATH=src python3 -m telachat models --json
 PYTHONPATH=src python3 -m telachat theme
 PYTHONPATH=src python3 -m telachat backup -o /tmp/telachat-backups
 PYTHONPATH=src python3 -m telachat restore --dry-run /tmp/telachat-backups/FILE.zip
@@ -23,6 +24,8 @@ sandbox. No external API key is needed.
 
 ```sh
 telachat doctor
+telachat models
+telachat models --live -p tki --json
 telachat config-check
 telachat config-check --strict
 telachat config-check --json
@@ -77,7 +80,7 @@ and controller persistence.
 Backup tests inspect the ZIP bundle and verify that envfile secret values and
 secret-like header values are not included. GUI smoke tests also cover
 construction of the slash-command autocomplete widgets.
-CLI JSON tests cover profiles, config-check, sessions, folders, and doctor
+CLI JSON tests cover profiles, models, config-check, sessions, folders, and doctor
 while checking that secret values remain redacted.
 Restore tests verify dry-run counts, duplicate-safe imports, session ID
 rewrites, and folder-name reuse.

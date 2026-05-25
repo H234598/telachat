@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.26.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.27.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -22,6 +22,11 @@ Create the default configuration.
 Show configured provider profiles with redacted API keys. The default config
 includes non-default local presets for LM Studio, Ollama, and Jan. Use
 \fB--json\fR for structured output.
+.TP
+.B models
+Show configured model IDs per profile without network access. Use
+\fB--live\fR with \fB--profile NAME\fR to query the selected provider's
+\fB/models\fR endpoint. Use \fB--json\fR for structured output.
 .TP
 .B config-check, config
 Check local configuration, model metadata, and secret references without an API
@@ -100,6 +105,8 @@ Start the Tk desktop frontend.
 .SH EXAMPLES
 .nf
 telachat doctor --chat
+telachat models
+telachat models --live -p tki --json
 telachat config-check
 telachat config-check --strict
 telachat config-check --profile tki --strict

@@ -239,6 +239,83 @@ model = "demo"
             finally:
                 _restore_env("TELACHAT_MISSING_TEST_KEY", old_missing)
 
+    def test_models_lists_configured_and_live_models(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp) / "config.toml"
+            config.write_text(
+                """
+default_profile = "ok"
+
+[profiles.ok]
+label = "Okay"
+base_url = "http://127.0.0.1:9/v1"
+api_key = "env:TELACHAT_MODELS_TEST_KEY"
+model = "demo"
+models = ["demo", "demo-large"]
+
+[profiles.other]
+base_url = "http://127.0.0.1:9/v1"
+api_key = "env:TELACHAT_MODELS_TEST_KEY"
+model = "other-model"
+""".strip(),
+                encoding="utf-8",
+            )
+            old_key = os.environ.get("TELACHAT_MODELS_TEST_KEY")
+            os.environ["TELACHAT_MODELS_TEST_KEY"] = "secret-value"
+            try:
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["--config", str(config), "models", "--json"]),
+                        0,
+                    )
+                payload = json.loads(out.getvalue())
+                self.assertFalse(payload["live"])
+                self.assertIsNone(payload["profile_filter"])
+                self.assertEqual(
+                    [profile["name"] for profile in payload["profiles"]],
+                    ["ok", "other"],
+                )
+                self.assertEqual(
+                    payload["profiles"][0]["configured_models"],
+                    ["demo", "demo-large"],
+                )
+                self.assertNotIn("secret-value", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out), mock.patch(
+                    "telachat.cli.OpenAICompatClient",
+                ) as client_cls:
+                    client_cls.return_value.list_models.return_value = [
+                        "live-demo",
+                        "live-large",
+                    ]
+                    self.assertEqual(
+                        main(
+                            [
+                                "--config",
+                                str(config),
+                                "models",
+                                "--profile",
+                                "ok",
+                                "--live",
+                                "--json",
+                            ]
+                        ),
+                        0,
+                    )
+                payload = json.loads(out.getvalue())
+                self.assertTrue(payload["live"])
+                self.assertEqual(payload["profile_filter"], "ok")
+                self.assertEqual(
+                    payload["profiles"][0]["live_models"],
+                    ["live-demo", "live-large"],
+                )
+                self.assertEqual(client_cls.call_args.args[0].name, "ok")
+                self.assertNotIn("secret-value", out.getvalue())
+            finally:
+                _restore_env("TELACHAT_MODELS_TEST_KEY", old_key)
+
     def test_doctor_json_reports_live_checks_without_leaking_keys(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = Path(tmp) / "config.toml"

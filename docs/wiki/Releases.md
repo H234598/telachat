@@ -1,5 +1,13 @@
 # Releases
 
+## 0.27.0 - 2026-05-25
+
+- `telachat models` zeigt konfigurierte Modelle pro Profil.
+- `telachat models --live [-p PROFILE]` fragt `/models` gezielt fuer ein
+  Profil ab.
+- JSON-Ausgabe bleibt redaktiert und enthaelt konfigurierte sowie live
+  gemeldete Modell-IDs.
+
 ## 0.26.0 - 2026-05-25
 
 - `config-check --profile NAME` prueft nur ein Profil.

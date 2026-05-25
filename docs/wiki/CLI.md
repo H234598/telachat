@@ -7,6 +7,8 @@ Telachat kann komplett aus dem Terminal genutzt werden.
 ```sh
 telachat init
 telachat profiles
+telachat models
+telachat models --live -p tki --json
 telachat config-check
 telachat config-check --profile tki --strict
 telachat config-check --json
@@ -30,9 +32,11 @@ telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
 telachat ask --template explain "SQLite WAL"
 ```
 
-`telachat config-check` prueft lokale Profile, Modelle und Secret-Quellen ohne
-API-Anfrage. `telachat config-check --strict` liefert einen Fehlercode, wenn
-eine nicht-lokale Secret-Quelle fehlt.
+`telachat models` zeigt konfigurierte Modelle pro Profil. Mit
+`telachat models --live -p PROFILE` wird `/models` fuer genau ein Zielprofil
+abgefragt. `telachat config-check` prueft lokale Profile, Modelle und
+Secret-Quellen ohne API-Anfrage. `telachat config-check --strict` liefert einen
+Fehlercode, wenn eine nicht-lokale Secret-Quelle fehlt.
 `telachat theme [NAME]` zeigt oder setzt das persistente GUI-Theme. Fuer
 temporäre Starts kann `TELACHAT_THEME=dark telachat-tk` genutzt werden. Bei
 `theme = "system"` kann `TELACHAT_SYSTEM_THEME=solarized-dark` nur die
@@ -42,8 +46,8 @@ derselbe Wechsel mit `/theme NAME`.
 Manifest; rohe Secrets und Envfiles bleiben draussen.
 `telachat restore` importiert die Backup-Historie additiv in die bestehende
 SQLite-Datenbank. Mit `--dry-run` wird nur gezaehlt.
-`profiles --json`, `config-check --json`, `sessions --json`, `folders --json`,
-`export --json`, `export-folder --json` und `doctor --json` liefern
+`profiles --json`, `models --json`, `config-check --json`, `sessions --json`,
+`folders --json`, `export --json`, `export-folder --json` und `doctor --json` liefern
 strukturierte Daten fuer Skripte und Agenten; Provider-/Secret-Konfiguration
 bleibt redaktiert.
 

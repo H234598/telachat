@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.27.0 - 2026-05-25
+
+- Add `telachat models` for configured model inventory across profiles.
+- Add `telachat models --live [-p PROFILE]` to query `/models` for one target
+  profile.
+- Add redacted JSON output for model inventory and live model discovery.
+
 ## 0.26.0 - 2026-05-25
 
 - Add `config-check --profile NAME` to validate one configured profile.
