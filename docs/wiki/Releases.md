@@ -1,5 +1,10 @@
 # Releases
 
+## 0.43.6 - 2026-05-25
+
+- `file:`- und `envfile:`-Secret-Quellen behalten rohe Windows-Backslashes in
+  TOML-Basic-Strings bei.
+
 ## 0.43.5 - 2026-05-25
 
 - GTK/Tk wenden ein Ordner-Default-Modell nicht mehr an, wenn das zugehoerige

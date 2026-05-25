@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.43.6 - 2026-05-25
+
+- Preserve raw Windows backslashes in `file:` and `envfile:` secret sources written as TOML basic strings.
+
 ## 0.43.5 - 2026-05-25
 
 - Prevent GTK/Tk folder model defaults from being applied when the folder's default profile is not configured locally.
