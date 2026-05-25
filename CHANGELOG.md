@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.47.0 - 2026-05-25
+
+- Persist provider token-usage metadata on saved assistant messages when usage is available.
+- Aggregate stored input/output/total token counts in `telachat stats` and `stats --json` without exposing message content.
+- Reuse the shared token-usage record helper across CLI/controller storage and JSON output.
+
 ## 0.46.0 - 2026-05-25
 
 - Add built-in prompt-template variables: `{date}`, `{time}`, and `{datetime}` in addition to `{input}`.

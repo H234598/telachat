@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, replace
 
-from .client import ChatResult, OpenAICompatClient, TokenUsage
+from .client import ChatResult, OpenAICompatClient, TokenUsage, token_usage_record
 from .config import AppConfig, Profile, load_config, set_config_theme
 from .store import (
     ChatStore,
@@ -298,7 +298,12 @@ class TelachatController:
         else:
             answer = "".join(result)
             usage = None
-        self.store.add_message(session.id, "assistant", answer)
+        self.store.add_message(
+            session.id,
+            "assistant",
+            answer,
+            metadata=_assistant_message_metadata(usage),
+        )
         return ChatPayload(
             session=session,
             messages=self.store.messages(session.id),
@@ -341,7 +346,12 @@ class TelachatController:
         else:
             answer = "".join(result)
             usage = None
-        self.store.add_message(session.id, "assistant", answer)
+        self.store.add_message(
+            session.id,
+            "assistant",
+            answer,
+            metadata=_assistant_message_metadata(usage),
+        )
         updated = self.store.get_session(session.id) or session
         return ChatPayload(
             session=updated,
@@ -376,3 +386,8 @@ class TelachatController:
 
     def export_markdown(self, session_id: str) -> str:
         return self.store.export_markdown(session_id)
+
+
+def _assistant_message_metadata(usage: TokenUsage | None) -> dict[str, object] | None:
+    record = token_usage_record(usage)
+    return {"usage": record} if record else None

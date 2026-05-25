@@ -122,6 +122,15 @@ def format_stats_lines(stats: object, *, include_database: bool = True) -> list[
             ),
         ]
     )
+    usage_records = getattr(stats, "usage_records", 0)
+    if usage_records:
+        lines.append(
+            "Token-Nutzung: "
+            f"{usage_records} Antworten, "
+            f"{getattr(stats, 'usage_input_tokens', 0)} in, "
+            f"{getattr(stats, 'usage_output_tokens', 0)} out, "
+            f"{getattr(stats, 'usage_total_tokens', 0)} total"
+        )
     return lines
 
 

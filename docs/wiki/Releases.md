@@ -1,5 +1,12 @@
 # Releases
 
+## 0.47.0 - 2026-05-25
+
+- Speichert Provider-Token-Usage an Assistant-Nachrichten, wenn der Provider
+  Usage-Daten meldet.
+- `telachat stats` und `stats --json` aggregieren gespeicherte Input-/Output-/
+  Total-Tokens content-frei.
+
 ## 0.46.0 - 2026-05-25
 
 - Prompt-Templates unterstuetzen jetzt `{date}`, `{time}` und `{datetime}`

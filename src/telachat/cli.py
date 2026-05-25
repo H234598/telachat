@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 
 from . import __version__
-from .client import ApiError, ChatResult, OpenAICompatClient
+from .client import ApiError, ChatResult, OpenAICompatClient, token_usage_record
 from .commands import (
     ContextEstimate,
     canonical_slash_command,
@@ -662,7 +662,12 @@ def cmd_ask(args: argparse.Namespace) -> int:
                 system_prompt=system_prompt,
             )
             store.add_message(session.id, "user", prompt)
-            store.add_message(session.id, "assistant", response)
+            store.add_message(
+                session.id,
+                "assistant",
+                response,
+                metadata=_assistant_message_metadata(result if isinstance(result, ChatResult) else None),
+            )
             saved_session_id = session.id
             if not args.json:
                 print(f"\n[gespeichert: {session.id}]", file=sys.stderr)
@@ -938,21 +943,15 @@ def _profile_record(name: str, profile: Profile, *, is_default: bool) -> dict[st
 
 
 def _usage_record(result: ChatResult) -> dict[str, int] | None:
-    usage = result.usage
-    if usage is None:
-        return None
-    record = {
-        name: value
-        for name, value in (
-            ("input_tokens", usage.input_tokens),
-            ("output_tokens", usage.output_tokens),
-            ("total_tokens", usage.total_tokens),
-            ("cached_input_tokens", usage.cached_input_tokens),
-            ("reasoning_tokens", usage.reasoning_tokens),
-        )
-        if value is not None
-    }
+    record = token_usage_record(result.usage)
     return record or None
+
+
+def _assistant_message_metadata(result: ChatResult | None) -> dict[str, object] | None:
+    if result is None:
+        return None
+    usage = token_usage_record(result.usage)
+    return {"usage": usage} if usage else None
 
 
 def _model_record(
@@ -1006,6 +1005,14 @@ def _stats_record(stats: StoreStats) -> dict[str, object]:
                 {"role": role, "messages": count}
                 for role, count in stats.message_roles
             ],
+        },
+        "usage": {
+            "records": stats.usage_records,
+            "input_tokens": stats.usage_input_tokens,
+            "output_tokens": stats.usage_output_tokens,
+            "total_tokens": stats.usage_total_tokens,
+            "cached_input_tokens": stats.usage_cached_input_tokens,
+            "reasoning_tokens": stats.usage_reasoning_tokens,
         },
         "folders": {
             "total": stats.folders_total,

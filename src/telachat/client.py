@@ -342,6 +342,22 @@ def format_token_usage(usage: TokenUsage | None) -> str:
     return "Tokens: " + ", ".join(parts)
 
 
+def token_usage_record(usage: TokenUsage | None) -> dict[str, int]:
+    if usage is None:
+        return {}
+    return {
+        name: value
+        for name, value in (
+            ("input_tokens", usage.input_tokens),
+            ("output_tokens", usage.output_tokens),
+            ("total_tokens", usage.total_tokens),
+            ("cached_input_tokens", usage.cached_input_tokens),
+            ("reasoning_tokens", usage.reasoning_tokens),
+        )
+        if value is not None
+    }
+
+
 def _read_error_body(exc: urllib.error.HTTPError) -> str:
     try:
         raw = exc.read().decode("utf-8", errors="replace").strip()

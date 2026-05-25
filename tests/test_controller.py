@@ -144,6 +144,10 @@ class ControllerTests(unittest.TestCase):
                         [(message.role, message.content) for message in payload.messages],
                         [("user", "Hallo"), ("assistant", "Neu")],
                     )
+                    self.assertEqual(
+                        payload.messages[-1].metadata["usage"],
+                        {"input_tokens": 7, "output_tokens": 3, "total_tokens": 10},
+                    )
                     sent_messages = client_cls.return_value.chat.call_args.args[0]
                     self.assertEqual(
                         [item["role"] for item in sent_messages],
@@ -345,6 +349,11 @@ class ControllerTests(unittest.TestCase):
                     self.assertIsNotNone(stored)
                     assert stored is not None
                     self.assertEqual(stored.model, "demo-large")
+                    messages = controller.store.messages(payload.session.id)
+                    self.assertEqual(
+                        messages[-1].metadata["usage"],
+                        {"input_tokens": 5, "output_tokens": 4, "total_tokens": 9},
+                    )
                 finally:
                     controller.close()
             finally:

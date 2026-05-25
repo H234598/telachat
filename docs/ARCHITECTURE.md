@@ -222,8 +222,9 @@ that folder as a portable data bundle. Folder backend defaults are not secrets
 and are included in folder JSON whenever they are configured.
 
 `stats` is read-only and does not include message content. It counts sessions,
-messages by role, folders, tag assignments, profile usage, and model usage so a
-local database can be inspected quickly from scripts.
+messages by role, folders, tag assignments, profile usage, model usage, and
+stored provider token usage so a local database can be inspected quickly from
+scripts.
 
 `context` is also read-only and content-free. It estimates one session's next
 request size from the system prompt, the configured history-message window, and

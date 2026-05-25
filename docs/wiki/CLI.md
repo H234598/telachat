@@ -53,6 +53,8 @@ SQLite-Datenbank. Mit `--dry-run` wird nur gezaehlt.
 `export --json`, `export-folder --json` und `doctor --json` liefern
 strukturierte Daten fuer Skripte und Agenten; Provider-/Secret-Konfiguration
 bleibt redaktiert.
+`stats` enthaelt keine Nachrichtentexte und fasst gespeicherte Provider-Usage-
+Metadaten nur als Token-Zaehler zusammen.
 
 ## Sessions
 

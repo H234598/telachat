@@ -175,7 +175,18 @@ class CliTests(unittest.TestCase):
                         system_prompt="System",
                     )
                     store.add_message(session.id, "user", "Geheimer Projektplan")
-                    store.add_message(session.id, "assistant", "Antwort")
+                    store.add_message(
+                        session.id,
+                        "assistant",
+                        "Antwort",
+                        metadata={
+                            "usage": {
+                                "input_tokens": 11,
+                                "output_tokens": 5,
+                                "total_tokens": 16,
+                            }
+                        },
+                    )
                     store.add_message(archived.id, "user", "Archivnotiz")
                     store.set_session_pinned(session.id, True)
                     store.set_session_archived(archived.id, True)
@@ -193,6 +204,17 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(payload["sessions"]["pinned"], 1)
                 self.assertEqual(payload["sessions"]["unfiled"], 1)
                 self.assertEqual(payload["messages"]["total"], 3)
+                self.assertEqual(
+                    payload["usage"],
+                    {
+                        "cached_input_tokens": 0,
+                        "input_tokens": 11,
+                        "output_tokens": 5,
+                        "reasoning_tokens": 0,
+                        "records": 1,
+                        "total_tokens": 16,
+                    },
+                )
                 self.assertEqual(payload["tags"]["assignments"], 1)
                 self.assertEqual(payload["folders"]["with_system_prompt"], 1)
                 self.assertEqual(
@@ -208,6 +230,7 @@ class CliTests(unittest.TestCase):
                 text = out.getvalue()
                 self.assertIn("Sessions: 2 gesamt", text)
                 self.assertIn("Nachrichten: 3 gesamt", text)
+                self.assertIn("Token-Nutzung: 1 Antworten, 11 in, 5 out, 16 total", text)
                 self.assertIn("Profile: openai=1, tki=1", text)
                 self.assertNotIn("Geheimer Projektplan", text)
 
@@ -414,11 +437,19 @@ class CliTests(unittest.TestCase):
                 with redirect_stdout(out), redirect_stderr(err), mock.patch(
                     "telachat.cli.OpenAICompatClient",
                 ) as client_cls:
-                    client_cls.return_value.chat.return_value = ChatResult("Gespeichert", {})
+                    client_cls.return_value.chat.return_value = ChatResult(
+                        "Gespeichert",
+                        {},
+                        usage=TokenUsage(input_tokens=4, output_tokens=2, total_tokens=6),
+                    )
                     self.assertEqual(main(["ask", "--json", "--save", "Bitte merken"]), 0)
                 payload = json.loads(out.getvalue())
                 self.assertEqual(payload["answer"], "Gespeichert")
                 self.assertIn("saved_session_id", payload)
+                self.assertEqual(
+                    payload["usage"],
+                    {"input_tokens": 4, "output_tokens": 2, "total_tokens": 6},
+                )
                 self.assertEqual("", err.getvalue())
                 store = ChatStore()
                 try:
@@ -428,6 +459,10 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(
                     [(message.role, message.content) for message in messages],
                     [("user", "Bitte merken"), ("assistant", "Gespeichert")],
+                )
+                self.assertEqual(
+                    messages[-1].metadata["usage"],
+                    {"input_tokens": 4, "output_tokens": 2, "total_tokens": 6},
                 )
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)

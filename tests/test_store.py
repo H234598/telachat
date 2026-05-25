@@ -389,6 +389,8 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual(stats.message_roles, ())
                 self.assertEqual(stats.session_profiles, ())
                 self.assertEqual(stats.session_models, ())
+                self.assertEqual(stats.usage_records, 0)
+                self.assertEqual(stats.usage_total_tokens, 0)
             finally:
                 store.close()
 
@@ -416,7 +418,20 @@ class StoreTests(unittest.TestCase):
                     system_prompt="System",
                 )
                 store.add_message(active.id, "user", "Geheimer Inhalt")
-                store.add_message(active.id, "assistant", "Antwort")
+                assistant = store.add_message(
+                    active.id,
+                    "assistant",
+                    "Antwort",
+                    metadata={
+                        "usage": {
+                            "input_tokens": 21,
+                            "output_tokens": 8,
+                            "total_tokens": 29,
+                            "cached_input_tokens": 3,
+                            "reasoning_tokens": 2,
+                        }
+                    },
+                )
                 store.add_message(unfiled.id, "system", "Systemnotiz")
                 store.add_message(archived.id, "user", "Archivnotiz")
                 store.set_session_pinned(active.id, True)
@@ -425,7 +440,19 @@ class StoreTests(unittest.TestCase):
                 store.set_session_tags(unfiled.id, ["Projekt"])
 
                 stats = store.stats()
+                messages = store.messages(active.id)
 
+                self.assertEqual(
+                    assistant.metadata["usage"],
+                    {
+                        "input_tokens": 21,
+                        "output_tokens": 8,
+                        "total_tokens": 29,
+                        "cached_input_tokens": 3,
+                        "reasoning_tokens": 2,
+                    },
+                )
+                self.assertEqual(messages[-1].metadata, assistant.metadata)
                 self.assertEqual(stats.sessions_total, 3)
                 self.assertEqual(stats.sessions_active, 2)
                 self.assertEqual(stats.sessions_archived, 1)
@@ -443,6 +470,12 @@ class StoreTests(unittest.TestCase):
                     dict(stats.session_models),
                     {"": 1, "Qwen/Qwen2.5-1.5B-Instruct": 1, "gpt-5.5": 1},
                 )
+                self.assertEqual(stats.usage_records, 1)
+                self.assertEqual(stats.usage_input_tokens, 21)
+                self.assertEqual(stats.usage_output_tokens, 8)
+                self.assertEqual(stats.usage_total_tokens, 29)
+                self.assertEqual(stats.usage_cached_input_tokens, 3)
+                self.assertEqual(stats.usage_reasoning_tokens, 2)
                 self.assertNotIn("Geheimer Inhalt", repr(stats))
             finally:
                 store.close()

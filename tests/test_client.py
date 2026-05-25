@@ -7,7 +7,13 @@ from unittest import mock
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import ClassVar
 
-from telachat.client import ChatResult, OpenAICompatClient, TokenUsage, format_token_usage
+from telachat.client import (
+    ChatResult,
+    OpenAICompatClient,
+    TokenUsage,
+    format_token_usage,
+    token_usage_record,
+)
 from telachat.config import Profile
 
 
@@ -225,7 +231,18 @@ class ClientTests(unittest.TestCase):
             format_token_usage(usage),
             "Tokens: 13 in/18 out, 31 total, 5 cached, 4 reasoning",
         )
+        self.assertEqual(
+            token_usage_record(usage),
+            {
+                "cached_input_tokens": 5,
+                "input_tokens": 13,
+                "output_tokens": 18,
+                "reasoning_tokens": 4,
+                "total_tokens": 31,
+            },
+        )
         self.assertEqual(format_token_usage(None), "")
+        self.assertEqual(token_usage_record(None), {})
 
 
 if __name__ == "__main__":
