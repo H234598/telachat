@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.34.1 - 2026-05-25
+
+- Add focused Chat Completions regression coverage for generation parameters.
+
 ## 0.34.0 - 2026-05-25
 
 - Add visible Tk/GTK generation controls for temperature and max output tokens.

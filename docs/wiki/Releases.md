@@ -1,5 +1,10 @@
 # Releases
 
+## 0.34.1 - 2026-05-25
+
+- Ergaenzt fokussierte Regressionstests fuer Chat-Completions-Parameter wie
+  Temperatur, `top_p`, Tokenlimit und Reasoning-Aufwand.
+
 ## 0.34.0 - 2026-05-25
 
 - GTK und Tk haben jetzt sichtbare Generierungsregler fuer Temperatur und
