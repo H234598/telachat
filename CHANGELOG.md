@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.22.0 - 2026-05-25
+
+- Add `telachat export-folder FOLDER --json` for machine-readable
+  multi-session folder exports.
+- Include folder metadata, selected sort mode, session metadata, system
+  prompts, and ordered messages without provider config or raw secrets.
+- Keep empty folder JSON exports machine-readable with an empty session list.
+
 ## 0.21.0 - 2026-05-25
 
 - Add `telachat import-session FILE.json` for additive single-session imports.

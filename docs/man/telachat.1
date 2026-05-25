@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.21.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.22.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -68,7 +68,8 @@ Use \fB--title\fR, \fB--folder\fR, and \fB--json\fR for import metadata and
 structured output.
 .TP
 .B export-folder
-Export a selected folder as Markdown files or a single bundled Markdown file.
+Export a selected folder as Markdown files, a single bundled Markdown file, or
+machine-readable JSON with \fB--json\fR.
 .TP
 .B backup
 Create a local ZIP backup containing a consistent SQLite history copy,
@@ -110,6 +111,7 @@ telachat export SESSION_ID --json
 telachat import-session session.json --folder Importe
 telachat export-folder Arbeit -o ./arbeit-export
 telachat export-folder Arbeit --single-file -o arbeit.md
+telachat export-folder Arbeit --json -o arbeit.json
 telachat backup -o ./backups
 telachat restore --dry-run ./backups/telachat-backup.zip
 telachat-tk

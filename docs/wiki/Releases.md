@@ -1,5 +1,13 @@
 # Releases
 
+## 0.22.0 - 2026-05-25
+
+- `telachat export-folder FOLDER --json` exportiert mehrere Sessions als
+  `telachat.folder.v1`.
+- JSON enthaelt Ordner-Metadaten, Sortierung, Session-Metadaten,
+  Systemprompts und Nachrichten.
+- Leere Ordner bleiben als JSON mit leerer `sessions`-Liste skriptbar.
+
 ## 0.21.0 - 2026-05-25
 
 - `telachat import-session FILE.json` importiert `telachat.session.v1`

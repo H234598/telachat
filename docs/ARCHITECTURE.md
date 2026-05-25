@@ -147,6 +147,7 @@ telachat export <session-id> --json
 telachat import-session FILE.json
 telachat export-folder <folder-name-or-id>
 telachat export-folder <folder-name-or-id> --single-file
+telachat export-folder <folder-name-or-id> --json
 telachat backup
 telachat backup -o DIR
 telachat backup -o FILE.zip
@@ -158,10 +159,11 @@ telachat import-backup [--dry-run] FILE.zip
 profile modes, model metadata, and whether configured secret sources resolve to
 a value. It prints only redacted secret references. `doctor` remains the live
 network/API check.
-`profiles`, `config-check`, `sessions`, `folders`, `export`, and `doctor` also
-support `--json` for agent/script consumption. JSON output is redacted where it
-contains provider configuration; folder system prompts are included only when
-`folders --show-system --json` is requested.
+`profiles`, `config-check`, `sessions`, `folders`, `export`, `export-folder`,
+and `doctor` also support `--json` for agent/script consumption. JSON output is
+redacted where it contains provider configuration; folder system prompts are
+included only when `folders --show-system --json` is requested or when exporting
+that folder as a portable data bundle.
 
 `backup` creates a ZIP bundle with a consistent SQLite copy, a redacted TOML
 config reconstruction, and a JSON manifest. It intentionally does not include

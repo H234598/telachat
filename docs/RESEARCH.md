@@ -11,6 +11,12 @@ describes a protocol-oriented design around Chat Completions. LibreChat's custom
 endpoint docs use the same idea: endpoint name, API URL, models and API keys are
 configuration, not hard-coded provider classes.
 
+Open WebUI, LibreChat and Msty all treat conversation portability as a normal
+chat-client responsibility. The common pattern is JSON for machine-readable
+archives and Markdown for readable exports; imports should add copies rather
+than overwriting existing history. That makes Telachat's single-session JSON
+export/import and folder JSON export worth keeping first-class.
+
 Jan and LM Studio validate the native-desktop/local-first direction. Jan exposes
 a desktop app with local models and cloud providers configured by user-owned API
 keys. LM Studio's server path is OpenAI-compatible and keeps tool/function-use
@@ -92,13 +98,16 @@ and local state under `$XDG_STATE_HOME`.
 ## Sources
 
 - Open WebUI OpenAI-compatible docs: https://docs.openwebui.com/getting-started/quick-start/connect-a-provider/starting-with-openai-compatible/
+- Open WebUI import/export docs: https://docs.openwebui.com/features/chat-conversations/data-controls/import-export/
 - Open WebUI chat features overview: https://docs.openwebui.com/features/chat-conversations/chat-features/
 - Open WebUI folders/projects: https://docs.openwebui.com/features/chat-conversations/chat-features/conversation-organization
 - Open WebUI prompts/slash commands: https://docs.openwebui.com/features/workspace/prompts/
 - LibreChat custom endpoints: https://www.librechat.ai/docs/quick_start/custom_endpoints
+- LibreChat import conversations: https://www.librechat.ai/docs/features/import_convos
 - LibreChat resumable streams: https://www.librechat.ai/docs/features/resumable_streams
 - Jan model/provider management: https://www.jan.ai/docs/desktop/manage-models
 - LM Studio tool use/server API: https://www.lmstudio.ai/docs/advanced/tool-use
+- Msty export chat: https://docs.msty.app/features/export-chat
 - Msty Turnstiles/regeneration: https://docs.msty.studio/features/turnstiles
 - OpenAI Help retry/regenerate note: https://help.openai.com/en/articles/11909943-gpt-53-and-gpt-54-in-chatgpt
 - LLM OpenAI-compatible models: https://llm.datasette.io/en/stable/other-models.html

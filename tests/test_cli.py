@@ -388,12 +388,15 @@ model = "demo"
                     self.assertEqual(main(["init"]), 0)
                 export_dir = Path(tmp) / "export"
                 bundle = Path(tmp) / "bundle.md"
+                folder_json = Path(tmp) / "folder.json"
                 store = ChatStore()
                 try:
-                    work = store.create_folder("Arbeit")
+                    work = store.create_folder("Arbeit", system_prompt="Projektprompt")
+                    store.create_folder("Leer")
                     alpha = store.create_session(
                         title="Alpha Plan",
                         profile="openai",
+                        model="gpt-5.5",
                         system_prompt="System",
                         folder_id=work.id,
                     )
@@ -430,6 +433,37 @@ model = "demo"
                 self.assertIn("Telachat Export: Arbeit", text)
                 self.assertIn("Projektplan", text)
                 self.assertNotIn("Nicht im Export", text)
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["export-folder", "Arbeit", "--json", "-o", str(folder_json)]),
+                        0,
+                    )
+                self.assertEqual(out.getvalue().strip(), str(folder_json))
+                payload = json.loads(folder_json.read_text(encoding="utf-8"))
+                self.assertEqual(payload["format"], "telachat.folder.v1")
+                self.assertEqual(payload["title"], "Arbeit")
+                self.assertEqual(payload["folder"]["kind"], "folder")
+                self.assertEqual(payload["folder"]["name"], "Arbeit")
+                self.assertEqual(payload["folder"]["system_prompt"], "Projektprompt")
+                self.assertEqual(payload["sessions"][0]["session"]["title"], "Alpha Plan")
+                self.assertEqual(payload["sessions"][0]["session"]["model"], "gpt-5.5")
+                self.assertEqual(payload["sessions"][0]["session"]["system_prompt"], "System")
+                self.assertEqual(
+                    [(message["role"], message["content"]) for message in payload["sessions"][0]["messages"]],
+                    [("user", "Projektplan"), ("assistant", "Antwort")],
+                )
+                encoded = json.dumps(payload, sort_keys=True)
+                self.assertNotIn("Nicht im Export", encoded)
+                self.assertNotIn("api_key", encoded)
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["export-folder", "Leer", "--json"]), 0)
+                empty = json.loads(out.getvalue())
+                self.assertEqual(empty["folder"]["name"], "Leer")
+                self.assertEqual(empty["sessions"], [])
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)

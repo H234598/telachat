@@ -170,6 +170,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Alle Chats in eine Markdown-Datei schreiben",
     )
+    p_export_folder.add_argument(
+        "--json",
+        action="store_true",
+        help="Ordner als maschinenlesbares JSON exportieren",
+    )
     p_export_folder.set_defaults(func=cmd_export_folder)
 
     p_import_session = sub.add_parser(
@@ -587,6 +592,45 @@ def _folder_record(folder: Folder, *, include_system_prompt: bool) -> dict[str, 
     return record
 
 
+def _session_export_payload(store: ChatStore, session: Session) -> dict[str, object]:
+    return {
+        "session": {
+            **_session_record(session),
+            "system_prompt": session.system_prompt,
+        },
+        "messages": [_message_record(message) for message in store.messages(session.id)],
+    }
+
+
+def _folder_export_record(
+    store: ChatStore,
+    folder: str,
+    folder_id: str | None,
+) -> dict[str, object]:
+    if folder_id == "__none__":
+        return {
+            "id": None,
+            "name": "Ohne Ordner",
+            "kind": "unfiled",
+        }
+    if folder_id is None:
+        return {
+            "id": None,
+            "name": "Alle Sessions",
+            "kind": "all",
+        }
+    item = store.get_folder(folder_id)
+    if item is None:
+        return {
+            "id": folder_id,
+            "name": folder,
+            "kind": "folder",
+        }
+    record = _folder_record(item, include_system_prompt=True)
+    record["kind"] = "folder"
+    return record
+
+
 def cmd_fork(args: argparse.Namespace) -> int:
     store = ChatStore()
     try:
@@ -643,11 +687,7 @@ def cmd_export(args: argparse.Namespace) -> int:
         if args.json:
             payload = {
                 "format": "telachat.session.v1",
-                "session": {
-                    **_session_record(session),
-                    "system_prompt": session.system_prompt,
-                },
-                "messages": [_message_record(message) for message in store.messages(session.id)],
+                **_session_export_payload(store, session),
             }
             text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
             if args.output:
@@ -676,10 +716,26 @@ def cmd_export_folder(args: argparse.Namespace) -> int:
             folder_id=folder_id,
             sort=SESSION_SORTS[args.sort],
         )
+        title = _folder_export_title(store, args.folder, folder_id)
+        if args.json:
+            payload = {
+                "format": "telachat.folder.v1",
+                "title": title,
+                "folder": _folder_export_record(store, args.folder, folder_id),
+                "sort": args.sort,
+                "sessions": [_session_export_payload(store, session) for session in sessions],
+            }
+            text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+            if args.output:
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_text(text, encoding="utf-8")
+                print(args.output)
+            else:
+                print(text, end="")
+            return 0
         if not sessions:
             print("Keine Sessions fuer diesen Export gefunden.")
             return 0
-        title = _folder_export_title(store, args.folder, folder_id)
         if args.single_file:
             markdown = _export_sessions_markdown(store, sessions, title)
             if args.output:
