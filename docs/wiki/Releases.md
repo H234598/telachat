@@ -1,5 +1,10 @@
 # Releases
 
+## 0.43.5 - 2026-05-25
+
+- GTK/Tk wenden ein Ordner-Default-Modell nicht mehr an, wenn das zugehoerige
+  Default-Profil lokal nicht konfiguriert ist.
+
 ## 0.43.4 - 2026-05-25
 
 - Controller-seitig angelegte Ordner pruefen Default-Provider/-Modell jetzt
