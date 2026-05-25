@@ -5,7 +5,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from telachat.config import ensure_default_config, load_config, redact_secret, set_config_theme
+from telachat.config import (
+    ConfigError,
+    ensure_default_config,
+    load_config,
+    redact_secret,
+    set_config_theme,
+)
 
 
 class ConfigTests(unittest.TestCase):
@@ -98,6 +104,37 @@ ticket = "Schreibe ein Ticket:\\n\\n{input}"
             )
             cfg = load_config(path)
             self.assertEqual(cfg.prompt_templates, {"ticket": "Schreibe ein Ticket:\n\n{input}"})
+
+    def test_profile_stream_and_api_mode_are_validated(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            path.write_text(
+                """
+default_profile = "local"
+[profiles.local]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "test"
+model = "demo"
+stream = "false"
+""".strip(),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ConfigError, "stream"):
+                load_config(path)
+
+            path.write_text(
+                """
+default_profile = "local"
+[profiles.local]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "test"
+model = "demo"
+api_mode = "unknown_mode"
+""".strip(),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ConfigError, "api_mode"):
+                load_config(path)
 
     def test_env_api_key_resolution(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

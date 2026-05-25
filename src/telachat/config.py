@@ -155,8 +155,8 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
             max_tokens=int(values.get("max_tokens", 512)),
             reasoning_effort=_optional_reasoning_effort(values.get("reasoning_effort"), name),
             timeout_seconds=int(values.get("timeout_seconds", 300)),
-            stream=bool(values.get("stream", True)),
-            api_mode=str(values.get("api_mode", "chat_completions")),
+            stream=_bool(values, "stream", True, name),
+            api_mode=_api_mode(values.get("api_mode", "chat_completions"), name),
             extra_headers=extra_headers,
         )
 
@@ -250,6 +250,23 @@ def _optional_reasoning_effort(value: object, profile_name: str) -> str | None:
         raise ConfigError(
             f"Profil '{profile_name}' hat ungueltiges reasoning_effort: {value}"
         )
+    return clean
+
+
+def _bool(values: dict[str, Any], key: str, default: bool, profile_name: str) -> bool:
+    value = values.get(key, default)
+    if isinstance(value, bool):
+        return value
+    raise ConfigError(f"Profil '{profile_name}' hat ungueltiges {key}.")
+
+
+def _api_mode(value: object, profile_name: str) -> str:
+    if not isinstance(value, str):
+        raise ConfigError(f"Profil '{profile_name}' hat ungueltiges api_mode.")
+    clean = value.strip().lower()
+    allowed = {"chat_completions", "responses", "codex"}
+    if clean not in allowed:
+        raise ConfigError(f"Profil '{profile_name}' hat ungueltiges api_mode: {value}")
     return clean
 
 
