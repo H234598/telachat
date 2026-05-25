@@ -462,6 +462,28 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(calls, ["doctor"])
 
+    def test_tk_models_command_lists_configured_models(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        combo = _FakeCombo()
+        combo.configure(values=["base-model", "backup-model"])
+        app = SimpleNamespace(model_combo=combo)
+
+        with mock.patch.object(module.messagebox, "showinfo") as showinfo:
+            module.TkTelachatApp.handle_command(app, "/models")
+
+        showinfo.assert_called_once()
+        self.assertEqual(showinfo.call_args.args[0], "Telachat Modelle")
+        self.assertEqual(showinfo.call_args.args[1], "base-model\nbackup-model")
+
+    def test_tk_models_live_command_starts_existing_check(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        calls: list[str] = []
+        app = SimpleNamespace(doctor=lambda: calls.append("doctor"))
+
+        module.TkTelachatApp.handle_command(app, "/models live")
+
+        self.assertEqual(calls, ["doctor"])
+
     def test_tk_doctor_result_refreshes_model_choices(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         events: queue.Queue[object] = queue.Queue()
@@ -686,6 +708,54 @@ class GuiImportTests(unittest.TestCase):
         app = SimpleNamespace(doctor=lambda: calls.append("doctor"))
 
         module.GtkTelachatApp.handle_command(app, "/doctor")
+
+        self.assertEqual(calls, ["doctor"])
+
+    def test_gtk_models_command_lists_configured_models(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        created: list[_FakeDialog] = []
+
+        class FakeMessageDialog:
+            @staticmethod
+            def new(_parent: object, title: str, body: str) -> _FakeDialog:
+                dialog = _FakeDialog(title, body)
+                created.append(dialog)
+                return dialog
+
+        app = SimpleNamespace(
+            model_names=["base-model", "backup-model"],
+            window=object(),
+        )
+
+        with mock.patch.object(module.Adw, "MessageDialog", FakeMessageDialog):
+            module.GtkTelachatApp.handle_command(app, "/models")
+
+        self.assertEqual(len(created), 1)
+        self.assertEqual(created[0].title, "Telachat Modelle")
+        self.assertEqual(created[0].body, "base-model\nbackup-model")
+        self.assertEqual(created[0].responses, [("ok", "OK")])
+        self.assertTrue(created[0].presented)
+
+    def test_gtk_models_live_command_starts_existing_check(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        calls: list[str] = []
+        app = SimpleNamespace(doctor=lambda: calls.append("doctor"))
+
+        module.GtkTelachatApp.handle_command(app, "/models live")
 
         self.assertEqual(calls, ["doctor"])
 
