@@ -158,6 +158,7 @@ telachat doctor
 telachat doctor --chat
 telachat doctor --json --chat
 telachat ask "Hallo"
+telachat ask --json "Hallo"
 telachat chat
 telachat-gtk
 telachat-tk
@@ -208,8 +209,8 @@ presets for LM Studio, Ollama, and Jan. They are normal profiles and may fail
 profile, which is useful when optional provider presets are intentionally not
 configured.
 `profiles`, `models`, `config-check`, `sessions`, `stats`, `context`,
-`templates`, `folders`, `export`, `export-folder`, and `doctor` also support
-`--json` for agent/script consumption. JSON output is redacted where it
+`templates`, `folders`, `ask`, `export`, `export-folder`, and `doctor` also
+support `--json` for agent/script consumption. JSON output is redacted where it
 contains provider configuration;
 folder system prompts are
 included only when `folders --show-system --json` is requested or when exporting

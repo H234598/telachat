@@ -367,6 +367,28 @@ class CliTests(unittest.TestCase):
                 messages = run_chat.call_args.args[1]
                 self.assertIn("Projektstand", messages[-1]["content"])
                 self.assertIn("Fasse", messages[-1]["content"])
+
+                out = io.StringIO()
+                with redirect_stdout(out), mock.patch(
+                    "telachat.cli.OpenAICompatClient",
+                ) as client_cls:
+                    client_cls.return_value.chat.return_value = ChatResult(
+                        "JSON OK",
+                        {},
+                        usage=TokenUsage(input_tokens=9, output_tokens=3, total_tokens=12),
+                    )
+                    self.assertEqual(
+                        main(["ask", "--json", "--template", "summarize", "Projektstand"]),
+                        0,
+                    )
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["answer"], "JSON OK")
+                self.assertEqual(payload["model"], "Qwen/Qwen2.5-1.5B-Instruct")
+                self.assertEqual(
+                    payload["usage"],
+                    {"input_tokens": 9, "output_tokens": 3, "total_tokens": 12},
+                )
+                self.assertEqual(client_cls.return_value.chat.call_args.kwargs["stream"], False)
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)

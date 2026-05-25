@@ -1,5 +1,11 @@
 # Releases
 
+## 0.45.0 - 2026-05-25
+
+- `telachat ask --json` gibt One-Shot-Antworten maschinenlesbar mit Provider,
+  Modell und verfuegbaren Usage-Metadaten aus.
+- Tracked-Source-Secret-Hygiene wird nun ueber einen Regressionstest bewacht.
+
 ## 0.44.0 - 2026-05-25
 
 - Zeigt Provider-Usage-Daten aus Chat-Completions- und Responses-Antworten in

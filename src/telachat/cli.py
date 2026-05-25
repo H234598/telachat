@@ -173,6 +173,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_ask.add_argument("--stdin", action="store_true", help="Prompt aus stdin lesen")
     p_ask.add_argument("--save", action="store_true", help="Frage und Antwort speichern")
     p_ask.add_argument("--template", "-t", help="Prompt-Template auf den Prompt anwenden")
+    p_ask.add_argument("--json", action="store_true", help="Antwort maschinenlesbar ausgeben")
     p_ask.set_defaults(func=cmd_ask)
 
     p_chat = sub.add_parser("chat", help="Interaktiven Chat starten")
@@ -642,7 +643,14 @@ def cmd_ask(args: argparse.Namespace) -> int:
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt},
     ]
-    response = _run_chat(profile, messages, stream=not args.no_stream)
+    saved_session_id: str | None = None
+    if args.json:
+        result = OpenAICompatClient(profile, retries=1).chat(messages, stream=False)
+        assert isinstance(result, ChatResult)
+        response = result.content
+    else:
+        result = None
+        response = _run_chat(profile, messages, stream=not args.no_stream)
     if args.save:
         store = ChatStore()
         try:
@@ -654,9 +662,24 @@ def cmd_ask(args: argparse.Namespace) -> int:
             )
             store.add_message(session.id, "user", prompt)
             store.add_message(session.id, "assistant", response)
-            print(f"\n[gespeichert: {session.id}]", file=sys.stderr)
+            saved_session_id = session.id
+            if not args.json:
+                print(f"\n[gespeichert: {session.id}]", file=sys.stderr)
         finally:
             store.close()
+    if args.json:
+        assert isinstance(result, ChatResult)
+        payload: dict[str, object] = {
+            "answer": response,
+            "profile": profile.name,
+            "model": profile.model,
+        }
+        usage = _usage_record(result)
+        if usage:
+            payload["usage"] = usage
+        if saved_session_id:
+            payload["saved_session_id"] = saved_session_id
+        print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
 
 

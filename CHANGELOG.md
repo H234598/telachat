@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.45.0 - 2026-05-25
+
+- Add `telachat ask --json` for scriptable one-shot answers with provider, model, and usage metadata.
+- Add tracked-source secret-shape hygiene coverage.
+
 ## 0.44.0 - 2026-05-25
 
 - Surface provider token usage from Chat Completions and Responses results in GUI response status and `doctor --json --chat`.
