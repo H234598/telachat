@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import sqlite3
 import sys
 import textwrap
@@ -22,7 +23,7 @@ from .commands import (
 from .config import ConfigError, Profile, ensure_default_config, load_config, redact_secret
 from .defaults import APP_TITLE
 from .paths import config_path, db_path, state_dir
-from .store import ChatStore, messages_for_api, title_from_prompt
+from .store import ChatStore, HistoryImportSummary, messages_for_api, title_from_prompt
 
 
 SESSION_SORTS = {
@@ -144,6 +145,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_backup = sub.add_parser("backup", help="SQLite-Historie und redaktierte Config sichern")
     p_backup.add_argument("-o", "--output", type=Path, help="Backup-Zip oder Zielverzeichnis")
     p_backup.set_defaults(func=cmd_backup)
+
+    p_restore = sub.add_parser("restore", help="Backup-Historie sicher importieren")
+    p_restore.add_argument("backup", type=Path, help="Telachat-Backup-ZIP")
+    p_restore.add_argument("--dry-run", action="store_true", help="Nur anzeigen, was importiert wuerde")
+    p_restore.set_defaults(func=cmd_restore)
+
+    p_import_backup = sub.add_parser("import-backup", help="Alias fuer restore")
+    p_import_backup.add_argument("backup", type=Path, help="Telachat-Backup-ZIP")
+    p_import_backup.add_argument("--dry-run", action="store_true", help="Nur anzeigen, was importiert wuerde")
+    p_import_backup.set_defaults(func=cmd_restore)
 
     p_doctor = sub.add_parser("doctor", help="Konfiguration/API pruefen")
     p_doctor.add_argument("-p", "--profile", help="Profilname")
@@ -500,6 +511,33 @@ def cmd_backup(args: argparse.Namespace) -> int:
                 json.dumps(manifest, indent=2, sort_keys=True) + "\n",
             )
     print(target)
+    return 0
+
+
+def cmd_restore(args: argparse.Namespace) -> int:
+    backup = args.backup.expanduser()
+    if not backup.exists():
+        raise ConfigError(f"Backup nicht gefunden: {backup}")
+    with tempfile.TemporaryDirectory() as tmp:
+        backup_db = Path(tmp) / "history.sqlite3"
+        try:
+            with zipfile.ZipFile(backup) as archive:
+                if "history.sqlite3" not in archive.namelist():
+                    raise ConfigError("Backup enthaelt keine history.sqlite3.")
+                with archive.open("history.sqlite3") as source, backup_db.open("wb") as target:
+                    shutil.copyfileobj(source, target)
+        except zipfile.BadZipFile as exc:
+            raise ConfigError(f"Ungueltiges Backup-ZIP: {backup}") from exc
+
+        store = ChatStore()
+        try:
+            try:
+                summary = store.import_history_database(backup_db, dry_run=args.dry_run)
+            except (sqlite3.Error, ValueError) as exc:
+                raise ConfigError(str(exc)) from exc
+        finally:
+            store.close()
+    print(_restore_summary(summary))
     return 0
 
 
@@ -1044,6 +1082,14 @@ def _backup_manifest(cfg: object, backup_db: Path) -> dict[str, object]:
         "prompt_templates": sorted(cfg.prompt_templates),
         "counts": counts,
     }
+
+
+def _restore_summary(summary: HistoryImportSummary) -> str:
+    prefix = "Wuerde importieren" if summary.dry_run else "Importiert"
+    return (
+        f"{prefix}: {summary.sessions} Sessions, "
+        f"{summary.messages} Nachrichten, {summary.folders} neue Ordner"
+    )
 
 
 def _redacted_config_toml(cfg: object) -> str:

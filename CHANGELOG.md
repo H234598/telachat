@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.0 - 2026-05-25
+
+- Add `telachat restore` and `telachat import-backup` for safe backup imports.
+- Import backup history into the existing SQLite database without overwriting
+  existing sessions.
+- Preserve folder relationships, reuse matching folder names, and create new
+  session IDs for imported chats.
+- Add `--dry-run` so backup contents can be counted before import.
+- Add deterministic CLI and store coverage for restore/import behavior.
+
 ## 0.10.0 - 2026-05-25
 
 - Add `telachat backup` for local, secret-aware backup bundles.

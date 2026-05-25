@@ -6,6 +6,7 @@
 cd /home/teladi/telachat
 PYTHONPATH=src python3 -m telachat config-check
 PYTHONPATH=src python3 -m telachat backup -o /tmp/telachat-backups
+PYTHONPATH=src python3 -m telachat restore --dry-run /tmp/telachat-backups/FILE.zip
 make compile
 make test3
 make zipapp
@@ -23,6 +24,7 @@ telachat doctor
 telachat config-check
 telachat config-check --strict
 telachat backup -o /tmp/telachat-backups
+telachat restore --dry-run /tmp/telachat-backups/FILE.zip
 telachat doctor --chat
 telachat templates
 telachat folders --show-system
@@ -54,6 +56,8 @@ candidates, offline config checks with secret redaction, and documented
 terminal slash-command actions. Backup tests inspect the ZIP bundle and verify
 that envfile secret values and secret-like header values are not included. GUI
 smoke tests also cover construction of the slash-command autocomplete widgets.
+Restore tests verify dry-run counts, duplicate-safe imports, session ID
+rewrites, and folder-name reuse.
 
 ## Expected default live configuration
 

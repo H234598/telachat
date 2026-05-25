@@ -18,7 +18,7 @@
   - Enables folders, session listing, search, loading, and Markdown export.
 - `telachat.cli`
   - `init`, `profiles`, `config-check`, `ask`, `chat`, `sessions`,
-    `export`, `export-folder`, `backup`, `doctor`.
+    `export`, `export-folder`, `backup`, `restore`, `doctor`.
   - Interactive `chat` installs optional Readline completion for slash commands
     and context values when stdin is a TTY.
 - `telachat.commands`
@@ -114,6 +114,8 @@ telachat export-folder <folder-name-or-id> --single-file
 telachat backup
 telachat backup -o DIR
 telachat backup -o FILE.zip
+telachat restore [--dry-run] FILE.zip
+telachat import-backup [--dry-run] FILE.zip
 ```
 
 `config-check` is intentionally offline: it validates the loaded TOML shape,
@@ -126,6 +128,12 @@ config reconstruction, and a JSON manifest. It intentionally does not include
 raw envfiles, raw API keys, or the user's original config file. The redacted
 TOML writer quotes keys when needed and redacts potentially secret header
 values.
+
+`restore` and its alias `import-backup` import only the `history.sqlite3` from
+a Telachat backup ZIP. They append imported chats to the existing database,
+generate new session/folder IDs as needed, reuse matching folder names, and do
+not overwrite or replace current history. `--dry-run` reports the number of
+folders, sessions, and messages that would be imported.
 
 Interactive CLI chat supports Tab completion for slash commands, provider names,
 model IDs, prompt templates, folders, session references, sort modes, and common
@@ -165,7 +173,7 @@ GUI slash commands:
 - SQLite session/message roundtrip, Markdown export, and selective folder export.
 - SQLite folder prompts, sorting and history-search behavior.
 - SQLite session model metadata, legacy migration, exports, and backend restore.
-- Backup ZIP content and secret redaction.
+- Backup ZIP content, secret redaction, and safe backup restore/import.
 - CLI init/profile behavior with temporary XDG directories.
 - Shared slash-command catalog behavior.
 - Interactive CLI Readline completion and documented terminal command actions.

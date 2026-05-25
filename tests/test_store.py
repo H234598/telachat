@@ -131,6 +131,63 @@ class StoreTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_import_history_database_adds_copies_without_overwriting(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = ChatStore(Path(tmp) / "source.sqlite3")
+            target = ChatStore(Path(tmp) / "target.sqlite3")
+            try:
+                source_folder = source.create_folder(
+                    "Arbeit",
+                    system_prompt="Quellprojekt",
+                )
+                source_session = source.create_session(
+                    title="Import",
+                    profile="openai",
+                    model="gpt-5.5",
+                    system_prompt="System",
+                    folder_id=source_folder.id,
+                )
+                source.add_message(source_session.id, "user", "Frage")
+                source.add_message(source_session.id, "assistant", "Antwort")
+                existing_folder = target.create_folder(
+                    "arbeit",
+                    system_prompt="Zielprojekt",
+                )
+                existing_session = target.create_session(
+                    title="Bleibt",
+                    profile="tki",
+                    model="Qwen/Qwen2.5-1.5B-Instruct",
+                    system_prompt="System",
+                    folder_id=existing_folder.id,
+                )
+                target.add_message(existing_session.id, "user", "Vorhanden")
+
+                dry_run = target.import_history_database(source.path, dry_run=True)
+                self.assertTrue(dry_run.dry_run)
+                self.assertEqual(dry_run.folders, 0)
+                self.assertEqual(dry_run.sessions, 1)
+                self.assertEqual(dry_run.messages, 2)
+
+                summary = target.import_history_database(source.path)
+                self.assertEqual(summary.folders, 0)
+                self.assertEqual(summary.sessions, 1)
+                self.assertEqual(summary.messages, 2)
+
+                sessions = target.list_sessions(limit=10, folder_id="__all__")
+                self.assertEqual(len(sessions), 2)
+                imported = [session for session in sessions if session.title == "Import"]
+                self.assertEqual(len(imported), 1)
+                self.assertNotEqual(imported[0].id, source_session.id)
+                self.assertEqual(imported[0].folder_id, existing_folder.id)
+                self.assertEqual(
+                    [message.content for message in target.messages(imported[0].id)],
+                    ["Frage", "Antwort"],
+                )
+                self.assertEqual(len(target.list_folders()), 1)
+            finally:
+                source.close()
+                target.close()
+
     def test_store_can_be_used_from_worker_thread(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             store = ChatStore(Path(tmp) / "history.sqlite3")

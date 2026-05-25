@@ -327,6 +327,36 @@ X-Test-Header = "yes"
                 )
                 self.assertEqual(manifest["counts"]["sessions"], 1)
                 self.assertEqual(manifest["counts"]["messages"], 1)
+
+                restore_data = Path(tmp) / "restore-data"
+                os.environ["XDG_DATA_HOME"] = str(restore_data)
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["restore", "--dry-run", str(backup_path)]), 0)
+                self.assertIn("Wuerde importieren: 1 Sessions, 1 Nachrichten", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["restore", str(backup_path)]), 0)
+                self.assertIn("Importiert: 1 Sessions, 1 Nachrichten", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["import-backup", str(backup_path)]), 0)
+                self.assertIn("Importiert: 1 Sessions, 1 Nachrichten", out.getvalue())
+
+                target_store = ChatStore()
+                try:
+                    sessions = target_store.list_sessions(limit=10, folder_id="__all__")
+                    self.assertEqual(len(sessions), 2)
+                    self.assertEqual({session.title for session in sessions}, {"Backup"})
+                    self.assertEqual(
+                        {message.content for session in sessions for message in target_store.messages(session.id)},
+                        {"Hallo Backup"},
+                    )
+                    self.assertEqual(len({session.id for session in sessions}), 2)
+                finally:
+                    target_store.close()
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)

@@ -1,5 +1,16 @@
 # Releases
 
+## 0.11.0 - 2026-05-25
+
+- Neue Befehle `telachat restore` und `telachat import-backup`.
+- Backup-Historien werden additiv in die bestehende SQLite-Datenbank importiert.
+- Bestehende Sessions werden nicht ueberschrieben; importierte Sessions
+  bekommen neue IDs.
+- Ordnerbeziehungen bleiben erhalten, gleichnamige Zielordner werden
+  wiederverwendet.
+- `--dry-run` zeigt vorab Ordner-, Session- und Nachrichtenanzahlen.
+- Tests pruefen CLI-Import, Store-Import, ID-Neuschreibung und Ordner-Mapping.
+
 ## 0.10.0 - 2026-05-25
 
 - Neuer Befehl `telachat backup` fuer lokale Backup-ZIP-Dateien.

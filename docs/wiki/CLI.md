@@ -15,6 +15,7 @@ telachat doctor --chat
 telachat ask "Deine Frage"
 telachat chat
 telachat backup -o ./backups
+telachat restore --dry-run ./backups/telachat-backup.zip
 ```
 
 ## Provider und Template
@@ -30,6 +31,8 @@ API-Anfrage. `telachat config-check --strict` liefert einen Fehlercode, wenn
 eine nicht-lokale Secret-Quelle fehlt.
 `telachat backup` schreibt ein ZIP mit SQLite-Historie, redaktierter Config und
 Manifest; rohe Secrets und Envfiles bleiben draussen.
+`telachat restore` importiert die Backup-Historie additiv in die bestehende
+SQLite-Datenbank. Mit `--dry-run` wird nur gezaehlt.
 
 ## Sessions
 

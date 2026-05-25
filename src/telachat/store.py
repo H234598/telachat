@@ -42,6 +42,14 @@ class Message:
     created_at: int
 
 
+@dataclass(frozen=True)
+class HistoryImportSummary:
+    folders: int
+    sessions: int
+    messages: int
+    dry_run: bool = False
+
+
 class ChatStore:
     def __init__(self, path: Path | None = None) -> None:
         self.path = path or db_path()
@@ -54,6 +62,15 @@ class ChatStore:
     def close(self) -> None:
         with self._lock:
             self.db.close()
+
+    def _new_unique_id(self, table: str) -> str:
+        if table not in {"folders", "sessions"}:
+            raise ValueError(f"Ungueltige Tabelle: {table}")
+        while True:
+            candidate = uuid.uuid4().hex[:12]
+            row = self.db.execute(f"SELECT 1 FROM {table} WHERE id = ?", (candidate,)).fetchone()
+            if row is None:
+                return candidate
 
     def _init_schema(self) -> None:
         with self._lock:
@@ -440,6 +457,126 @@ class ChatStore:
             self.db.commit()
             return message
 
+    def import_history_database(
+        self,
+        source_path: Path,
+        *,
+        dry_run: bool = False,
+    ) -> HistoryImportSummary:
+        source = sqlite3.connect(source_path)
+        source.row_factory = sqlite3.Row
+        try:
+            if not _table_exists(source, "sessions") or not _table_exists(source, "messages"):
+                raise ValueError("Backup enthaelt keine Telachat-Historie.")
+            source_folders = (
+                source.execute("SELECT * FROM folders ORDER BY created_at ASC, id ASC").fetchall()
+                if _table_exists(source, "folders")
+                else []
+            )
+            source_sessions = source.execute(
+                "SELECT * FROM sessions ORDER BY created_at ASC, id ASC"
+            ).fetchall()
+            source_messages = source.execute(
+                "SELECT * FROM messages ORDER BY created_at ASC, id ASC"
+            ).fetchall()
+        finally:
+            source.close()
+
+        with self._lock:
+            existing_folder_rows = self.db.execute("SELECT id, name FROM folders").fetchall()
+            folder_map = {
+                row["id"]: existing["id"]
+                for row in source_folders
+                for existing in existing_folder_rows
+                if existing["name"].casefold() == _row_value(row, "name", "").casefold()
+            }
+            folders_to_add = [
+                row
+                for row in source_folders
+                if row["id"] not in folder_map and _row_value(row, "name", "").strip()
+            ]
+            session_ids = {row["id"] for row in source_sessions}
+            message_count = sum(1 for row in source_messages if row["session_id"] in session_ids)
+            if dry_run:
+                return HistoryImportSummary(
+                    folders=len(folders_to_add),
+                    sessions=len(source_sessions),
+                    messages=message_count,
+                    dry_run=True,
+                )
+
+            now = int(time.time())
+            folders_added = 0
+            sessions_added = 0
+            messages_added = 0
+            for row in folders_to_add:
+                folder_id = self._new_unique_id("folders")
+                folder_map[row["id"]] = folder_id
+                self.db.execute(
+                    """
+                    INSERT INTO folders(id, name, created_at, updated_at, system_prompt)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        folder_id,
+                        _row_value(row, "name", "").strip(),
+                        int(_row_value(row, "created_at", now)),
+                        int(_row_value(row, "updated_at", now)),
+                        _row_value(row, "system_prompt", ""),
+                    ),
+                )
+                folders_added += 1
+
+            session_map: dict[str, str] = {}
+            for row in source_sessions:
+                session_id = self._new_unique_id("sessions")
+                source_folder_id = _row_value(row, "folder_id", None)
+                target_folder_id = folder_map.get(source_folder_id) if source_folder_id else None
+                session_map[row["id"]] = session_id
+                self.db.execute(
+                    """
+                    INSERT INTO sessions(
+                        id, title, profile, model, system_prompt,
+                        created_at, updated_at, folder_id, pinned
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        session_id,
+                        _row_value(row, "title", "Importierte Unterhaltung"),
+                        _row_value(row, "profile", ""),
+                        _row_value(row, "model", ""),
+                        _row_value(row, "system_prompt", ""),
+                        int(_row_value(row, "created_at", now)),
+                        int(_row_value(row, "updated_at", now)),
+                        target_folder_id,
+                        int(_row_value(row, "pinned", 0) or 0),
+                    ),
+                )
+                sessions_added += 1
+
+            for row in source_messages:
+                target_session_id = session_map.get(row["session_id"])
+                if not target_session_id:
+                    continue
+                self.db.execute(
+                    """
+                    INSERT INTO messages(session_id, role, content, created_at, metadata)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        target_session_id,
+                        _row_value(row, "role", "user"),
+                        _row_value(row, "content", ""),
+                        int(_row_value(row, "created_at", now)),
+                        _row_value(row, "metadata", "{}"),
+                    ),
+                )
+                messages_added += 1
+
+            self.db.commit()
+            return HistoryImportSummary(folders_added, sessions_added, messages_added)
+
     def export_markdown(self, session_id: str) -> str:
         with self._lock:
             session = self.get_session(session_id)
@@ -475,6 +612,18 @@ def title_from_prompt(prompt: str) -> str:
     if not clean:
         return "Neue Unterhaltung"
     return clean[:64]
+
+
+def _table_exists(db: sqlite3.Connection, table: str) -> bool:
+    row = db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+        (table,),
+    ).fetchone()
+    return row is not None
+
+
+def _row_value(row: sqlite3.Row, key: str, default: object) -> object:
+    return row[key] if key in row.keys() else default
 
 
 def _session_from_row(row: sqlite3.Row) -> Session:
