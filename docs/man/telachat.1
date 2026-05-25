@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.15.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.16.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -71,7 +71,8 @@ Existing sessions are not overwritten; imported sessions receive new IDs. Use
 \fB--dry-run\fR to show counts without importing.
 .TP
 .B doctor
-Check profile configuration and the configured API.
+Check profile configuration and the configured API. Use \fB--json\fR for
+redacted structured output.
 .TP
 .B gtk, gui
 Start the GTK desktop frontend.
@@ -84,6 +85,7 @@ telachat doctor --chat
 telachat config-check
 telachat config-check --strict
 telachat config-check --json
+telachat doctor --json --chat
 telachat theme dark
 telachat ask -p tki "Hallo"
 telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"

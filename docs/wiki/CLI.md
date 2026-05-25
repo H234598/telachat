@@ -13,6 +13,7 @@ telachat theme
 telachat templates
 telachat folders
 telachat doctor
+telachat doctor --json --chat
 telachat doctor --chat
 telachat ask "Deine Frage"
 telachat chat
@@ -37,8 +38,8 @@ temporäre Starts kann `TELACHAT_THEME=dark telachat-tk` genutzt werden.
 Manifest; rohe Secrets und Envfiles bleiben draussen.
 `telachat restore` importiert die Backup-Historie additiv in die bestehende
 SQLite-Datenbank. Mit `--dry-run` wird nur gezaehlt.
-`profiles --json`, `config-check --json`, `sessions --json` und
-`folders --json` liefern strukturierte, redaktierte Daten fuer Skripte und
+`profiles --json`, `config-check --json`, `sessions --json`, `folders --json`
+und `doctor --json` liefern strukturierte, redaktierte Daten fuer Skripte und
 Agenten.
 
 ## Sessions

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.16.0 - 2026-05-25
+
+- Add redacted JSON output for `telachat doctor --json`.
+- Include `/models` results and optional `--chat` check metadata in doctor JSON.
+- Add regression coverage that doctor JSON does not leak resolved env secrets.
+- Keep text `doctor` diagnostics visible when later live checks fail.
+
 ## 0.15.0 - 2026-05-25
 
 - Add redacted JSON output for `telachat profiles --json`.

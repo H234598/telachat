@@ -187,6 +187,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_doctor = sub.add_parser("doctor", help="Konfiguration/API pruefen")
     p_doctor.add_argument("-p", "--profile", help="Profilname")
     p_doctor.add_argument("--chat", action="store_true", help="Auch kurze Chat-Anfrage testen")
+    p_doctor.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_doctor.set_defaults(func=cmd_doctor)
 
     p_gui = sub.add_parser("gui", help="GTK-GUI starten")
@@ -711,16 +712,19 @@ def cmd_restore(args: argparse.Namespace) -> int:
 def cmd_doctor(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     profile = cfg.profile(args.profile)
-    print(f"{APP_TITLE} doctor")
-    print(f"Config: {cfg.path}")
-    print(f"SQLite: {db_path()}")
-    print(f"Profil: {profile.name} ({profile.display_name})")
-    print(f"API: {profile.base_url}")
-    print(f"Model: {profile.model}")
-    print(f"API-Key: {redact_secret(profile.api_key)}")
+    if not args.json:
+        print(f"{APP_TITLE} doctor")
+        print(f"Config: {cfg.path}")
+        print(f"SQLite: {db_path()}")
+        print(f"Profil: {profile.name} ({profile.display_name})")
+        print(f"API: {profile.base_url}")
+        print(f"Model: {profile.model}")
+        print(f"API-Key: {redact_secret(profile.api_key)}")
     client = OpenAICompatClient(profile, retries=1)
     models = client.list_models()
-    print(f"/models: ok ({', '.join(models) if models else 'keine IDs gemeldet'})")
+    if not args.json:
+        print(f"/models: ok ({', '.join(models) if models else 'keine IDs gemeldet'})")
+    chat_check: dict[str, object] | None = None
     if args.chat:
         messages = [
             {"role": "system", "content": cfg.default_system_prompt},
@@ -731,7 +735,35 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         label = "/responses" if profile.api_mode == "responses" else "/chat/completions"
         if profile.api_mode == "codex":
             label = "codex exec"
-        print(f"{label}: ok ({result.content[:80]!r})")
+        chat_check = {
+            "ok": True,
+            "endpoint": label,
+            "preview": result.content[:80],
+        }
+        if not args.json:
+            print(f"{label}: ok ({result.content[:80]!r})")
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "app": APP_TITLE,
+                    "config": str(cfg.path),
+                    "sqlite": str(db_path()),
+                    "profile": _profile_record(
+                        profile.name,
+                        profile,
+                        is_default=profile.name == cfg.default_profile,
+                    ),
+                    "checks": {
+                        "models": {"ok": True, "models": models},
+                        "chat": chat_check,
+                    },
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
     return 0
 
 

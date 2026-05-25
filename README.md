@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.15.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.16.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -31,7 +31,7 @@ telachat config-check
 telachat config-check --json
 telachat theme
 telachat backup
-telachat doctor
+telachat doctor --json
 ```
 
 Der Wrapper wird nach `~/.local/bin/telachat` installiert, Manpages nach
@@ -133,7 +133,8 @@ Im interaktiven Terminal-Chat nutzt Telachat Readline-Completion: `Tab`
 vervollstaendigt Slash-Befehle und passende Kontextwerte wie Profile, Modelle,
 Templates, Ordner, Session-IDs, Session-Titel und Sortiermodi.
 Fuer Skripte und Agenten liefern `profiles --json`, `config-check --json`,
-`sessions --json` und `folders --json` strukturierte, redaktierte Daten.
+`sessions --json`, `folders --json` und `doctor --json` strukturierte,
+redaktierte Daten.
 
 GUI-Themes werden dauerhaft ueber `theme = "system"` in `config.toml`
 gesteuert. Verfuegbar sind `system`, `light`, `dark` und `high-contrast`.
@@ -190,6 +191,7 @@ telachat templates
 telachat config-check
 telachat config-check --strict
 telachat config-check --json
+telachat doctor --json --chat
 telachat ask --template summarize "Langer Text..."
 ```
 

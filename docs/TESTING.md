@@ -31,6 +31,7 @@ TELACHAT_THEME=dark telachat config-check
 telachat backup -o /tmp/telachat-backups
 telachat restore --dry-run /tmp/telachat-backups/FILE.zip
 telachat doctor --chat
+telachat doctor --json --chat
 telachat templates
 telachat folders --show-system
 telachat folders --json --show-system
@@ -65,8 +66,8 @@ overrides, CLI setting, and controller persistence. Backup tests inspect the
 ZIP bundle and verify that envfile secret values and secret-like header values
 are not included. GUI smoke tests also cover construction of the slash-command
 autocomplete widgets.
-CLI JSON tests cover profiles, config-check, sessions, and folders while
-checking that secret values remain redacted.
+CLI JSON tests cover profiles, config-check, sessions, folders, and doctor
+while checking that secret values remain redacted.
 Restore tests verify dry-run counts, duplicate-safe imports, session ID
 rewrites, and folder-name reuse.
 Edit-last tests verify that the latest user message can be replaced and that

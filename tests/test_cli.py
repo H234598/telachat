@@ -7,10 +7,11 @@ import tempfile
 import tomllib
 import unittest
 import zipfile
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
+from telachat.client import ApiError, ChatResult
 from telachat.cli import cli_completion_candidates, main
 from telachat.config import load_config
 from telachat.store import ChatStore
@@ -205,6 +206,79 @@ model = "demo"
                 self.assertNotIn("secret-value", out.getvalue())
             finally:
                 _restore_env("TELACHAT_MISSING_TEST_KEY", old_missing)
+
+    def test_doctor_json_reports_live_checks_without_leaking_keys(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp) / "config.toml"
+            _write_doctor_test_config(config)
+            old_key = os.environ.get("TELACHAT_DOCTOR_TEST_KEY")
+            os.environ["TELACHAT_DOCTOR_TEST_KEY"] = "secret-value"
+            try:
+                out = io.StringIO()
+                with redirect_stdout(out), mock.patch(
+                    "telachat.cli.OpenAICompatClient",
+                ) as client_cls:
+                    client_cls.return_value.list_models.return_value = ["demo"]
+                    client_cls.return_value.chat.return_value = ChatResult("OK", {})
+                    self.assertEqual(
+                        main(["--config", str(config), "doctor", "--json", "--chat"]),
+                        0,
+                    )
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["checks"]["models"]["models"], ["demo"])
+                self.assertEqual(payload["checks"]["chat"]["preview"], "OK")
+                self.assertEqual(payload["profile"]["api_key"], "env:TELACHAT_DOCTOR_TEST_KEY")
+                self.assertNotIn("secret-value", out.getvalue())
+            finally:
+                _restore_env("TELACHAT_DOCTOR_TEST_KEY", old_key)
+
+    def test_doctor_text_reports_models_before_chat_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp) / "config.toml"
+            _write_doctor_test_config(config)
+            old_key = os.environ.get("TELACHAT_DOCTOR_TEST_KEY")
+            os.environ["TELACHAT_DOCTOR_TEST_KEY"] = "secret-value"
+            try:
+                out = io.StringIO()
+                err = io.StringIO()
+                with redirect_stdout(out), redirect_stderr(err), mock.patch(
+                    "telachat.cli.OpenAICompatClient",
+                ) as client_cls:
+                    client_cls.return_value.list_models.return_value = ["demo"]
+                    client_cls.return_value.chat.side_effect = ApiError("Chat kaputt")
+                    self.assertEqual(
+                        main(["--config", str(config), "doctor", "--chat"]),
+                        1,
+                    )
+                self.assertIn("/models: ok (demo)", out.getvalue())
+                self.assertIn("Fehler: Chat kaputt", err.getvalue())
+                self.assertNotIn("secret-value", out.getvalue())
+            finally:
+                _restore_env("TELACHAT_DOCTOR_TEST_KEY", old_key)
+
+    def test_doctor_text_reports_profile_before_models_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp) / "config.toml"
+            _write_doctor_test_config(config)
+            old_key = os.environ.get("TELACHAT_DOCTOR_TEST_KEY")
+            os.environ["TELACHAT_DOCTOR_TEST_KEY"] = "secret-value"
+            try:
+                out = io.StringIO()
+                err = io.StringIO()
+                with redirect_stdout(out), redirect_stderr(err), mock.patch(
+                    "telachat.cli.OpenAICompatClient",
+                ) as client_cls:
+                    client_cls.return_value.list_models.side_effect = ApiError("Models kaputt")
+                    self.assertEqual(
+                        main(["--config", str(config), "doctor"]),
+                        1,
+                    )
+                self.assertIn("Profil: ok (ok)", out.getvalue())
+                self.assertIn("API-Key: env:TELACHAT_DOCTOR_TEST_KEY", out.getvalue())
+                self.assertIn("Fehler: Models kaputt", err.getvalue())
+                self.assertNotIn("secret-value", out.getvalue())
+            finally:
+                _restore_env("TELACHAT_DOCTOR_TEST_KEY", old_key)
 
     def test_theme_command_sets_configured_theme(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -748,6 +822,20 @@ def _restore_env(name: str, value: str | None) -> None:
         os.environ.pop(name, None)
     else:
         os.environ[name] = value
+
+
+def _write_doctor_test_config(path: Path) -> None:
+    path.write_text(
+        """
+default_profile = "ok"
+
+[profiles.ok]
+base_url = "http://127.0.0.1:9/v1"
+api_key = "env:TELACHAT_DOCTOR_TEST_KEY"
+model = "demo"
+""".strip(),
+        encoding="utf-8",
+    )
 
 
 if __name__ == "__main__":

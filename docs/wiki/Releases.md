@@ -1,5 +1,12 @@
 # Releases
 
+## 0.16.0 - 2026-05-25
+
+- JSON-Ausgabe fuer `telachat doctor --json`.
+- `doctor --json --chat` meldet Modelle und Chat-Check strukturiert.
+- Regressionstest stellt sicher, dass aufgeloeste Env-Secrets nicht ausgegeben
+  werden.
+
 ## 0.15.0 - 2026-05-25
 
 - JSON-Ausgabe fuer `profiles`, `config-check`, `sessions` und `folders`.
