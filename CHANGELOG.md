@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.44.0 - 2026-05-25
+
+- Surface provider token usage from Chat Completions and Responses results in GUI response status and `doctor --json --chat`.
+- Further redact documented local key names and keep additional secret-source parsing coverage.
+
 ## 0.43.11 - 2026-05-25
 
 - Add GUI regression coverage for refreshing live model choices after Check.

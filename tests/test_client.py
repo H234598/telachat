@@ -7,7 +7,7 @@ from unittest import mock
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import ClassVar
 
-from telachat.client import ChatResult, OpenAICompatClient
+from telachat.client import ChatResult, OpenAICompatClient, TokenUsage, format_token_usage
 from telachat.config import Profile
 
 
@@ -47,7 +47,14 @@ class FakeOpenAIHandler(BaseHTTPRequestHandler):
             {
                 "choices": [
                     {"message": {"role": "assistant", "content": "Hello"}, "index": 0}
-                ]
+                ],
+                "usage": {
+                    "prompt_tokens": 3,
+                    "completion_tokens": 2,
+                    "total_tokens": 5,
+                    "prompt_tokens_details": {"cached_tokens": 1},
+                    "completion_tokens_details": {"reasoning_tokens": 1},
+                },
             }
         )
 
@@ -98,6 +105,16 @@ class ClientTests(unittest.TestCase):
         self.assertIsInstance(result, ChatResult)
         assert isinstance(result, ChatResult)
         self.assertEqual(result.content, "Hello")
+        self.assertEqual(
+            result.usage,
+            TokenUsage(
+                input_tokens=3,
+                output_tokens=2,
+                total_tokens=5,
+                cached_input_tokens=1,
+                reasoning_tokens=1,
+            ),
+        )
 
     def test_chat_completions_request_uses_profile_generation_parameters(self) -> None:
         profile = Profile(
@@ -163,18 +180,52 @@ class ClientTests(unittest.TestCase):
         with mock.patch.object(
             client,
             "_request_json",
-            return_value={"output_text": "Response OK"},
+            return_value={
+                "output_text": "Response OK",
+                "usage": {
+                    "input_tokens": 11,
+                    "output_tokens": 4,
+                    "total_tokens": 15,
+                    "input_tokens_details": {"cached_tokens": 6},
+                    "output_tokens_details": {"reasoning_tokens": 2},
+                },
+            },
         ) as request:
             result = client.chat([{"role": "user", "content": "Hi"}])
         self.assertIsInstance(result, ChatResult)
         assert isinstance(result, ChatResult)
         self.assertEqual(result.content, "Response OK")
+        self.assertEqual(
+            result.usage,
+            TokenUsage(
+                input_tokens=11,
+                output_tokens=4,
+                total_tokens=15,
+                cached_input_tokens=6,
+                reasoning_tokens=2,
+            ),
+        )
         self.assertEqual(request.call_args.args[1], "/responses")
         body = request.call_args.args[2]
         self.assertEqual(body["max_output_tokens"], 77)
         self.assertEqual(body["temperature"], 0.35)
         self.assertEqual(body["top_p"], 0.55)
         self.assertEqual(body["reasoning"], {"effort": "high"})
+
+    def test_usage_summary_formatting(self) -> None:
+        usage = TokenUsage(
+            input_tokens=13,
+            output_tokens=18,
+            total_tokens=31,
+            cached_input_tokens=5,
+            reasoning_tokens=4,
+        )
+
+        self.assertEqual(
+            format_token_usage(usage),
+            "Tokens: 13 in/18 out, 31 total, 5 cached, 4 reasoning",
+        )
+        self.assertEqual(format_token_usage(None), "")
 
 
 if __name__ == "__main__":

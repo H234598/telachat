@@ -107,7 +107,6 @@ and local state under `$XDG_STATE_HOME`.
 
 - Config editor with validation and secret redaction.
 - Markdown rendering with copy buttons.
-- Token/usage counters when backends provide usage data.
 - Per-folder defaults for system prompt, model and attached knowledge/context.
 - Import bundles for a folder of chats without including API keys.
 - Tool/function-call viewer once a backend returns structured tool calls.

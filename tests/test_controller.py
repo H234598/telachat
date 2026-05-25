@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from telachat.client import ChatResult
+from telachat.client import ChatResult, TokenUsage
 from telachat.config import ConfigError
 from telachat.controller import TelachatController
 
@@ -119,6 +119,7 @@ class ControllerTests(unittest.TestCase):
                         client_cls.return_value.chat.return_value = ChatResult(
                             content="Neu",
                             raw={},
+                            usage=TokenUsage(input_tokens=7, output_tokens=3, total_tokens=10),
                         )
                         payload = controller.regenerate(
                             session_id=session.id,
@@ -134,6 +135,10 @@ class ControllerTests(unittest.TestCase):
                     self.assertEqual(selected_profile.max_tokens, 123)
                     self.assertEqual(payload.elapsed_seconds, 0.75)
                     self.assertEqual(payload.answer, "Neu")
+                    self.assertEqual(
+                        payload.usage,
+                        TokenUsage(input_tokens=7, output_tokens=3, total_tokens=10),
+                    )
                     self.assertEqual(payload.session.model, "demo-large")
                     self.assertEqual(
                         [(message.role, message.content) for message in payload.messages],
@@ -315,6 +320,7 @@ class ControllerTests(unittest.TestCase):
                         client_cls.return_value.chat.return_value = ChatResult(
                             content="Antwort",
                             raw={},
+                            usage=TokenUsage(input_tokens=5, output_tokens=4, total_tokens=9),
                         )
                         payload = controller.send(
                             session_id=None,
@@ -329,6 +335,10 @@ class ControllerTests(unittest.TestCase):
                     self.assertEqual(selected_profile.temperature, 0.45)
                     self.assertEqual(selected_profile.max_tokens, 321)
                     self.assertEqual(payload.elapsed_seconds, 1.25)
+                    self.assertEqual(
+                        payload.usage,
+                        TokenUsage(input_tokens=5, output_tokens=4, total_tokens=9),
+                    )
                     self.assertEqual(payload.session.profile, "test")
                     self.assertEqual(payload.session.model, "demo-large")
                     stored = controller.store.get_session(payload.session.id)

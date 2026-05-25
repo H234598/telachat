@@ -7,6 +7,8 @@ import warnings
 from types import SimpleNamespace
 from unittest import mock
 
+from telachat.client import TokenUsage
+
 
 class _FakeController:
     def __init__(self, tags: list[tuple[str, int]] | None = None) -> None:
@@ -355,6 +357,19 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(status, "Antwort in 1.2s")
 
+    def test_tk_response_status_reports_usage_when_available(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+
+        status = module.TkTelachatApp.response_status(
+            SimpleNamespace(),
+            SimpleNamespace(
+                elapsed_seconds=1.24,
+                usage=TokenUsage(input_tokens=13, output_tokens=18, total_tokens=31),
+            ),
+        )
+
+        self.assertEqual(status, "Antwort in 1.2s | Tokens: 13 in/18 out, 31 total")
+
     def test_tk_cancelled_request_ignores_late_result(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         app = object.__new__(module.TkTelachatApp)
@@ -502,6 +517,26 @@ class GuiImportTests(unittest.TestCase):
         )
 
         self.assertEqual(status, "Antwort in 2.0s")
+
+    def test_gtk_response_status_reports_usage_when_available(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+
+        status = module.GtkTelachatApp.response_status(
+            SimpleNamespace(),
+            SimpleNamespace(
+                elapsed_seconds=2.05,
+                usage=TokenUsage(input_tokens=21, output_tokens=8, total_tokens=29),
+            ),
+        )
+
+        self.assertEqual(status, "Antwort in 2.0s | Tokens: 21 in/8 out, 29 total")
 
     def test_gtk_cancelled_request_ignores_late_result(self) -> None:
         with warnings.catch_warnings():

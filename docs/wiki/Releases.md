@@ -1,5 +1,13 @@
 # Releases
 
+## 0.44.0 - 2026-05-25
+
+- Zeigt Provider-Usage-Daten aus Chat-Completions- und Responses-Antworten in
+  der GUI-Statuszeile und in `doctor --json --chat`, wenn der Provider sie
+  liefert.
+- Dokumentierte lokale Key-Namen sind weiter entschaerft; Secret-Source-Parsing
+  hat zusaetzliche Regression-Coverage.
+
 ## 0.43.11 - 2026-05-25
 
 - Ergaenzt GTK/Tk-Regressionstests, die sicherstellen, dass die Modellliste

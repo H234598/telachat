@@ -110,7 +110,8 @@ chat/provider pane and the right system pane are real resizable split panes
 rather than fixed sidebars. Session archive state is a soft-hide flag: normal
 lists show active chats, while explicit archive filters and direct session
 loads can still reach archived chats. GTK and Tk expose that archive filter in
-the sidebar as active, archived, or all chats.
+the sidebar as active, archived, or all chats. When providers return token
+usage, GTK and Tk include input/output/total token counts in the response status.
 The shared command path includes `/edit-last TEXT`, which updates the latest
 user message and removes later messages before `/regen` creates a replacement
 answer.
@@ -307,6 +308,8 @@ GUI request cancellation:
   persistence.
 - Configured and live model inventory output.
 - GUI model-choice merge behavior after live model discovery.
+- Token usage extraction from Chat Completions and Responses payloads, plus GUI
+  response-status formatting when usage is available.
 - Offline config-check behavior and strict missing-secret handling.
 - Redacted JSON output for profiles, models, config-check, sessions, stats,
   folders, and doctor.

@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.43.11`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.44.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -80,7 +80,8 @@ wird gespeichert und beim Laden wieder in der Provider/Modell-Auswahl gesetzt.
 Der GUI-Button `Check` fragt `/models` live fuer den gewaehlten Provider ab und
 ergaenzt die Modellauswahl mit den gemeldeten IDs. Temperatur und maximale
 Antworttokens koennen direkt im rechten Systembereich pro Anfrage gesetzt
-werden. Nach Antworten zeigen beide GUIs die gemessene Antwortzeit im Status.
+werden. Nach Antworten zeigen beide GUIs die gemessene Antwortzeit im Status
+und, wenn der Provider Usage-Daten liefert, Input-/Output-/Total-Tokens.
 Laufende GUI-Anfragen koennen mit `Abbrechen` verworfen werden; Telachat macht
 die Oberflaeche wieder bedienbar und ignoriert spaete Antworten oder Fehler,
 kann den bereits gestarteten Provider-Request aber nicht garantiert serverseitig

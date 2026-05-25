@@ -18,9 +18,19 @@ class ApiError(RuntimeError):
 
 
 @dataclass(frozen=True)
+class TokenUsage:
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+    cached_input_tokens: int | None = None
+    reasoning_tokens: int | None = None
+
+
+@dataclass(frozen=True)
 class ChatResult:
     content: str
     raw: dict[str, Any]
+    usage: TokenUsage | None = None
 
 
 class OpenAICompatClient:
@@ -64,7 +74,11 @@ class OpenAICompatClient:
         if use_stream:
             return self._stream_chat(body)
         raw = self._request_json("POST", "/chat/completions", body)
-        return ChatResult(content=_extract_message_content(raw), raw=raw)
+        return ChatResult(
+            content=_extract_message_content(raw),
+            raw=raw,
+            usage=_extract_usage(raw),
+        )
 
     def _responses_chat(self, messages: list[dict[str, str]]) -> ChatResult:
         body = {
@@ -82,7 +96,11 @@ class OpenAICompatClient:
         if self.profile.reasoning_effort:
             body["reasoning"] = {"effort": self.profile.reasoning_effort}
         raw = self._request_json("POST", "/responses", body)
-        return ChatResult(content=_extract_response_text(raw), raw=raw)
+        return ChatResult(
+            content=_extract_response_text(raw),
+            raw=raw,
+            usage=_extract_usage(raw),
+        )
 
     def _codex_chat(self, messages: list[dict[str, str]]) -> ChatResult:
         prompt = _messages_to_codex_prompt(messages)
@@ -249,6 +267,79 @@ def _extract_response_text(payload: dict[str, Any]) -> str:
     if parts:
         return "".join(parts).strip()
     raise ApiError("Responses-API-Antwort enthaelt keinen Text.")
+
+
+def _extract_usage(payload: dict[str, Any]) -> TokenUsage | None:
+    usage = payload.get("usage")
+    if not isinstance(usage, dict):
+        return None
+    input_tokens = _int_or_none(usage.get("input_tokens"))
+    output_tokens = _int_or_none(usage.get("output_tokens"))
+    if input_tokens is None:
+        input_tokens = _int_or_none(usage.get("prompt_tokens"))
+    if output_tokens is None:
+        output_tokens = _int_or_none(usage.get("completion_tokens"))
+    total_tokens = _int_or_none(usage.get("total_tokens"))
+    cached_input_tokens = _usage_detail_int(usage, "input_tokens_details", "cached_tokens")
+    if cached_input_tokens is None:
+        cached_input_tokens = _usage_detail_int(usage, "prompt_tokens_details", "cached_tokens")
+    reasoning_tokens = _usage_detail_int(usage, "output_tokens_details", "reasoning_tokens")
+    if reasoning_tokens is None:
+        reasoning_tokens = _usage_detail_int(
+            usage,
+            "completion_tokens_details",
+            "reasoning_tokens",
+        )
+    result = TokenUsage(
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        total_tokens=total_tokens,
+        cached_input_tokens=cached_input_tokens,
+        reasoning_tokens=reasoning_tokens,
+    )
+    if any(value is not None for value in result.__dict__.values()):
+        return result
+    return None
+
+
+def _usage_detail_int(
+    usage: dict[str, Any],
+    detail_key: str,
+    value_key: str,
+) -> int | None:
+    details = usage.get(detail_key)
+    if not isinstance(details, dict):
+        return None
+    return _int_or_none(details.get(value_key))
+
+
+def _int_or_none(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    return None
+
+
+def format_token_usage(usage: TokenUsage | None) -> str:
+    if usage is None:
+        return ""
+    parts: list[str] = []
+    if usage.input_tokens is not None and usage.output_tokens is not None:
+        parts.append(f"{usage.input_tokens} in/{usage.output_tokens} out")
+    elif usage.input_tokens is not None:
+        parts.append(f"{usage.input_tokens} in")
+    elif usage.output_tokens is not None:
+        parts.append(f"{usage.output_tokens} out")
+    if usage.total_tokens is not None:
+        parts.append(f"{usage.total_tokens} total")
+    if usage.cached_input_tokens:
+        parts.append(f"{usage.cached_input_tokens} cached")
+    if usage.reasoning_tokens:
+        parts.append(f"{usage.reasoning_tokens} reasoning")
+    if not parts:
+        return ""
+    return "Tokens: " + ", ".join(parts)
 
 
 def _read_error_body(exc: urllib.error.HTTPError) -> str:

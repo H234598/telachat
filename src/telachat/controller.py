@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, replace
 
-from .client import ChatResult, OpenAICompatClient
+from .client import ChatResult, OpenAICompatClient, TokenUsage
 from .config import AppConfig, Profile, load_config, set_config_theme
 from .store import (
     ChatStore,
@@ -23,6 +23,7 @@ class ChatPayload:
     messages: list[Message]
     answer: str
     elapsed_seconds: float
+    usage: TokenUsage | None = None
 
 
 class TelachatController:
@@ -295,14 +296,17 @@ class TelachatController:
         elapsed = time.perf_counter() - started
         if isinstance(result, ChatResult):
             answer = result.content
+            usage = result.usage
         else:
             answer = "".join(result)
+            usage = None
         self.store.add_message(session.id, "assistant", answer)
         return ChatPayload(
             session=session,
             messages=self.store.messages(session.id),
             answer=answer,
             elapsed_seconds=elapsed,
+            usage=usage,
         )
 
     def regenerate(
@@ -335,8 +339,10 @@ class TelachatController:
         elapsed = time.perf_counter() - started
         if isinstance(result, ChatResult):
             answer = result.content
+            usage = result.usage
         else:
             answer = "".join(result)
+            usage = None
         self.store.add_message(session.id, "assistant", answer)
         updated = self.store.get_session(session.id) or session
         return ChatPayload(
@@ -344,6 +350,7 @@ class TelachatController:
             messages=self.store.messages(session.id),
             answer=answer,
             elapsed_seconds=elapsed,
+            usage=usage,
         )
 
     def edit_last_user_message(

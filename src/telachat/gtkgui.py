@@ -22,6 +22,7 @@ from .commands import (
     slash_command_help,
     slash_command_suggestions,
 )
+from .client import format_token_usage
 from .config import redact_secret
 from .controller import TelachatController
 from .model_choices import merge_model_choices
@@ -921,8 +922,10 @@ class GtkTelachatApp(Adw.Application):
 
     def response_status(self, payload: object) -> str:
         elapsed = getattr(payload, "elapsed_seconds", None)
+        usage = format_token_usage(getattr(payload, "usage", None))
         if isinstance(elapsed, (float, int)):
-            return f"Antwort in {elapsed:.1f}s"
+            suffix = f" | {usage}" if usage else ""
+            return f"Antwort in {elapsed:.1f}s{suffix}"
         return "Bereit"
 
     def on_doctor(self, _button: Gtk.Button) -> None:

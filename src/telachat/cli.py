@@ -913,6 +913,24 @@ def _profile_record(name: str, profile: Profile, *, is_default: bool) -> dict[st
     }
 
 
+def _usage_record(result: ChatResult) -> dict[str, int] | None:
+    usage = result.usage
+    if usage is None:
+        return None
+    record = {
+        name: value
+        for name, value in (
+            ("input_tokens", usage.input_tokens),
+            ("output_tokens", usage.output_tokens),
+            ("total_tokens", usage.total_tokens),
+            ("cached_input_tokens", usage.cached_input_tokens),
+            ("reasoning_tokens", usage.reasoning_tokens),
+        )
+        if value is not None
+    }
+    return record or None
+
+
 def _model_record(
     profile: Profile,
     *,
@@ -1586,6 +1604,9 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             "endpoint": label,
             "preview": result.content[:80],
         }
+        usage = _usage_record(result)
+        if usage:
+            chat_check["usage"] = usage
         if not args.json:
             print(f"{label}: ok ({result.content[:80]!r})")
     if args.json:

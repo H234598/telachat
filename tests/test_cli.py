@@ -11,7 +11,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-from telachat.client import ApiError, ChatResult
+from telachat.client import ApiError, ChatResult, TokenUsage
 from telachat.cli import cli_completion_candidates, main
 from telachat.config import load_config
 from telachat.store import ChatStore
@@ -557,7 +557,15 @@ model = "other-model"
                     "telachat.cli.OpenAICompatClient",
                 ) as client_cls:
                     client_cls.return_value.list_models.return_value = ["demo"]
-                    client_cls.return_value.chat.return_value = ChatResult("OK", {})
+                    client_cls.return_value.chat.return_value = ChatResult(
+                        "OK",
+                        {},
+                        usage=TokenUsage(
+                            input_tokens=4,
+                            output_tokens=2,
+                            total_tokens=6,
+                        ),
+                    )
                     self.assertEqual(
                         main(["--config", str(config), "doctor", "--json", "--chat"]),
                         0,
@@ -565,6 +573,10 @@ model = "other-model"
                 payload = json.loads(out.getvalue())
                 self.assertEqual(payload["checks"]["models"]["models"], ["demo"])
                 self.assertEqual(payload["checks"]["chat"]["preview"], "OK")
+                self.assertEqual(
+                    payload["checks"]["chat"]["usage"],
+                    {"input_tokens": 4, "output_tokens": 2, "total_tokens": 6},
+                )
                 self.assertEqual(payload["profile"]["api_key"], "env:TELACHAT_DOCTOR_TEST_KEY")
                 self.assertNotIn("secret-value", out.getvalue())
             finally:
