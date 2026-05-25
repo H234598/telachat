@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.24.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.25.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -19,8 +19,9 @@ Markdown exports.
 Create the default configuration.
 .TP
 .B profiles
-Show configured provider profiles with redacted API keys. Use \fB--json\fR for
-structured output.
+Show configured provider profiles with redacted API keys. The default config
+includes non-default local presets for LM Studio, Ollama, and Jan. Use
+\fB--json\fR for structured output.
 .TP
 .B config-check, config
 Check local configuration, model metadata, and secret references without an API

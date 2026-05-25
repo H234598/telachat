@@ -1,5 +1,12 @@
 # Releases
 
+## 0.25.0 - 2026-05-25
+
+- Standardkonfiguration enthaelt lokale Provider-Presets fuer LM Studio,
+  Ollama und Jan.
+- Die Presets sind nicht Default und enthalten keine echten Secrets.
+- Tests pruefen die neuen lokalen Profile und Endpunkt-Metadaten.
+
 ## 0.24.0 - 2026-05-25
 
 - `import-session` und `import-folder` unterstuetzen `--dry-run`.

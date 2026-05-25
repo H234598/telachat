@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.25.0 - 2026-05-25
+
+- Add default local OpenAI-compatible provider presets for LM Studio, Ollama,
+  and Jan Local API.
+- Keep local presets non-default and secret-safe; users still choose or adjust
+  installed local model IDs explicitly.
+- Add regression coverage for the new default local profile metadata.
+
 ## 0.24.0 - 2026-05-25
 
 - Add `--dry-run` to `import-session` and `import-folder`.

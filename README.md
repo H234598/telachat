@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.24.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.25.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -251,6 +251,9 @@ Weitere Standardprofile:
 
 - `openai`: allgemeine OpenAI-API-Anbindung mit `env:OPENAI_API_KEY`, `gpt-5.5`, Responses API, `reasoning_effort = "high"` und GPT-5.x-Modelloptionen.
 - `huggingface`: dein Hugging-Face/Qwen-Space mit Qwen-Modellnamen.
+- `lmstudio`: lokaler LM-Studio-Server unter `http://localhost:1234/v1`, Modell-ID lokal anpassen.
+- `ollama`: lokaler Ollama-OpenAI-Endpunkt unter `http://localhost:11434/v1`, Modell vorher mit Ollama bereitstellen.
+- `jan`: lokaler Jan-API-Server unter `http://127.0.0.1:1337/v1`, API-Key ueber `TELACHAT_JAN_API_KEY`.
 - `codex`: lokaler Codex-CLI-Zugriff ueber `codex exec`, kein `/v1`-HTTP-Modell.
 
 Fuer OpenAI:

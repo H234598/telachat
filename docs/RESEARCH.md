@@ -21,6 +21,9 @@ Jan and LM Studio validate the native-desktop/local-first direction. Jan exposes
 a desktop app with local models and cloud providers configured by user-owned API
 keys. LM Studio's server path is OpenAI-compatible and keeps tool/function-use
 available through standard `/v1/chat/completions` and `/v1/responses` shapes.
+Ollama documents OpenAI-compatible `/v1/chat/completions` at
+`http://localhost:11434/v1`, with the API key required by clients but ignored by
+the server.
 
 Simon Willison's `llm` CLI is the strongest small-tool reference. It supports
 additional OpenAI-compatible models by config, separates the public model ID
@@ -81,6 +84,9 @@ and local state under `$XDG_STATE_HOME`.
   `env:OPENAI_API_KEY`. The separate ChatGPT alias was removed because it used
   the same Responses API path. Codex is exposed through the local `codex exec`
   CLI because it is an agent CLI, not a normal Chat Completions model endpoint.
+- Local desktop/server presets are included for LM Studio, Ollama and Jan, but
+  they are not the default profile. The user still has to start the local
+  server and choose a model installed in that tool.
 
 ## Feature ideas kept for later
 
@@ -92,7 +98,6 @@ and local state under `$XDG_STATE_HOME`.
 - Tags in addition to folders and pinned chats.
 - Per-folder defaults for system prompt, model and attached knowledge/context.
 - Import bundles for a folder of chats without including API keys.
-- Optional local provider presets for Ollama, LM Studio and Jan Server.
 - Tool/function-call viewer once a backend returns structured tool calls.
 
 ## Sources
@@ -106,7 +111,11 @@ and local state under `$XDG_STATE_HOME`.
 - LibreChat import conversations: https://www.librechat.ai/docs/features/import_convos
 - LibreChat resumable streams: https://www.librechat.ai/docs/features/resumable_streams
 - Jan model/provider management: https://www.jan.ai/docs/desktop/manage-models
+- Jan local API server: https://www.jan.ai/docs/desktop/api-server
+- Jan API reference: https://www.jan.ai/docs/desktop/api-preference
+- Ollama OpenAI compatibility: https://docs.ollama.com/openai
 - LM Studio tool use/server API: https://www.lmstudio.ai/docs/advanced/tool-use
+- LM Studio OpenAI compatibility endpoints: https://lmstudio.ai/docs/developer/openai-compat/
 - Msty export chat: https://docs.msty.app/features/export-chat
 - Msty Turnstiles/regeneration: https://docs.msty.studio/features/turnstiles
 - OpenAI Help retry/regenerate note: https://help.openai.com/en/articles/11909943-gpt-53-and-gpt-54-in-chatgpt

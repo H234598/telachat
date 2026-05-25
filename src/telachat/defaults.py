@@ -77,6 +77,47 @@ timeout_seconds = 300
 stream = false
 api_mode = "responses"
 
+# Local OpenAI-compatible desktop/server presets. Start the respective local
+# server first and adjust `model` to a model installed in that tool.
+[profiles.lmstudio]
+label = "LM Studio"
+base_url = "http://localhost:1234/v1"
+api_key = "lm-studio"
+model = "local-model"
+models = ["local-model"]
+temperature = 0.2
+top_p = 0.9
+max_tokens = 1024
+timeout_seconds = 300
+stream = true
+api_mode = "chat_completions"
+
+[profiles.ollama]
+label = "Ollama"
+base_url = "http://localhost:11434/v1"
+api_key = "ollama"
+model = "llama3.2"
+models = ["llama3.2", "qwen2.5:1.5b", "gpt-oss:20b"]
+temperature = 0.2
+top_p = 0.9
+max_tokens = 1024
+timeout_seconds = 300
+stream = true
+api_mode = "chat_completions"
+
+[profiles.jan]
+label = "Jan Local API"
+base_url = "http://127.0.0.1:1337/v1"
+api_key = "env:TELACHAT_JAN_API_KEY"
+model = "jan-v3-4b-base-instruct"
+models = ["jan-v3-4b-base-instruct"]
+temperature = 0.2
+top_p = 0.9
+max_tokens = 1024
+timeout_seconds = 300
+stream = true
+api_mode = "chat_completions"
+
 # Codex is not a normal OpenAI-compatible chat endpoint. This profile is a
 # placeholder so the UI exposes the desired target, but direct Codex access is
 # handled through the local `codex exec` CLI, not through /v1/chat/completions.

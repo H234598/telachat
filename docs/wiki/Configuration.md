@@ -21,6 +21,9 @@ Beispiele fuer Provider:
 
 - `huggingface` / `tki`
 - `openai`
+- `lmstudio`
+- `ollama`
+- `jan`
 - `codex`
 
 ## Secrets
@@ -65,4 +68,27 @@ angepasst werden.
 telachat folders --create Projekt --system "Antworte mit Projektkontext."
 telachat folders --set-system Projekt "Neuer Kontext."
 telachat folders --show-system
+```
+
+## Lokale Provider-Presets
+
+Die Standardkonfiguration enthaelt nicht-default Presets fuer lokale
+OpenAI-kompatible Server. Starte den jeweiligen Server zuerst und passe das
+Modell an ein installiertes lokales Modell an.
+
+```toml
+[profiles.lmstudio]
+base_url = "http://localhost:1234/v1"
+api_key = "lm-studio"
+model = "local-model"
+
+[profiles.ollama]
+base_url = "http://localhost:11434/v1"
+api_key = "ollama"
+model = "llama3.2"
+
+[profiles.jan]
+base_url = "http://127.0.0.1:1337/v1"
+api_key = "env:TELACHAT_JAN_API_KEY"
+model = "jan-v3-4b-base-instruct"
 ```

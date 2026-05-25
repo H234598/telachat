@@ -162,6 +162,9 @@ telachat import-backup [--dry-run] FILE.zip
 profile modes, model metadata, and whether configured secret sources resolve to
 a value. It prints only redacted secret references. `doctor` remains the live
 network/API check.
+The generated default config includes non-default local OpenAI-compatible
+presets for LM Studio, Ollama, and Jan. They are normal profiles and may fail
+`doctor` until the corresponding local server and model are running.
 `profiles`, `config-check`, `sessions`, `folders`, `export`, `export-folder`,
 and `doctor` also support `--json` for agent/script consumption. JSON output is
 redacted where it contains provider configuration; folder system prompts are
