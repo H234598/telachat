@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.12.0 - 2026-05-25
+
+- Add central theme definitions for `system`, `light`, `dark`, and
+  `high-contrast`.
+- Add `theme = "..."` config support with `TELACHAT_THEME` as an environment
+  override.
+- Add `telachat theme [NAME]` to inspect and persist the configured GUI theme.
+- Apply the shared theme palette in both GTK and Tk frontends.
+- Include the active theme in backup manifests and redacted config backups.
+- Add deterministic tests for theme parsing, env overrides, CLI setting, and
+  controller persistence.
+
 ## 0.11.0 - 2026-05-25
 
 - Add `telachat restore` and `telachat import-backup` for safe backup imports.

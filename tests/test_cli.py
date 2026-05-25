@@ -164,6 +164,31 @@ model = "demo"
             finally:
                 _restore_env("TELACHAT_MISSING_TEST_KEY", old_missing)
 
+    def test_theme_command_sets_configured_theme(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["init"]), 0)
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["theme", "dark"]), 0)
+                self.assertIn("Theme gesetzt: dark", out.getvalue())
+                self.assertIn("* dark", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["config-check"]), 0)
+                self.assertIn("Theme: dark", out.getvalue())
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_folders_command_manages_system_prompts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")
@@ -327,6 +352,8 @@ X-Test-Header = "yes"
                 )
                 self.assertEqual(manifest["counts"]["sessions"], 1)
                 self.assertEqual(manifest["counts"]["messages"], 1)
+                self.assertEqual(manifest["theme"], "system")
+                self.assertEqual(parsed["theme"], "system")
 
                 restore_data = Path(tmp) / "restore-data"
                 os.environ["XDG_DATA_HOME"] = str(restore_data)

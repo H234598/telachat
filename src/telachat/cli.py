@@ -20,10 +20,18 @@ from .commands import (
     slash_command_help,
     slash_command_name_suggestions,
 )
-from .config import ConfigError, Profile, ensure_default_config, load_config, redact_secret
+from .config import (
+    ConfigError,
+    Profile,
+    ensure_default_config,
+    load_config,
+    redact_secret,
+    set_config_theme,
+)
 from .defaults import APP_TITLE
 from .paths import config_path, db_path, state_dir
 from .store import ChatStore, HistoryImportSummary, messages_for_api, title_from_prompt
+from .themes import theme_labels
 
 
 SESSION_SORTS = {
@@ -75,6 +83,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Mit Fehlercode beenden, wenn Secret-Quellen fehlen",
     )
     p_config.set_defaults(func=cmd_config_check)
+
+    p_theme = sub.add_parser("theme", help="GUI-Theme anzeigen oder setzen")
+    p_theme.add_argument("theme", nargs="?", help="system, light, dark oder high-contrast")
+    p_theme.set_defaults(func=cmd_theme)
 
     p_templates = sub.add_parser("templates", help="Prompt-Templates anzeigen")
     p_templates.set_defaults(func=cmd_templates)
@@ -215,6 +227,7 @@ def cmd_config_check(args: argparse.Namespace) -> int:
     print(f"Config: {cfg.path}")
     print(f"SQLite: {db_path()}")
     print(f"Default profile: {cfg.default_profile}")
+    print(f"Theme: {cfg.theme}")
     missing = 0
     for name in sorted(cfg.profiles):
         profile = cfg.profiles[name]
@@ -231,6 +244,19 @@ def cmd_config_check(args: argparse.Namespace) -> int:
     if missing:
         print(f"Warnings: {missing} profile(s) have missing secret sources.")
     return 1 if args.strict and missing else 0
+
+
+def cmd_theme(args: argparse.Namespace) -> int:
+    if args.theme:
+        theme = set_config_theme(args.theme, args.config)
+        print(f"Theme gesetzt: {theme}")
+    cfg = load_config(args.config)
+    print(f"Aktives Theme: {cfg.theme}")
+    print("Verfuegbar:")
+    for name, label in theme_labels().items():
+        marker = "*" if name == cfg.theme else " "
+        print(f"{marker} {name:14} {label}")
+    return 0
 
 
 def cmd_templates(args: argparse.Namespace) -> int:
@@ -1069,6 +1095,7 @@ def _backup_manifest(cfg: object, backup_db: Path) -> dict[str, object]:
         "config_path": str(cfg.path),
         "database_path": str(db_path()),
         "default_profile": cfg.default_profile,
+        "theme": cfg.theme,
         "profiles": {
             name: {
                 "api_mode": profile.api_mode,
@@ -1097,6 +1124,7 @@ def _redacted_config_toml(cfg: object) -> str:
         "# Redacted Telachat config backup.",
         "# Secret values are not included.",
         f"default_profile = {_toml_string(cfg.default_profile)}",
+        f"theme = {_toml_string(cfg.theme)}",
         f"default_system_prompt = {_toml_string(cfg.default_system_prompt)}",
         f"max_history_messages = {cfg.max_history_messages}",
         "",

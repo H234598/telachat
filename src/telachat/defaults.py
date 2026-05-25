@@ -6,6 +6,7 @@ DEFAULT_PROFILE = "tki"
 DEFAULT_BASE_URL = "https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1"
 DEFAULT_API_KEY = "env:TELACHAT_QWEN_API_KEY"
 DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
+DEFAULT_THEME = "system"
 DEFAULT_SYSTEM_PROMPT = (
     "Du bist Telachat, ein direkter, praktischer KI-Assistent. "
     "Antworte in der Sprache des Nutzers, rechne sorgfaeltig und erfinde "
@@ -27,6 +28,7 @@ DEFAULT_CONFIG = f"""# Telachat configuration.
 # Direct real keys in this file are possible, but not recommended.
 
 default_profile = "{DEFAULT_PROFILE}"
+theme = "{DEFAULT_THEME}"
 default_system_prompt = "{DEFAULT_SYSTEM_PROMPT}"
 max_history_messages = 24
 

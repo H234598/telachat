@@ -12,8 +12,10 @@ from .defaults import (
     DEFAULT_PROFILE,
     DEFAULT_PROMPT_TEMPLATES,
     DEFAULT_SYSTEM_PROMPT,
+    DEFAULT_THEME,
 )
 from .paths import config_path
+from .themes import normalize_theme_name, theme_choices
 
 
 class ConfigError(RuntimeError):
@@ -80,6 +82,7 @@ class Profile:
 class AppConfig:
     path: Path
     default_profile: str
+    theme: str
     default_system_prompt: str
     max_history_messages: int
     profiles: dict[str, Profile]
@@ -160,14 +163,39 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
     default_profile = str(raw.get("default_profile", DEFAULT_PROFILE))
     if default_profile not in profiles:
         default_profile = next(iter(profiles))
+    theme = _theme(raw.get("theme", DEFAULT_THEME))
     return AppConfig(
         path=target,
         default_profile=default_profile,
+        theme=theme,
         default_system_prompt=str(raw.get("default_system_prompt", DEFAULT_SYSTEM_PROMPT)),
         max_history_messages=int(raw.get("max_history_messages", 24)),
         profiles=profiles,
         prompt_templates=_prompt_templates(raw.get("prompt_templates", DEFAULT_PROMPT_TEMPLATES)),
     )
+
+
+def set_config_theme(value: str, path: Path | None = None) -> str:
+    theme = normalize_theme_name(value)
+    target = ensure_default_config(path)
+    text = target.read_text(encoding="utf-8")
+    replacement = f'theme = "{theme}"'
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if line.strip().startswith("theme"):
+            before, sep, _after = line.partition("=")
+            if sep and before.strip() == "theme":
+                lines[index] = replacement
+                target.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+                return theme
+    for index, line in enumerate(lines):
+        if line.strip().startswith("default_profile"):
+            lines.insert(index + 1, replacement)
+            target.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+            return theme
+    lines.insert(0, replacement)
+    target.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+    return theme
 
 
 def redact_secret(value: str) -> str:
@@ -213,6 +241,15 @@ def _optional_reasoning_effort(value: object, profile_name: str) -> str | None:
             f"Profil '{profile_name}' hat ungueltiges reasoning_effort: {value}"
         )
     return clean
+
+
+def _theme(value: object) -> str:
+    override = os.environ.get("TELACHAT_THEME")
+    try:
+        return normalize_theme_name(override if override is not None else value)
+    except ValueError as exc:
+        available = ", ".join(theme_choices())
+        raise ConfigError(f"{exc}. Erlaubt: {available}") from exc
 
 
 def _prompt_templates(raw: object) -> dict[str, str]:

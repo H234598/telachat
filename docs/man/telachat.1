@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.11.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.12.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -24,6 +24,11 @@ Show configured provider profiles with redacted API keys.
 Check local configuration, model metadata, and secret references without an API
 request. Use \fB--strict\fR to fail when a non-Codex provider secret source is
 missing.
+.TP
+.B theme
+Show or set the persistent GUI theme. Supported themes are \fIsystem\fR,
+\fIlight\fR, \fIdark\fR, and \fIhigh-contrast\fR. The environment variable
+\fBTELACHAT_THEME\fR overrides the config for one process.
 .TP
 .B templates
 List configured prompt templates.
@@ -70,6 +75,7 @@ Start the Tk desktop frontend.
 telachat doctor --chat
 telachat config-check
 telachat config-check --strict
+telachat theme dark
 telachat ask -p tki "Hallo"
 telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
 telachat templates

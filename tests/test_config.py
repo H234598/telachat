@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from telachat.config import ensure_default_config, load_config, redact_secret
+from telachat.config import ensure_default_config, load_config, redact_secret, set_config_theme
 
 
 class ConfigTests(unittest.TestCase):
@@ -27,8 +27,29 @@ class ConfigTests(unittest.TestCase):
             self.assertIn("gpt-5.5", cfg.profiles["openai"].models)
             self.assertEqual(cfg.profiles["openai"].reasoning_effort, "high")
             self.assertEqual(cfg.profiles["codex"].api_mode, "codex")
+            self.assertEqual(cfg.theme, "system")
             self.assertIn("summarize", cfg.prompt_templates)
             self.assertIn("{input}", cfg.prompt_templates["summarize"])
+
+    def test_theme_config_and_env_override(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            ensure_default_config(path)
+            self.assertEqual(set_config_theme("dark", path), "dark")
+            cfg = load_config(path)
+            self.assertEqual(cfg.theme, "dark")
+            self.assertIn('theme = "dark"', path.read_text(encoding="utf-8"))
+
+            old_theme = os.environ.get("TELACHAT_THEME")
+            os.environ["TELACHAT_THEME"] = "highcontrast"
+            try:
+                cfg = load_config(path)
+                self.assertEqual(cfg.theme, "high-contrast")
+            finally:
+                _restore_env("TELACHAT_THEME", old_theme)
+
+            with self.assertRaises(ValueError):
+                set_config_theme("neon-glitter", path)
 
     def test_custom_prompt_templates_load(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -95,6 +116,13 @@ model = "demo"
         self.assertEqual(redact_secret("env:KEY"), "env:KEY")
         self.assertEqual(redact_secret("envfile:/x#KEY"), "envfile:/x#KEY")
         self.assertEqual(redact_secret("sk-1234567890"), "sk-...890")
+
+
+def _restore_env(name: str, value: str | None) -> None:
+    if value is None:
+        os.environ.pop(name, None)
+    else:
+        os.environ[name] = value
 
 
 if __name__ == "__main__":

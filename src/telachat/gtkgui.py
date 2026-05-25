@@ -38,8 +38,10 @@ class GtkTelachatApp(Adw.Application):
 
     def on_activate(self, _app: Adw.Application) -> None:
         self.controller = TelachatController()
+        self.theme = self.controller.theme()
         self._install_css()
         self.window = Adw.ApplicationWindow(application=self)
+        self.window.add_css_class("telachat-window")
         self.window.set_title("Telachat GTK")
         self.window.set_default_size(1120, 720)
         self.window.connect("close-request", self.on_close)
@@ -73,6 +75,7 @@ class GtkTelachatApp(Adw.Application):
         self.window.set_content(toolbar)
 
         self.sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.sidebar.add_css_class("telachat-panel")
         self.sidebar.set_size_request(280, -1)
         self.sidebar.set_margin_top(14)
         self.sidebar.set_margin_bottom(14)
@@ -174,6 +177,7 @@ class GtkTelachatApp(Adw.Application):
         self.sidebar.append(sc_sessions)
 
         main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        main.add_css_class("telachat-main")
         main.set_margin_top(14)
         main.set_margin_bottom(14)
         main.set_margin_start(10)
@@ -204,6 +208,7 @@ class GtkTelachatApp(Adw.Application):
         top.append(export_button)
 
         self.chat_view = Gtk.TextView()
+        self.chat_view.add_css_class("telachat-text")
         self.chat_view.set_editable(False)
         self.chat_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         self.chat_buffer = self.chat_view.get_buffer()
@@ -215,6 +220,7 @@ class GtkTelachatApp(Adw.Application):
         composer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         main.append(composer)
         self.input_view = Gtk.TextView()
+        self.input_view.add_css_class("telachat-input")
         self.input_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         self.input_view.set_size_request(-1, 90)
         self.input_view.set_hexpand(True)
@@ -232,14 +238,29 @@ class GtkTelachatApp(Adw.Application):
         self.command_popover.set_child(self.command_box)
 
         self.settings = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        self.settings.add_css_class("telachat-panel")
         self.settings.set_size_request(300, -1)
         self.settings.set_margin_top(14)
         self.settings.set_margin_bottom(14)
         self.settings.set_margin_start(10)
         self.settings.set_margin_end(14)
         self.inner_paned.set_end_child(self.settings)
+        self.settings.append(Gtk.Label(label="Theme", xalign=0))
+        self.theme_names = list(self.controller.theme_labels())
+        theme_model = Gtk.StringList.new(
+            [self.controller.theme_labels()[name] for name in self.theme_names]
+        )
+        self.theme_dropdown = Gtk.DropDown.new(theme_model, None)
+        try:
+            self.theme_dropdown.set_selected(self.theme_names.index(self.theme.name))
+        except ValueError:
+            self.theme_dropdown.set_selected(0)
+        self.theme_dropdown.connect("notify::selected", self.on_theme_changed)
+        self.settings.append(self.theme_dropdown)
+
         self.settings.append(Gtk.Label(label="System", xalign=0))
         self.system_view = Gtk.TextView()
+        self.system_view.add_css_class("telachat-input")
         self.system_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         self.system_buffer = self.system_view.get_buffer()
         self.system_buffer.set_text(self.controller.system_prompt())
@@ -258,26 +279,65 @@ class GtkTelachatApp(Adw.Application):
         GLib.idle_add(self._set_initial_panes)
 
     def _install_css(self) -> None:
-        provider = Gtk.CssProvider()
-        provider.load_from_data(
-            b"""
-            paned > separator {
-                background: alpha(@theme_fg_color, 0.18);
+        palette = self.theme.palette
+        style_manager = Adw.StyleManager.get_default()
+        color_scheme = {
+            "dark": "FORCE_DARK",
+            "light": "FORCE_LIGHT",
+        }.get(self.theme.adw_scheme, "DEFAULT")
+        style_manager.set_color_scheme(getattr(Adw.ColorScheme, color_scheme))
+        if not hasattr(self, "_theme_css_provider"):
+            self._theme_css_provider = Gtk.CssProvider()
+            display = Gdk.Display.get_default()
+            if display is not None:
+                Gtk.StyleContext.add_provider_for_display(
+                    display,
+                    self._theme_css_provider,
+                    Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+                )
+        self._theme_css_provider.load_from_data(
+            f"""
+            .telachat-window {{
+                background-color: {palette.bg};
+                color: {palette.text};
+            }}
+            .telachat-panel {{
+                background-color: {palette.panel};
+                color: {palette.text};
+            }}
+            .telachat-main {{
+                background-color: {palette.bg};
+                color: {palette.text};
+            }}
+            .telachat-text text {{
+                background-color: {palette.surface};
+                color: {palette.text};
+            }}
+            .telachat-input text {{
+                background-color: {palette.input_bg};
+                color: {palette.text};
+            }}
+            listbox row:selected {{
+                background-color: {palette.selection};
+                color: {palette.selection_fg};
+            }}
+            paned > separator {{
+                background: {palette.sash};
                 min-width: 12px;
                 min-height: 12px;
-            }
-            paned > separator:hover {
-                background: alpha(@accent_color, 0.45);
-            }
-            """
+            }}
+            paned > separator:hover {{
+                background: {palette.accent};
+            }}
+            """.encode()
         )
-        display = Gdk.Display.get_default()
-        if display is not None:
-            Gtk.StyleContext.add_provider_for_display(
-                display,
-                provider,
-                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-            )
+
+    def on_theme_changed(self, *_args: object) -> None:
+        selected = self.theme_dropdown.get_selected()
+        if selected < len(self.theme_names):
+            self.theme = self.controller.set_theme(self.theme_names[selected])
+            self._install_css()
+            self.status.set_text(f"Theme: {self.theme.label}")
 
     def on_close(self, _window: Adw.ApplicationWindow) -> bool:
         if self.controller:

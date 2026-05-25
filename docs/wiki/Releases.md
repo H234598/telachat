@@ -1,5 +1,15 @@
 # Releases
 
+## 0.12.0 - 2026-05-25
+
+- Zentrale Themes: `system`, `light`, `dark`, `high-contrast`.
+- `theme = "..."` in `config.toml`; `TELACHAT_THEME` kann temporär
+  uebersteuern.
+- Neuer CLI-Befehl `telachat theme [NAME]`.
+- GTK und Tk nutzen dieselbe Theme-Palette.
+- Backup-Manifest und redaktierte Config enthalten das aktive Theme.
+- Tests pruefen Theme-Parsing, Env-Override, CLI-Setzen und Controller-Persistenz.
+
 ## 0.11.0 - 2026-05-25
 
 - Neue Befehle `telachat restore` und `telachat import-backup`.

@@ -15,6 +15,7 @@ from .store import Message, Session
 class TkTelachatApp:
     def __init__(self) -> None:
         self.controller = TelachatController()
+        self.theme = self.controller.theme()
         self.active_session: Session | None = None
         self.messages: list[Message] = []
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
@@ -51,17 +52,21 @@ class TkTelachatApp:
         return 0
 
     def _configure_style(self) -> None:
+        palette = self.theme.palette
         style = ttk.Style()
         if "clam" in style.theme_names():
             style.theme_use("clam")
-        style.configure("TFrame", background="#f4f2ee")
-        style.configure("Sidebar.TFrame", background="#ebe7de")
-        style.configure("TLabel", background="#f4f2ee", foreground="#242424")
-        style.configure("Muted.TLabel", foreground="#67645e")
+        style.configure("TFrame", background=palette.bg)
+        style.configure("Sidebar.TFrame", background=palette.panel)
+        style.configure("TLabel", background=palette.bg, foreground=palette.text)
+        style.configure("Muted.TLabel", background=palette.bg, foreground=palette.muted)
         style.configure("Accent.TButton", padding=(12, 8))
         style.configure("TButton", padding=(10, 7))
+        if hasattr(self, "root"):
+            self.root.configure(bg=palette.bg)
 
     def _build(self) -> None:
+        palette = self.theme.palette
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
 
@@ -74,7 +79,7 @@ class TkTelachatApp:
             handlesize=22,
             handlepad=70,
             opaqueresize=True,
-            bg="#d8d0c2",
+            bg=palette.sash,
             borderwidth=0,
         )
         self.paned.grid(row=0, column=0, sticky="nsew")
@@ -172,9 +177,11 @@ class TkTelachatApp:
             borderwidth=0,
             highlightthickness=1,
             activestyle="none",
-            bg="#fffdf8",
-            selectbackground="#0d6b6f",
-            selectforeground="#ffffff",
+            bg=palette.surface,
+            fg=palette.text,
+            highlightbackground=palette.border,
+            selectbackground=palette.selection,
+            selectforeground=palette.selection_fg,
         )
         self.session_list.grid(row=18, column=0, columnspan=2, sticky="nsew", pady=(14, 0))
         self.session_list.bind("<<ListboxSelect>>", self._on_session_select)
@@ -210,18 +217,30 @@ class TkTelachatApp:
             borderwidth=0,
             padx=12,
             pady=12,
-            bg="#fffdf8",
-            fg="#242424",
+            bg=palette.surface,
+            fg=palette.text,
+            insertbackground=palette.text,
+            highlightbackground=palette.border,
         )
         self.chat_text.grid(row=1, column=0, sticky="nsew", pady=12)
-        self.chat_text.tag_configure("user", background="#e8f2ef", lmargin1=8, lmargin2=8)
-        self.chat_text.tag_configure("assistant", background="#f8efe3", lmargin1=8, lmargin2=8)
-        self.chat_text.tag_configure("role", foreground="#67645e", font=("Sans", 9, "bold"))
+        self.chat_text.tag_configure("user", background=palette.user_bg, lmargin1=8, lmargin2=8)
+        self.chat_text.tag_configure(
+            "assistant", background=palette.assistant_bg, lmargin1=8, lmargin2=8
+        )
+        self.chat_text.tag_configure("role", foreground=palette.muted, font=("Sans", 9, "bold"))
 
         composer = ttk.Frame(self.main)
         composer.grid(row=2, column=0, sticky="ew")
         composer.columnconfigure(0, weight=1)
-        self.input_text = tk.Text(composer, height=4, wrap="word")
+        self.input_text = tk.Text(
+            composer,
+            height=4,
+            wrap="word",
+            bg=palette.input_bg,
+            fg=palette.text,
+            insertbackground=palette.text,
+            highlightbackground=palette.border,
+        )
         self.input_text.grid(row=0, column=0, sticky="ew", padx=(0, 10))
         self.input_text.bind("<Control-Return>", self._send_from_shortcut)
         self.input_text.bind("<Control-KP_Enter>", self._send_from_shortcut)
@@ -235,7 +254,11 @@ class TkTelachatApp:
             height=4,
             borderwidth=1,
             highlightthickness=1,
-            bg="#fffdf8",
+            bg=palette.surface,
+            fg=palette.text,
+            highlightbackground=palette.border,
+            selectbackground=palette.selection,
+            selectforeground=palette.selection_fg,
             activestyle="none",
         )
         self.command_suggestions.bind("<Double-Button-1>", self.on_command_suggestion_selected)
@@ -244,13 +267,78 @@ class TkTelachatApp:
         self.send_button.grid(row=0, column=1, sticky="ns")
 
         self.settings = ttk.Frame(self.paned, padding=14, width=320)
-        self.settings.rowconfigure(1, weight=1)
-        ttk.Label(self.settings, text="System").grid(row=0, column=0, sticky="w")
-        self.system_text = tk.Text(self.settings, width=32, height=18, wrap="word")
-        self.system_text.grid(row=1, column=0, sticky="nsew", pady=(4, 0))
+        self.settings.rowconfigure(3, weight=1)
+        ttk.Label(self.settings, text="Theme").grid(row=0, column=0, sticky="w")
+        self.theme_display_to_name = {
+            label: name for name, label in self.controller.theme_labels().items()
+        }
+        self.theme_var = tk.StringVar()
+        self.theme_combo = ttk.Combobox(
+            self.settings,
+            textvariable=self.theme_var,
+            state="readonly",
+            values=list(self.theme_display_to_name),
+            width=24,
+        )
+        self.theme_combo.grid(row=1, column=0, sticky="ew", pady=(4, 12))
+        self.theme_combo.bind("<<ComboboxSelected>>", self.on_theme_changed)
+        self.theme_var.set(self.controller.theme_labels()[self.theme.name])
+        ttk.Label(self.settings, text="System").grid(row=2, column=0, sticky="w")
+        self.system_text = tk.Text(
+            self.settings,
+            width=32,
+            height=18,
+            wrap="word",
+            bg=palette.input_bg,
+            fg=palette.text,
+            insertbackground=palette.text,
+            highlightbackground=palette.border,
+        )
+        self.system_text.grid(row=3, column=0, sticky="nsew", pady=(4, 0))
         self.system_text.insert("1.0", self.controller.system_prompt())
+        self._apply_theme_to_widgets()
         self._layout_panes()
         self.root.after_idle(self._set_initial_sashes)
+
+    def _apply_theme_to_widgets(self) -> None:
+        palette = self.theme.palette
+        self._configure_style()
+        widgets = [
+            getattr(self, "session_list", None),
+            getattr(self, "chat_text", None),
+            getattr(self, "input_text", None),
+            getattr(self, "command_suggestions", None),
+            getattr(self, "system_text", None),
+        ]
+        for widget in widgets:
+            if widget is not None:
+                options = {
+                    "bg": palette.input_bg
+                    if widget is self.input_text or widget is self.system_text
+                    else palette.surface,
+                    "fg": palette.text,
+                    "highlightbackground": palette.border,
+                    "selectbackground": palette.selection,
+                    "selectforeground": palette.selection_fg,
+                }
+                if isinstance(widget, tk.Text):
+                    options["insertbackground"] = palette.text
+                widget.configure(
+                    **options,
+                )
+        if hasattr(self, "paned"):
+            self.paned.configure(bg=palette.sash)
+        if hasattr(self, "chat_text"):
+            self.chat_text.tag_configure("user", background=palette.user_bg)
+            self.chat_text.tag_configure("assistant", background=palette.assistant_bg)
+            self.chat_text.tag_configure("role", foreground=palette.muted)
+
+    def on_theme_changed(self, _event: object) -> None:
+        theme_name = self.theme_display_to_name.get(self.theme_var.get(), "system")
+        self.theme = self.controller.set_theme(theme_name)
+        self.theme_var.set(self.controller.theme_labels()[self.theme.name])
+        self._apply_theme_to_widgets()
+        self.set_status(f"Theme: {self.theme.label}")
 
     def refresh_profiles(self) -> None:
         self.profile_display_to_name = {

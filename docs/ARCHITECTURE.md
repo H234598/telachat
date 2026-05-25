@@ -6,8 +6,11 @@
   - Reads `config.toml` using `tomllib`.
   - Validates provider profiles.
   - Loads prompt templates from `[prompt_templates]`.
+  - Resolves the GUI theme from config plus `TELACHAT_THEME`.
   - Resolves API keys from literal values, `env:NAME`, or `file:/path`.
   - Carries optional model-specific knobs such as `reasoning_effort`.
+- `telachat.themes`
+  - Central theme token definitions shared by GTK and Tk.
 - `telachat.client`
   - Minimal OpenAI-compatible HTTP client.
   - Supports `/models`, non-streaming chat, and SSE streaming chat.
@@ -17,7 +20,7 @@
   - SQLite-backed session and message history.
   - Enables folders, session listing, search, loading, and Markdown export.
 - `telachat.cli`
-  - `init`, `profiles`, `config-check`, `ask`, `chat`, `sessions`,
+  - `init`, `profiles`, `config-check`, `theme`, `ask`, `chat`, `sessions`,
     `export`, `export-folder`, `backup`, `restore`, `doctor`.
   - Interactive `chat` installs optional Readline completion for slash commands
     and context values when stdin is a TTY.
@@ -64,6 +67,18 @@ api_key = "envfile:/home/teladi/.config/telachat/qwen.env#TELACHAT_QWEN_API_KEY"
 model = "Qwen/Qwen2.5-1.5B-Instruct"
 ```
 
+GUI theme:
+
+```toml
+theme = "system"
+```
+
+Allowed themes are `system`, `light`, `dark`, and `high-contrast`.
+`TELACHAT_THEME` overrides the config for one process and is useful for
+wrappers, test launches, and temporary desktop-specific starts. GTK maps
+`system`, `light`, and `dark` to Libadwaita color-scheme preferences and then
+applies Telachat-specific CSS tokens. Tk uses the same token palette directly.
+
 Additional built-in profiles:
 
 - `openai`: OpenAI `/v1` Responses API using an env/envfile key, default model `gpt-5.5`, `reasoning_effort = "high"`, with GPT-5.x model options.
@@ -96,6 +111,8 @@ telachat init
 telachat profiles
 telachat config-check
 telachat config-check --strict
+telachat theme
+telachat theme dark
 telachat templates
 telachat folders
 telachat doctor
@@ -167,6 +184,8 @@ GUI slash commands:
 ## Test strategy
 
 - Config parsing and secret redaction.
+- Theme config parsing, env overrides, CLI setting, and GUI controller
+  persistence.
 - Offline config-check behavior and strict missing-secret handling.
 - API client against a local fake OpenAI-compatible HTTP server.
 - Non-streaming and streaming SSE responses.

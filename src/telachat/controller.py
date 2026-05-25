@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from .client import ChatResult, OpenAICompatClient
-from .config import AppConfig, Profile, load_config
+from .config import AppConfig, Profile, load_config, set_config_theme
 from .store import ChatStore, Folder, Message, Session, messages_for_api, title_from_prompt
+from .themes import Theme, normalize_theme_name, theme_by_name, theme_labels
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,18 @@ class TelachatController:
 
     def system_prompt(self) -> str:
         return self.config.default_system_prompt
+
+    def theme(self) -> Theme:
+        return theme_by_name(self.config.theme)
+
+    def theme_labels(self) -> dict[str, str]:
+        return theme_labels()
+
+    def set_theme(self, name: str) -> Theme:
+        theme_name = normalize_theme_name(name)
+        set_config_theme(theme_name, self.config.path)
+        self.config = replace(load_config(self.config.path), theme=theme_name)
+        return self.theme()
 
     def prompt_templates(self) -> dict[str, str]:
         return self.config.prompt_templates

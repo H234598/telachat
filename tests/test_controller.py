@@ -11,6 +11,29 @@ from telachat.controller import TelachatController
 
 
 class ControllerTests(unittest.TestCase):
+    def test_theme_can_be_changed_through_controller(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                controller = TelachatController()
+                try:
+                    self.assertEqual(controller.theme().name, "system")
+                    theme = controller.set_theme("dark")
+                    self.assertEqual(theme.name, "dark")
+                    self.assertEqual(controller.config.theme, "dark")
+                    config_text = (Path(tmp) / "config" / "telachat" / "config.toml").read_text(
+                        encoding="utf-8"
+                    )
+                    self.assertIn('theme = "dark"', config_text)
+                finally:
+                    controller.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_apply_prompt_template(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

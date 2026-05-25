@@ -8,6 +8,7 @@ Telachat kann komplett aus dem Terminal genutzt werden.
 telachat init
 telachat profiles
 telachat config-check
+telachat theme
 telachat templates
 telachat folders
 telachat doctor
@@ -29,6 +30,8 @@ telachat ask --template explain "SQLite WAL"
 `telachat config-check` prueft lokale Profile, Modelle und Secret-Quellen ohne
 API-Anfrage. `telachat config-check --strict` liefert einen Fehlercode, wenn
 eine nicht-lokale Secret-Quelle fehlt.
+`telachat theme [NAME]` zeigt oder setzt das persistente GUI-Theme. Fuer
+temporäre Starts kann `TELACHAT_THEME=dark telachat-tk` genutzt werden.
 `telachat backup` schreibt ein ZIP mit SQLite-Historie, redaktierter Config und
 Manifest; rohe Secrets und Envfiles bleiben draussen.
 `telachat restore` importiert die Backup-Historie additiv in die bestehende
