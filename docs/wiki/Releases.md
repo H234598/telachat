@@ -1,5 +1,11 @@
 # Releases
 
+## 0.38.1 - 2026-05-25
+
+- `/doctor` beendet den interaktiven Chat nicht mehr, wenn lokale
+  Secret-Quellen oder OS-Zugriffe fehlschlagen.
+- Ergaenzt Regressionstests fuer fehlende Envfile-Fehler im Terminal-Chat.
+
 ## 0.38.0 - 2026-05-25
 
 - `/doctor` funktioniert jetzt im interaktiven CLI-Prompt sowie in Tk und GTK.

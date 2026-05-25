@@ -97,7 +97,8 @@ terminal slash-command actions, including `/theme` and `/find`. Theme tests
 cover config persistence, env overrides, system-palette detection, CLI setting,
 and controller persistence. `/stats` tests cover the shared content-free
 formatter plus terminal, Tk, and GTK prompt paths. `/doctor` prompt tests cover
-terminal `/models` output and GUI dispatch to the existing Check action.
+terminal `/models` output, local secret-source errors, and GUI dispatch to the
+existing Check action.
 Backup tests inspect the ZIP bundle and verify that envfile secret values and
 secret-like header values are not included. GUI smoke and regression tests also
 cover construction of the slash-command autocomplete widgets, visible

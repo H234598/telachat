@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.38.1 - 2026-05-25
+
+- Keep interactive `/doctor` alive when local secret sources or OS access fail.
+- Add regression coverage for missing envfile errors in terminal chat.
+
 ## 0.38.0 - 2026-05-25
 
 - Add `/doctor` to interactive CLI, Tk, and GTK prompt command paths.
