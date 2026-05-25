@@ -163,7 +163,12 @@ class StoreTests(unittest.TestCase):
                     folder_id=folder.id,
                 )
                 store.add_message(session.id, "user", "Frage")
-                store.add_message(session.id, "assistant", "Antwort")
+                store.add_message(
+                    session.id,
+                    "assistant",
+                    "Antwort",
+                    metadata={"usage": {"input_tokens": 8, "output_tokens": 5}},
+                )
                 store.set_session_pinned(session.id, True)
                 store.set_session_tags(session.id, ["Projekt", "#Review Notes"])
                 store.set_session_archived(session.id, True)
@@ -179,9 +184,14 @@ class StoreTests(unittest.TestCase):
                 self.assertFalse(fork.pinned)
                 self.assertFalse(fork.archived)
                 self.assertEqual(fork.tags, ("projekt", "review-notes"))
+                fork_messages = store.messages(fork.id)
                 self.assertEqual(
-                    [(message.role, message.content) for message in store.messages(fork.id)],
+                    [(message.role, message.content) for message in fork_messages],
                     [("user", "Frage"), ("assistant", "Antwort")],
+                )
+                self.assertEqual(
+                    fork_messages[-1].metadata,
+                    {"usage": {"input_tokens": 8, "output_tokens": 5}},
                 )
                 store.edit_last_user_message(fork.id, "Andere Frage")
                 self.assertEqual(
@@ -497,7 +507,12 @@ class StoreTests(unittest.TestCase):
                     folder_id=source_folder.id,
                 )
                 source.add_message(source_session.id, "user", "Frage")
-                source.add_message(source_session.id, "assistant", "Antwort")
+                source.add_message(
+                    source_session.id,
+                    "assistant",
+                    "Antwort",
+                    metadata={"usage": {"input_tokens": 6, "output_tokens": 4}},
+                )
                 source.set_session_tags(source_session.id, ["Import", "Projekt"])
                 source.set_session_archived(source_session.id, True)
                 existing_folder = target.create_folder(
@@ -532,9 +547,14 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual(imported[0].folder_id, existing_folder.id)
                 self.assertTrue(imported[0].archived)
                 self.assertEqual(imported[0].tags, ("import", "projekt"))
+                imported_messages = target.messages(imported[0].id)
                 self.assertEqual(
-                    [message.content for message in target.messages(imported[0].id)],
+                    [message.content for message in imported_messages],
                     ["Frage", "Antwort"],
+                )
+                self.assertEqual(
+                    imported_messages[-1].metadata,
+                    {"usage": {"input_tokens": 6, "output_tokens": 4}},
                 )
                 self.assertEqual(len(target.list_folders()), 1)
             finally:
