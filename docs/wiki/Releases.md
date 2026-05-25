@@ -1,5 +1,11 @@
 # Releases
 
+## 0.38.2 - 2026-05-25
+
+- Profile mit ungueltigem `stream` oder `api_mode` werden jetzt beim Laden der
+  Konfiguration abgewiesen.
+- Ergaenzt Regressionstests fuer ungueltige Profil-Booleans und API-Modi.
+
 ## 0.38.1 - 2026-05-25
 
 - `/doctor` beendet den interaktiven Chat nicht mehr, wenn lokale

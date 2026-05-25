@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.38.2 - 2026-05-25
+
+- Validate profile `stream` and `api_mode` values while loading config.
+- Add regression coverage for invalid profile booleans and API modes.
+
 ## 0.38.1 - 2026-05-25
 
 - Keep interactive `/doctor` alive when local secret sources or OS access fail.
