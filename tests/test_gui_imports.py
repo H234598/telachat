@@ -48,6 +48,12 @@ class _FakeText:
     def set_text(self, value: str) -> None:
         self.value = value
 
+    def insert(self, _index: str, value: str) -> None:
+        self.value = value
+
+    def delete(self, *_args: object) -> None:
+        self.value = ""
+
     def configure(self, **kwargs: object) -> None:
         if "text" in kwargs:
             self.value = str(kwargs["text"])
@@ -246,12 +252,14 @@ class GuiImportTests(unittest.TestCase):
         app = object.__new__(module.TkTelachatApp)
         app.active_operation_id = 4
         app.cancelled_operation_ids = set()
+        app.operation_prompt_drafts = {4: "Bitte nochmal pruefen"}
         app.operation_counter = 4
         app.active_session = SimpleNamespace(id="old")
         app.messages = []
         app.events = queue.Queue()
         app.root = _FakeRoot()
         app.status = _FakeText("")
+        app.input_text = _FakeText("")
         app.send_button = _FakeButton()
         app.cancel_button = _FakeButton()
         app.update_active_title = mock.Mock()
@@ -276,6 +284,8 @@ class GuiImportTests(unittest.TestCase):
         self.assertIsNone(app.active_operation_id)
         self.assertEqual(app.active_session.id, "old")
         self.assertEqual(app.messages, [])
+        self.assertEqual(app.input_text.get_text(), "Bitte nochmal pruefen")
+        self.assertEqual(app.operation_prompt_drafts, {})
         self.assertEqual(app.status.get_text(), "Abgebrochen; Ergebnis wird ignoriert")
         self.assertEqual(app.send_button.state, "normal")
         self.assertEqual(app.cancel_button.state, "disabled")
@@ -376,6 +386,7 @@ class GuiImportTests(unittest.TestCase):
         app = SimpleNamespace(
             active_operation_id=2,
             cancelled_operation_ids=set(),
+            operation_prompt_drafts={2: "Bitte nochmal pruefen"},
             operation_counter=2,
             active_session=SimpleNamespace(id="old"),
             messages=[],
@@ -386,9 +397,15 @@ class GuiImportTests(unittest.TestCase):
             refresh_sessions=mock.Mock(),
             render_messages=mock.Mock(),
         )
+        input_text = _FakeText("")
+        app.input_prompt = lambda: input_text.get_text()
+        app.set_input_prompt = lambda text: input_text.set_text(text)
         app.set_busy = lambda busy, text: module.GtkTelachatApp.set_busy(app, busy, text)
         app.operation_result_current = lambda operation_id: module.GtkTelachatApp.operation_result_current(
             app, operation_id
+        )
+        app.restore_operation_prompt = lambda text: module.GtkTelachatApp.restore_operation_prompt(
+            app, text
         )
         app.finish_operation = lambda operation_id, text: module.GtkTelachatApp.finish_operation(
             app, operation_id, text
@@ -408,6 +425,8 @@ class GuiImportTests(unittest.TestCase):
         self.assertIsNone(app.active_operation_id)
         self.assertEqual(app.active_session.id, "old")
         self.assertEqual(app.messages, [])
+        self.assertEqual(input_text.get_text(), "Bitte nochmal pruefen")
+        self.assertEqual(app.operation_prompt_drafts, {})
         self.assertEqual(app.status.get_text(), "Abgebrochen; Ergebnis wird ignoriert")
         self.assertTrue(app.send_button.sensitive)
         self.assertFalse(app.cancel_button.sensitive)

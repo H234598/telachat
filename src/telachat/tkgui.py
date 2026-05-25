@@ -33,6 +33,7 @@ class TkTelachatApp:
         self.operation_counter = 0
         self.active_operation_id: int | None = None
         self.cancelled_operation_ids: set[int] = set()
+        self.operation_prompt_drafts: dict[int, str] = {}
         self.folder_display_to_id: dict[str, str | None] = {}
         self.tag_display_to_value: dict[str, str | None] = {"Alle Tags": None}
         self.sidebar_visible = True
@@ -518,7 +519,7 @@ class TkTelachatApp:
         max_tokens = self.selected_max_tokens()
         self.input_text.delete("1.0", tk.END)
         self.hide_command_suggestions()
-        operation_id = self.begin_operation("Denke...")
+        operation_id = self.begin_operation("Denke...", prompt)
         threading.Thread(
             target=self._send_worker,
             args=(
@@ -1242,11 +1243,13 @@ class TkTelachatApp:
     def set_status(self, text: str) -> None:
         self.status.configure(text=text)
 
-    def begin_operation(self, text: str) -> int:
+    def begin_operation(self, text: str, prompt_draft: str | None = None) -> int:
         self.operation_counter += 1
         operation_id = self.operation_counter
         self.active_operation_id = operation_id
         self.cancelled_operation_ids.discard(operation_id)
+        if prompt_draft:
+            self.operation_prompt_drafts[operation_id] = prompt_draft
         self.set_busy(True, text)
         return operation_id
 
@@ -1254,6 +1257,9 @@ class TkTelachatApp:
         operation_id = self.active_operation_id
         if operation_id is None:
             return
+        draft = self.operation_prompt_drafts.pop(operation_id, None)
+        if draft:
+            self.restore_operation_prompt(draft)
         self.cancelled_operation_ids.add(operation_id)
         self.active_operation_id = None
         self.set_busy(False, "Abgebrochen; Ergebnis wird ignoriert")
@@ -1261,14 +1267,24 @@ class TkTelachatApp:
     def operation_result_current(self, operation_id: int) -> bool:
         if operation_id in self.cancelled_operation_ids:
             self.cancelled_operation_ids.discard(operation_id)
+            self.operation_prompt_drafts.pop(operation_id, None)
             return False
-        return operation_id == self.active_operation_id
+        if operation_id != self.active_operation_id:
+            self.operation_prompt_drafts.pop(operation_id, None)
+            return False
+        return True
 
     def finish_operation(self, operation_id: int, text: str) -> None:
         self.cancelled_operation_ids.discard(operation_id)
+        self.operation_prompt_drafts.pop(operation_id, None)
         if operation_id == self.active_operation_id:
             self.active_operation_id = None
         self.set_busy(False, text)
+
+    def restore_operation_prompt(self, prompt: str) -> None:
+        if self.input_text.get("1.0", "end-1c").strip():
+            return
+        self.input_text.insert("1.0", prompt)
 
     def response_status(self, payload: object) -> str:
         elapsed = getattr(payload, "elapsed_seconds", None)

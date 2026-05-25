@@ -1,5 +1,13 @@
 # Releases
 
+## 0.42.1 - 2026-05-25
+
+- Wenn eine laufende Send-Anfrage abgebrochen wird, setzen GTK und Tk den
+  gerade abgeschickten Prompt wieder in den Composer, solange dort noch nichts
+  Neues steht.
+- Gespeicherte Prompt-Drafts werden auch bei spaeten abgebrochenen oder
+  veralteten Worker-Ergebnissen aufgeraeumt.
+
 ## 0.42.0 - 2026-05-25
 
 - GTK und Tk zeigen waehrend Senden, Regenerieren oder Check einen

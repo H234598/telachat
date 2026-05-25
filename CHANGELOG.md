@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.42.1 - 2026-05-25
+
+- Restore the just-sent prompt after cancelling a running GUI send operation when the composer is still empty.
+- Clear stored prompt drafts when late cancelled or stale GUI worker results arrive.
+
 ## 0.42.0 - 2026-05-25
 
 - Add an `Abbrechen` button to GTK and Tk while send, regenerate, or Check is running.

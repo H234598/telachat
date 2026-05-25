@@ -105,7 +105,8 @@ canonical command. GUI tests also cover shared alias normalization for `/q` and
 `/quit` closing Tk and GTK windows, plus `/regenerate` dispatching through the
 canonical command catalog. Tk and GTK cancellation regressions verify that late
 worker results from an `Abbrechen` operation are ignored instead of overwriting
-the active view.
+the active view. They also verify prompt restoration for cancelled Send
+operations when the composer is still empty.
 Backup tests inspect the ZIP bundle and verify that envfile secret values and
 secret-like header values are not included. GUI smoke and regression tests also
 cover construction of the slash-command autocomplete widgets, visible

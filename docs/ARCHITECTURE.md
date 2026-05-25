@@ -290,6 +290,8 @@ GUI request cancellation:
   worker thread.
 - `Abbrechen` marks the active ID as cancelled, re-enables the UI, and leaves
   any already-started provider call to finish in the background.
+- Cancelled send operations restore their submitted prompt if the composer is
+  still empty.
 - Late success/error results are accepted only when their operation ID is still
   active; cancelled or stale results are ignored.
 
@@ -311,7 +313,7 @@ GUI request cancellation:
 - SQLite session archive filtering, archive import/export, and legacy migration.
 - SQLite local statistics for content-free history inventory.
 - GUI archive filter wiring in Tk and GTK.
-- GUI cancelled-request guards in Tk and GTK.
+- GUI cancelled-request guards and send-prompt restoration in Tk and GTK.
 - SQLite session model metadata, legacy migration, exports, and backend restore.
 - Latest user-message editing and post-edit answer removal.
 - Session forking with independent copied history.

@@ -22,7 +22,9 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - Nach erfolgreichen Antworten zeigt der Status die gemessene Antwortzeit.
 - `Abbrechen` verwirft laufende Send-, Regenerate- oder Check-Ergebnisse und
   macht die GUI sofort wieder bedienbar. Bereits gestartete Provider-Requests
-  koennen serverseitig trotzdem weiterlaufen.
+  koennen serverseitig trotzdem weiterlaufen. Bei abgebrochenen Send-Anfragen
+  wird der abgeschickte Prompt wieder eingesetzt, wenn der Composer noch leer
+  ist.
 - `Check` fragt `/models` live fuer den gewaehlten Provider ab und ergaenzt die
   Modellauswahl mit den gemeldeten IDs.
 - `Shift+Enter` sendet eine Nachricht.
