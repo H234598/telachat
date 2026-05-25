@@ -52,7 +52,10 @@ class Profile:
             return _read_envfile_secret(key[8:].strip())
         if key.startswith("file:"):
             file_name = key[5:].strip()
-            return Path(file_name).expanduser().read_text(encoding="utf-8").strip()
+            try:
+                return Path(file_name).expanduser().read_text(encoding="utf-8").strip()
+            except OSError as exc:
+                raise ConfigError(f"Secret-Datei kann nicht gelesen werden: {file_name}") from exc
         return key
 
     def with_overrides(
@@ -306,7 +309,11 @@ def _read_envfile_secret(spec: str) -> str:
     wanted = env_name.strip()
     if not wanted:
         raise ConfigError("envfile braucht einen Variablennamen.")
-    for raw_line in file_path.read_text(encoding="utf-8").splitlines():
+    try:
+        lines = file_path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        raise ConfigError(f"envfile kann nicht gelesen werden: {file_path}") from exc
+    for raw_line in lines:
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue

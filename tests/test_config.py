@@ -177,6 +177,39 @@ model = "demo"
             cfg = load_config(path)
             self.assertEqual(cfg.profile().resolved_api_key(), "envfile-secret")
 
+    def test_missing_secret_files_raise_config_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path = Path(tmp) / "config.toml"
+            missing_secret = Path(tmp) / "missing.secret"
+            config_path.write_text(
+                f"""
+default_profile = "local"
+[profiles.local]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "file:{missing_secret}"
+model = "demo"
+""".strip(),
+                encoding="utf-8",
+            )
+            cfg = load_config(config_path)
+            with self.assertRaisesRegex(ConfigError, "Secret-Datei kann nicht gelesen"):
+                cfg.profile().resolved_api_key()
+
+            missing_envfile = Path(tmp) / "missing.env"
+            config_path.write_text(
+                f"""
+default_profile = "local"
+[profiles.local]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "envfile:{missing_envfile}#OPENAI_API_KEY"
+model = "demo"
+""".strip(),
+                encoding="utf-8",
+            )
+            cfg = load_config(config_path)
+            with self.assertRaisesRegex(ConfigError, "envfile kann nicht gelesen"):
+                cfg.profile().resolved_api_key()
+
     def test_redact_secret(self) -> None:
         self.assertEqual(redact_secret("hf-space"), "<redacted>")
         self.assertEqual(redact_secret("env:KEY"), "env:KEY")

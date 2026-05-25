@@ -642,6 +642,34 @@ model = "other-model"
             finally:
                 _restore_env("TELACHAT_DOCTOR_TEST_KEY", old_key)
 
+    def test_doctor_reports_secret_source_errors_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp) / "config.toml"
+            missing_envfile = Path(tmp) / "missing.env"
+            config.write_text(
+                f"""
+default_profile = "broken"
+
+[profiles.broken]
+label = "Broken"
+base_url = "http://127.0.0.1:9/v1"
+api_key = "envfile:{missing_envfile}#TELACHAT_TEST_KEY"
+model = "demo"
+stream = false
+""".strip(),
+                encoding="utf-8",
+            )
+
+            out = io.StringIO()
+            err = io.StringIO()
+            with redirect_stdout(out), redirect_stderr(err):
+                self.assertEqual(main(["--config", str(config), "doctor"]), 1)
+
+            self.assertIn("Profil: broken", out.getvalue())
+            self.assertIn("Fehler:", err.getvalue())
+            self.assertIn("missing.env", err.getvalue())
+            self.assertNotIn("Traceback", err.getvalue())
+
     def test_theme_command_sets_configured_theme(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")
