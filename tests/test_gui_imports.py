@@ -50,22 +50,19 @@ class _FakeCombo:
 
 
 class GuiImportTests(unittest.TestCase):
-    def import_gtk_module(self) -> object:
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=DeprecationWarning)
-            try:
-                return importlib.import_module("telachat.gtkgui")
-            except ModuleNotFoundError as exc:
-                if exc.name == "gi":
-                    self.skipTest("PyGObject is not installed in this environment")
-                raise
-
     def test_tk_gui_imports(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         self.assertTrue(hasattr(module, "TkTelachatApp"))
 
     def test_gtk_gui_imports(self) -> None:
-        module = self.import_gtk_module()
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
         self.assertTrue(hasattr(module, "GtkTelachatApp"))
 
     def test_tk_refresh_sessions_uses_selected_sidebar_filters(self) -> None:
@@ -90,7 +87,14 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(controller.calls[0]["tag"], "projekt")
 
     def test_gtk_refresh_sessions_uses_selected_sidebar_filters(self) -> None:
-        module = self.import_gtk_module()
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
         controller = _FakeController()
         app = SimpleNamespace(
             controller=controller,
