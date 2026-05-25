@@ -150,6 +150,70 @@ class CliTests(unittest.TestCase):
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_stats_command_reports_counts_without_content(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(main(["init"]), 0)
+                store = ChatStore()
+                try:
+                    folder = store.create_folder("Arbeit", system_prompt="Projektprompt")
+                    session = store.create_session(
+                        title="Alpha",
+                        profile="openai",
+                        model="gpt-5.5",
+                        system_prompt="System",
+                        folder_id=folder.id,
+                    )
+                    archived = store.create_session(
+                        title="Archiv",
+                        profile="tki",
+                        system_prompt="System",
+                    )
+                    store.add_message(session.id, "user", "Geheimer Projektplan")
+                    store.add_message(session.id, "assistant", "Antwort")
+                    store.add_message(archived.id, "user", "Archivnotiz")
+                    store.set_session_pinned(session.id, True)
+                    store.set_session_archived(archived.id, True)
+                    store.set_session_tags(session.id, ["Projekt"])
+                finally:
+                    store.close()
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["stats", "--json"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["sessions"]["total"], 2)
+                self.assertEqual(payload["sessions"]["active"], 1)
+                self.assertEqual(payload["sessions"]["archived"], 1)
+                self.assertEqual(payload["sessions"]["pinned"], 1)
+                self.assertEqual(payload["sessions"]["unfiled"], 1)
+                self.assertEqual(payload["messages"]["total"], 3)
+                self.assertEqual(payload["tags"]["assignments"], 1)
+                self.assertEqual(payload["folders"]["with_system_prompt"], 1)
+                self.assertEqual(
+                    {row["profile"]: row["sessions"] for row in payload["profiles"]},
+                    {"openai": 1, "tki": 1},
+                )
+                self.assertNotIn("Geheimer Projektplan", out.getvalue())
+                self.assertNotIn("api_key", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["stats"]), 0)
+                text = out.getvalue()
+                self.assertIn("Sessions: 2 gesamt", text)
+                self.assertIn("Nachrichten: 3 gesamt", text)
+                self.assertIn("Profile: openai=1, tki=1", text)
+                self.assertNotIn("Geheimer Projektplan", text)
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_archive_commands_hide_and_restore_sessions(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

@@ -37,6 +37,7 @@ from .store import (
     Folder,
     HistoryImportSummary,
     Session,
+    StoreStats,
     messages_for_api,
     normalize_tag,
     title_from_prompt,
@@ -176,6 +177,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_sessions.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_sessions.set_defaults(func=cmd_sessions)
+
+    p_stats = sub.add_parser("stats", help="Lokale Historienstatistik anzeigen")
+    p_stats.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
+    p_stats.set_defaults(func=cmd_stats)
 
     p_tags = sub.add_parser("tags", help="Session-Tags anzeigen/verwalten")
     p_tags.add_argument("session", nargs="?", help="Session-ID oder Prefix; leer listet alle Tags")
@@ -689,6 +694,46 @@ def cmd_sessions(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_stats(args: argparse.Namespace) -> int:
+    store = ChatStore()
+    try:
+        stats = store.stats()
+        if args.json:
+            print(json.dumps(_stats_record(stats), indent=2, sort_keys=True))
+            return 0
+        print(f"{APP_TITLE} stats")
+        print(f"SQLite: {stats.database_path}")
+        print(
+            "Sessions: "
+            f"{stats.sessions_total} gesamt, "
+            f"{stats.sessions_active} aktiv, "
+            f"{stats.sessions_archived} archiviert, "
+            f"{stats.sessions_pinned} angeheftet, "
+            f"{stats.sessions_unfiled} ohne Ordner"
+        )
+        print(
+            "Nachrichten: "
+            f"{stats.messages_total} gesamt"
+            f"{_format_count_suffix(stats.message_roles)}"
+        )
+        print(
+            "Ordner: "
+            f"{stats.folders_total} gesamt, "
+            f"{stats.folders_with_system_prompt} mit System-Prompt"
+        )
+        print(
+            "Tags: "
+            f"{stats.tags_total} Tags, "
+            f"{stats.tag_links_total} Zuweisungen, "
+            f"{stats.tagged_sessions} getaggte Sessions"
+        )
+        print(f"Profile: {_format_count_pairs(stats.session_profiles)}")
+        print(f"Modelle: {_format_count_pairs(stats.session_models, empty_label='ohne Modell')}")
+    finally:
+        store.close()
+    return 0
+
+
 def cmd_tags(args: argparse.Namespace) -> int:
     store = ChatStore()
     try:
@@ -834,6 +879,60 @@ def _session_record(session: Session) -> dict[str, object]:
         "created_at": session.created_at,
         "updated_at": session.updated_at,
     }
+
+
+def _stats_record(stats: StoreStats) -> dict[str, object]:
+    return {
+        "database": stats.database_path,
+        "sessions": {
+            "total": stats.sessions_total,
+            "active": stats.sessions_active,
+            "archived": stats.sessions_archived,
+            "pinned": stats.sessions_pinned,
+            "unfiled": stats.sessions_unfiled,
+        },
+        "messages": {
+            "total": stats.messages_total,
+            "roles": [
+                {"role": role, "messages": count}
+                for role, count in stats.message_roles
+            ],
+        },
+        "folders": {
+            "total": stats.folders_total,
+            "with_system_prompt": stats.folders_with_system_prompt,
+        },
+        "tags": {
+            "total": stats.tags_total,
+            "assignments": stats.tag_links_total,
+            "tagged_sessions": stats.tagged_sessions,
+        },
+        "profiles": [
+            {"profile": profile, "sessions": count}
+            for profile, count in stats.session_profiles
+        ],
+        "models": [
+            {"model": model, "sessions": count}
+            for model, count in stats.session_models
+        ],
+    }
+
+
+def _format_count_suffix(pairs: Iterable[tuple[str, int]]) -> str:
+    text = _format_count_pairs(pairs)
+    return f" ({text})" if text != "-" else ""
+
+
+def _format_count_pairs(
+    pairs: Iterable[tuple[str, int]],
+    *,
+    empty_label: str = "leer",
+) -> str:
+    labels = [
+        f"{label or empty_label}={count}"
+        for label, count in pairs
+    ]
+    return ", ".join(labels) if labels else "-"
 
 
 def _format_session_line(session: Session) -> str:

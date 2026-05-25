@@ -357,6 +357,61 @@ class StoreTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_stats_counts_local_history_without_message_content(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                folder = store.create_folder("Arbeit", system_prompt="Nur Fakten.")
+                active = store.create_session(
+                    title="Aktiv",
+                    profile="openai",
+                    model="gpt-5.5",
+                    system_prompt="System",
+                    folder_id=folder.id,
+                )
+                unfiled = store.create_session(
+                    title="Ohne Ordner",
+                    profile="tki",
+                    model="Qwen/Qwen2.5-1.5B-Instruct",
+                    system_prompt="System",
+                )
+                archived = store.create_session(
+                    title="Archiv",
+                    profile="tki",
+                    system_prompt="System",
+                )
+                store.add_message(active.id, "user", "Geheimer Inhalt")
+                store.add_message(active.id, "assistant", "Antwort")
+                store.add_message(unfiled.id, "system", "Systemnotiz")
+                store.add_message(archived.id, "user", "Archivnotiz")
+                store.set_session_pinned(active.id, True)
+                store.set_session_archived(archived.id, True)
+                store.set_session_tags(active.id, ["Projekt", "Review"])
+                store.set_session_tags(unfiled.id, ["Projekt"])
+
+                stats = store.stats()
+
+                self.assertEqual(stats.sessions_total, 3)
+                self.assertEqual(stats.sessions_active, 2)
+                self.assertEqual(stats.sessions_archived, 1)
+                self.assertEqual(stats.sessions_pinned, 1)
+                self.assertEqual(stats.sessions_unfiled, 2)
+                self.assertEqual(stats.folders_total, 1)
+                self.assertEqual(stats.folders_with_system_prompt, 1)
+                self.assertEqual(stats.tags_total, 2)
+                self.assertEqual(stats.tag_links_total, 3)
+                self.assertEqual(stats.tagged_sessions, 2)
+                self.assertEqual(stats.messages_total, 4)
+                self.assertEqual(dict(stats.message_roles), {"assistant": 1, "system": 1, "user": 2})
+                self.assertEqual(dict(stats.session_profiles), {"openai": 1, "tki": 2})
+                self.assertEqual(
+                    dict(stats.session_models),
+                    {"": 1, "Qwen/Qwen2.5-1.5B-Instruct": 1, "gpt-5.5": 1},
+                )
+                self.assertNotIn("Geheimer Inhalt", repr(stats))
+            finally:
+                store.close()
+
     def test_import_history_database_adds_copies_without_overwriting(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             source = ChatStore(Path(tmp) / "source.sqlite3")

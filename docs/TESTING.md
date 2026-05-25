@@ -9,6 +9,7 @@ PYTHONPATH=src python3 -m telachat config-check
 PYTHONPATH=src python3 -m telachat config-check --json
 PYTHONPATH=src python3 -m telachat models --json
 PYTHONPATH=src python3 -m telachat theme
+PYTHONPATH=src python3 -m telachat stats --json
 PYTHONPATH=src python3 -m telachat backup -o /tmp/telachat-backups
 PYTHONPATH=src python3 -m telachat restore --dry-run /tmp/telachat-backups/FILE.zip
 make check
@@ -55,6 +56,7 @@ telachat import-folder folder.json --json
 telachat import-folder folder.json --dry-run --json
 telachat export-folder Arbeit -o /tmp/telachat-export
 telachat sessions --json
+telachat stats --json
 telachat sessions --tag projekt
 telachat sessions --archived
 telachat sessions --all
@@ -102,7 +104,9 @@ model-choice merge behavior after live model discovery. Controller and client
 tests verify that generation overrides reach the API profile and that Responses
 requests include temperature/top-p/max-output parameters. Controller and GUI
 tests also cover elapsed-time propagation for successful responses.
-CLI JSON tests cover profiles, models, config-check, sessions, folders, and doctor
+Store and CLI tests cover content-free local statistics for sessions, messages,
+folders, tags, profiles, and models.
+CLI JSON tests cover profiles, models, config-check, sessions, stats, folders, and doctor
 while checking that secret values remain redacted.
 Restore tests verify dry-run counts, duplicate-safe imports, session ID
 rewrites, and folder-name reuse.

@@ -53,6 +53,25 @@ class HistoryImportSummary:
     dry_run: bool = False
 
 
+@dataclass(frozen=True)
+class StoreStats:
+    database_path: str
+    sessions_total: int
+    sessions_active: int
+    sessions_archived: int
+    sessions_pinned: int
+    sessions_unfiled: int
+    folders_total: int
+    folders_with_system_prompt: int
+    tags_total: int
+    tag_links_total: int
+    tagged_sessions: int
+    messages_total: int
+    message_roles: tuple[tuple[str, int], ...]
+    session_profiles: tuple[tuple[str, int], ...]
+    session_models: tuple[tuple[str, int], ...]
+
+
 class ChatStore:
     def __init__(self, path: Path | None = None) -> None:
         self.path = path or db_path()
@@ -318,6 +337,79 @@ class ChatStore:
                 """
             ).fetchall()
             return [(row["tag"], int(row["sessions"])) for row in rows]
+
+    def stats(self) -> StoreStats:
+        with self._lock:
+            session_row = self.db.execute(
+                """
+                SELECT
+                    count(*) AS total,
+                    sum(CASE WHEN archived = 0 THEN 1 ELSE 0 END) AS active,
+                    sum(CASE WHEN archived = 1 THEN 1 ELSE 0 END) AS archived,
+                    sum(CASE WHEN pinned = 1 THEN 1 ELSE 0 END) AS pinned,
+                    sum(CASE WHEN folder_id IS NULL THEN 1 ELSE 0 END) AS unfiled
+                FROM sessions
+                """
+            ).fetchone()
+            folder_row = self.db.execute(
+                """
+                SELECT
+                    count(*) AS total,
+                    sum(CASE WHEN trim(system_prompt) != '' THEN 1 ELSE 0 END) AS with_system
+                FROM folders
+                """
+            ).fetchone()
+            tag_row = self.db.execute(
+                """
+                SELECT
+                    count(DISTINCT tag) AS total,
+                    count(*) AS links,
+                    count(DISTINCT session_id) AS tagged_sessions
+                FROM session_tags
+                """
+            ).fetchone()
+            message_total = self.db.execute("SELECT count(*) AS total FROM messages").fetchone()
+            message_roles = self.db.execute(
+                """
+                SELECT role, count(*) AS total
+                FROM messages
+                GROUP BY role
+                ORDER BY lower(role) ASC
+                """
+            ).fetchall()
+            session_profiles = self.db.execute(
+                """
+                SELECT profile, count(*) AS total
+                FROM sessions
+                GROUP BY profile
+                ORDER BY lower(profile) ASC
+                """
+            ).fetchall()
+            session_models = self.db.execute(
+                """
+                SELECT model, count(*) AS total
+                FROM sessions
+                GROUP BY model
+                ORDER BY lower(model) ASC
+                """
+            ).fetchall()
+            return StoreStats(
+                database_path=str(self.path),
+                sessions_total=_row_int(session_row, "total"),
+                sessions_active=_row_int(session_row, "active"),
+                sessions_archived=_row_int(session_row, "archived"),
+                sessions_pinned=_row_int(session_row, "pinned"),
+                sessions_unfiled=_row_int(session_row, "unfiled"),
+                folders_total=_row_int(folder_row, "total"),
+                folders_with_system_prompt=_row_int(folder_row, "with_system"),
+                tags_total=_row_int(tag_row, "total"),
+                tag_links_total=_row_int(tag_row, "links"),
+                tagged_sessions=_row_int(tag_row, "tagged_sessions"),
+                messages_total=_row_int(message_total, "total"),
+                message_roles=_count_pairs(message_roles, "role"),
+                session_profiles=_count_pairs(session_profiles, "profile"),
+                session_models=_count_pairs(session_models, "model"),
+            )
 
     def set_session_tags(self, session_id: str, tags: Iterable[str]) -> list[str]:
         with self._lock:
@@ -932,6 +1024,16 @@ def _table_exists(db: sqlite3.Connection, table: str) -> bool:
 
 def _row_value(row: sqlite3.Row, key: str, default: object) -> object:
     return row[key] if key in row.keys() else default
+
+
+def _row_int(row: sqlite3.Row | None, key: str) -> int:
+    if row is None or key not in row.keys() or row[key] is None:
+        return 0
+    return int(row[key])
+
+
+def _count_pairs(rows: Iterable[sqlite3.Row], label_key: str) -> tuple[tuple[str, int], ...]:
+    return tuple((str(row[label_key] or ""), int(row["total"] or 0)) for row in rows)
 
 
 def _session_from_row(row: sqlite3.Row, *, tags: Iterable[str] | None = None) -> Session:

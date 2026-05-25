@@ -8,6 +8,7 @@ zusaetzlich gibt es Profile fuer OpenAI und eine lokale Codex-Bridge.
 
 ```sh
 telachat profiles
+telachat stats --json
 telachat doctor --chat
 telachat ask "Hallo"
 telachat-tk

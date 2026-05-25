@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.35.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.36.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -63,6 +63,11 @@ filtering, archive filtering, and sorting. Session search also matches saved
 provider/model/tag metadata. Use \fB--archived\fR for only archived chats,
 \fB--all\fR for active plus archived chats, and \fB--json\fR for structured
 output.
+.TP
+.B stats
+Show local history inventory without message content. Counts sessions,
+messages, folders, tags, profiles, and models. Use \fB--json\fR for
+structured output.
 .TP
 .B archive
 Hide one session from normal session lists without deleting it.
@@ -135,6 +140,7 @@ telachat templates
 telachat ask --template summarize "Langer Text"
 telachat folders --create Arbeit --system "Antworte projektbezogen."
 telachat sessions --json
+telachat stats --json
 telachat sessions --tag projekt
 telachat sessions --archived
 telachat sessions --all

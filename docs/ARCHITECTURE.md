@@ -21,10 +21,11 @@
   - SQLite-backed session and message history.
   - Enables folders, archive filters, session listing, search, loading, and
     Markdown export.
+  - Provides content-free aggregate statistics for local inventory checks.
 - `telachat.cli`
   - `init`, `profiles`, `models`, `config-check`, `theme`, `ask`, `chat`,
-    `sessions`, `archive`, `unarchive`, `tags`, `export`, `export-folder`,
-    `backup`, `restore`, `doctor`.
+    `sessions`, `stats`, `archive`, `unarchive`, `tags`, `export`,
+    `export-folder`, `backup`, `restore`, `doctor`.
   - Interactive `chat` installs optional Readline completion for slash commands
     and context values when stdin is a TTY.
 - `telachat.commands`
@@ -159,6 +160,8 @@ telachat sessions --archived
 telachat sessions --all
 telachat sessions --sort newest|oldest|title|title-desc|provider
 telachat sessions --json
+telachat stats
+telachat stats --json
 telachat archive SESSION
 telachat unarchive SESSION
 telachat tags [SESSION]
@@ -193,12 +196,16 @@ presets for LM Studio, Ollama, and Jan. They are normal profiles and may fail
 `config-check --profile NAME --strict` narrows strict secret validation to one
 profile, which is useful when optional provider presets are intentionally not
 configured.
-`profiles`, `models`, `config-check`, `sessions`, `folders`, `export`,
-`export-folder`, and `doctor` also support `--json` for agent/script
+`profiles`, `models`, `config-check`, `sessions`, `stats`, `folders`,
+`export`, `export-folder`, and `doctor` also support `--json` for agent/script
 consumption. JSON output is redacted where it contains provider configuration;
 folder system prompts are
 included only when `folders --show-system --json` is requested or when exporting
 that folder as a portable data bundle.
+
+`stats` is read-only and does not include message content. It counts sessions,
+messages by role, folders, tag assignments, profile usage, and model usage so a
+local database can be inspected quickly from scripts.
 
 Sessions can also carry normalized tags in the `session_tags` table. Tags are
 many-to-one labels independent of folders; session search can match tags,
@@ -267,14 +274,15 @@ GUI slash commands:
 - Configured and live model inventory output.
 - GUI model-choice merge behavior after live model discovery.
 - Offline config-check behavior and strict missing-secret handling.
-- Redacted JSON output for profiles, models, config-check, sessions, folders, and
-  doctor.
+- Redacted JSON output for profiles, models, config-check, sessions, stats,
+  folders, and doctor.
 - API client against a local fake OpenAI-compatible HTTP server.
 - Non-streaming and streaming SSE responses.
 - SQLite session/message roundtrip, Markdown export, and selective folder export.
 - SQLite folder prompts, sorting and history-search behavior.
 - SQLite session tags, tag filtering/search, tag import/export, and tag counts.
 - SQLite session archive filtering, archive import/export, and legacy migration.
+- SQLite local statistics for content-free history inventory.
 - GUI archive filter wiring in Tk and GTK.
 - SQLite session model metadata, legacy migration, exports, and backend restore.
 - Latest user-message editing and post-edit answer removal.

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.36.0 - 2026-05-25
+
+- Add `telachat stats` for local, content-free history inventory.
+- Report counts for sessions, messages, folders, tags, profiles, and models.
+- Add JSON output and regression tests that verify message content and provider
+  secrets stay out of the statistics.
+- Integrate additional response-timing regression coverage for GTK status
+  updates and regenerate calls.
+
 ## 0.35.0 - 2026-05-25
 
 - Measure API response latency for send/regenerate operations.

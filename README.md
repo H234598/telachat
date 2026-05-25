@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.35.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.36.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -32,6 +32,7 @@ telachat models
 telachat config-check
 telachat config-check --json
 telachat theme
+telachat stats
 telachat backup
 telachat doctor --json
 ```
@@ -157,8 +158,8 @@ Im interaktiven Terminal-Chat nutzt Telachat Readline-Completion: `Tab`
 vervollstaendigt Slash-Befehle und passende Kontextwerte wie Profile, Modelle,
 Templates, Ordner, Session-IDs, Session-Titel und Sortiermodi.
 Fuer Skripte und Agenten liefern `profiles --json`, `models --json`,
-`config-check --json`, `sessions --json`, `folders --json`, `export --json`,
-`export-folder --json` und `doctor --json` strukturierte Daten;
+`config-check --json`, `sessions --json`, `stats --json`, `folders --json`,
+`export --json`, `export-folder --json` und `doctor --json` strukturierte Daten;
 Provider-/Secret-Konfiguration bleibt redaktiert.
 
 GUI-Themes werden dauerhaft ueber `theme = "system"` in `config.toml`
@@ -195,6 +196,8 @@ telachat sessions --archived
 telachat sessions --all
 telachat sessions --sort title
 telachat sessions --json
+telachat stats
+telachat stats --json
 telachat archive SESSION_ID
 telachat unarchive SESSION_ID
 telachat tags SESSION_ID --add projekt --add review
@@ -246,6 +249,7 @@ telachat config-check
 telachat config-check --strict
 telachat config-check --profile tki --strict
 telachat config-check --json
+telachat stats --json
 telachat doctor --json --chat
 telachat ask --template summarize "Langer Text..."
 ```

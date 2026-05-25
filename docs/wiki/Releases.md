@@ -1,5 +1,14 @@
 # Releases
 
+## 0.36.0 - 2026-05-25
+
+- `telachat stats` zeigt lokale Historienstatistiken ohne Nachrichtentexte.
+- Text- und JSON-Ausgabe zaehlen Sessions, Nachrichten, Ordner, Tags, Profile
+  und Modelle.
+- Tests sichern ab, dass weder Chat-Inhalte noch Secret-Felder in der Statistik
+  auftauchen.
+- Zusaetzliche Timing-Regressionstests pruefen GTK-Status und Regenerate.
+
 ## 0.35.0 - 2026-05-25
 
 - Send und Regenerate messen jetzt die API-Antwortzeit.

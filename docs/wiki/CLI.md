@@ -16,6 +16,7 @@ telachat config-check --json
 telachat theme
 telachat templates
 telachat folders
+telachat stats
 telachat doctor
 telachat doctor --json --chat
 telachat doctor --chat
@@ -48,7 +49,7 @@ Manifest; rohe Secrets und Envfiles bleiben draussen.
 `telachat restore` importiert die Backup-Historie additiv in die bestehende
 SQLite-Datenbank. Mit `--dry-run` wird nur gezaehlt.
 `profiles --json`, `models --json`, `config-check --json`, `sessions --json`,
-`folders --json`, `export --json`, `export-folder --json` und `doctor --json` liefern
+`stats --json`, `folders --json`, `export --json`, `export-folder --json` und `doctor --json` liefern
 strukturierte Daten fuer Skripte und Agenten; Provider-/Secret-Konfiguration
 bleibt redaktiert.
 
@@ -64,6 +65,8 @@ telachat sessions --archived
 telachat sessions --all
 telachat sessions --sort newest
 telachat sessions --json
+telachat stats
+telachat stats --json
 telachat archive SESSION_ID
 telachat unarchive SESSION_ID
 telachat tags
