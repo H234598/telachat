@@ -18,12 +18,31 @@ NODE24_MINIMUMS = {
 }
 
 
+def _workflow_files() -> list[Path]:
+    return sorted(WORKFLOW_DIR.glob("*.yml")) + sorted(WORKFLOW_DIR.glob("*.yaml"))
+
+
+def _release_upload_commands(lines: list[str]) -> list[tuple[int, str]]:
+    commands: list[tuple[int, str]] = []
+    index = 0
+    while index < len(lines):
+        command = lines[index].strip()
+        line_no = index + 1
+        if not command.startswith("gh release upload "):
+            index += 1
+            continue
+        while command.endswith("`") and index + 1 < len(lines):
+            command = command[:-1].rstrip() + " " + lines[index + 1].strip()
+            index += 1
+        commands.append((line_no, command))
+        index += 1
+    return commands
+
+
 class GitHubWorkflowTests(unittest.TestCase):
     def test_official_actions_use_node24_compatible_majors(self) -> None:
         failures: list[str] = []
-        for workflow in sorted(WORKFLOW_DIR.glob("*.yml")) + sorted(
-            WORKFLOW_DIR.glob("*.yaml")
-        ):
+        for workflow in _workflow_files():
             text = workflow.read_text(encoding="utf-8")
             for action, ref in USES_RE.findall(text):
                 minimum = NODE24_MINIMUMS.get(action.lower())
@@ -41,14 +60,9 @@ class GitHubWorkflowTests(unittest.TestCase):
 
     def test_release_uploads_do_not_use_raw_globs(self) -> None:
         failures: list[str] = []
-        for workflow in sorted(WORKFLOW_DIR.glob("*.yml")) + sorted(
-            WORKFLOW_DIR.glob("*.yaml")
-        ):
+        for workflow in _workflow_files():
             lines = workflow.read_text(encoding="utf-8").splitlines()
-            for line_no, line in enumerate(lines, 1):
-                command = line.strip()
-                if not command.startswith("gh release upload "):
-                    continue
+            for line_no, command in _release_upload_commands(lines):
                 if "*" in command:
                     failures.append(
                         f"{workflow.relative_to(ROOT)}:{line_no} resolves release "
@@ -57,6 +71,20 @@ class GitHubWorkflowTests(unittest.TestCase):
                     )
 
         self.assertEqual([], failures)
+
+    def test_release_upload_guard_follows_powershell_continuations(self) -> None:
+        commands = _release_upload_commands(
+            [
+                "          gh release upload $Tag `",
+                "            dist\\TelachatTk-*-windows-x64.zip `",
+                "            --clobber",
+            ]
+        )
+
+        self.assertEqual(
+            commands,
+            [(1, "gh release upload $Tag dist\\TelachatTk-*-windows-x64.zip --clobber")],
+        )
 
 
 if __name__ == "__main__":
