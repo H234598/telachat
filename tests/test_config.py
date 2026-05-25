@@ -1,0 +1,78 @@
+from __future__ import annotations
+
+import os
+import tempfile
+import unittest
+from pathlib import Path
+
+from telachat.config import ensure_default_config, load_config, redact_secret
+
+
+class ConfigTests(unittest.TestCase):
+    def test_default_config_loads(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            ensure_default_config(path)
+            cfg = load_config(path)
+            profile = cfg.profile()
+            self.assertEqual(profile.name, "tki")
+            self.assertEqual(profile.model, "gpt-4")
+            self.assertIn("Qwen/Qwen2.5-1.5B-Instruct", profile.models)
+            self.assertTrue(profile.base_url.endswith("/v1"))
+            self.assertIn("chatgpt", cfg.profiles)
+            self.assertIn("huggingface", cfg.profiles)
+            self.assertIn("openai", cfg.profiles)
+            self.assertIn("codex", cfg.profiles)
+            self.assertEqual(cfg.profiles["chatgpt"].api_mode, "responses")
+            self.assertEqual(cfg.profiles["codex"].api_mode, "codex")
+
+    def test_env_api_key_resolution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            path.write_text(
+                """
+default_profile = "local"
+[profiles.local]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "env:TELACHAT_TEST_KEY"
+model = "demo"
+""".strip(),
+                encoding="utf-8",
+            )
+            os.environ["TELACHAT_TEST_KEY"] = "secret-value"
+            try:
+                cfg = load_config(path)
+                self.assertEqual(cfg.profile().resolved_api_key(), "secret-value")
+            finally:
+                os.environ.pop("TELACHAT_TEST_KEY", None)
+
+    def test_envfile_api_key_resolution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            env_path = Path(tmp) / "openai.env"
+            env_path.write_text(
+                "OTHER=nope\nOPENAI_API_KEY='envfile-secret'\n",
+                encoding="utf-8",
+            )
+            path = Path(tmp) / "config.toml"
+            path.write_text(
+                f"""
+default_profile = "openai"
+[profiles.openai]
+base_url = "https://api.openai.com/v1"
+api_key = "envfile:{env_path}#OPENAI_API_KEY"
+model = "demo"
+""".strip(),
+                encoding="utf-8",
+            )
+            cfg = load_config(path)
+            self.assertEqual(cfg.profile().resolved_api_key(), "envfile-secret")
+
+    def test_redact_secret(self) -> None:
+        self.assertEqual(redact_secret("hf-space"), "<redacted>")
+        self.assertEqual(redact_secret("env:KEY"), "env:KEY")
+        self.assertEqual(redact_secret("envfile:/x#KEY"), "envfile:/x#KEY")
+        self.assertEqual(redact_secret("sk-1234567890"), "sk-...890")
+
+
+if __name__ == "__main__":
+    unittest.main()

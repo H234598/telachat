@@ -1,0 +1,486 @@
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+import textwrap
+from collections.abc import Iterable
+from pathlib import Path
+
+from .client import ApiError, ChatResult, OpenAICompatClient
+from .config import ConfigError, Profile, ensure_default_config, load_config, redact_secret
+from .defaults import APP_TITLE
+from .paths import config_path, db_path
+from .store import ChatStore, messages_for_api, title_from_prompt
+
+
+SESSION_SORTS = {
+    "newest": "updated_desc",
+    "oldest": "updated_asc",
+    "title": "title_asc",
+    "title-desc": "title_desc",
+    "provider": "profile_asc",
+}
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        return int(args.func(args) or 0)
+    except (ConfigError, ApiError, KeyboardInterrupt) as exc:
+        if isinstance(exc, KeyboardInterrupt):
+            print("\nAbgebrochen.", file=sys.stderr)
+            return 130
+        print(f"Fehler: {exc}", file=sys.stderr)
+        return 1
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="telachat",
+        description="Telachat: lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.",
+    )
+    parser.add_argument("--config", type=Path, default=None, help="Pfad zu config.toml")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_init = sub.add_parser("init", help="Standardkonfiguration anlegen")
+    p_init.add_argument("--force", action="store_true", help="Config ueberschreiben")
+    p_init.set_defaults(func=cmd_init)
+
+    p_profiles = sub.add_parser("profiles", help="Profile anzeigen")
+    p_profiles.set_defaults(func=cmd_profiles)
+
+    p_ask = sub.add_parser("ask", help="Einzelne Frage stellen")
+    add_chat_options(p_ask)
+    p_ask.add_argument("prompt", nargs="*", help="Prompt; leer liest interaktiv/stdin")
+    p_ask.add_argument("--stdin", action="store_true", help="Prompt aus stdin lesen")
+    p_ask.add_argument("--save", action="store_true", help="Frage und Antwort speichern")
+    p_ask.set_defaults(func=cmd_ask)
+
+    p_chat = sub.add_parser("chat", help="Interaktiven Chat starten")
+    add_chat_options(p_chat)
+    p_chat.add_argument("--session", "-s", help="Session-ID oder Prefix laden")
+    p_chat.add_argument("--new", action="store_true", help="Neue Session erzwingen")
+    p_chat.set_defaults(func=cmd_chat)
+
+    p_sessions = sub.add_parser("sessions", help="Gespeicherte Sessions anzeigen")
+    p_sessions.add_argument("--limit", type=int, default=20)
+    p_sessions.add_argument("--query", "-q", help="Titel, Provider oder Nachrichteninhalt suchen")
+    p_sessions.add_argument("--folder", help="Ordnername/-ID oder 'none' fuer Ohne Ordner")
+    p_sessions.add_argument(
+        "--sort",
+        choices=sorted(SESSION_SORTS),
+        default="newest",
+        help="Sortierung der Sessionliste",
+    )
+    p_sessions.set_defaults(func=cmd_sessions)
+
+    p_export = sub.add_parser("export", help="Session als Markdown exportieren")
+    p_export.add_argument("session", help="Session-ID oder Prefix")
+    p_export.add_argument("-o", "--output", type=Path, help="Ausgabedatei")
+    p_export.set_defaults(func=cmd_export)
+
+    p_doctor = sub.add_parser("doctor", help="Konfiguration/API pruefen")
+    p_doctor.add_argument("-p", "--profile", help="Profilname")
+    p_doctor.add_argument("--chat", action="store_true", help="Auch kurze Chat-Anfrage testen")
+    p_doctor.set_defaults(func=cmd_doctor)
+
+    p_gui = sub.add_parser("gui", help="GTK-GUI starten")
+    p_gui.set_defaults(func=cmd_gtk_gui)
+
+    p_gtk = sub.add_parser("gtk", help="GTK-GUI starten")
+    p_gtk.set_defaults(func=cmd_gtk_gui)
+
+    p_tk = sub.add_parser("tk", help="Tk-GUI starten")
+    p_tk.set_defaults(func=cmd_tk_gui)
+
+    return parser
+
+
+def add_chat_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("-p", "--profile", help="Profilname")
+    parser.add_argument("--model", help="Model-ID ueberschreiben")
+    parser.add_argument("--system", help="System-Prompt ueberschreiben")
+    parser.add_argument("--temperature", type=float, help="Sampling-Temperatur")
+    parser.add_argument("--max-tokens", type=int, help="Maximale neue Tokens")
+    parser.add_argument("--no-stream", action="store_true", help="Streaming deaktivieren")
+
+
+def cmd_init(args: argparse.Namespace) -> int:
+    path = ensure_default_config(args.config, force=args.force)
+    print(f"Konfiguration bereit: {path}")
+    print(f"Historie: {db_path()}")
+    return 0
+
+
+def cmd_profiles(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    print(f"Config: {cfg.path}")
+    for name in sorted(cfg.profiles):
+        profile = cfg.profiles[name]
+        marker = "*" if name == cfg.default_profile else " "
+        print(f"{marker} {name} ({profile.display_name})")
+        print(f"    base_url: {profile.base_url}")
+        print(f"    model:    {profile.model}")
+        print(f"    api_key:  {redact_secret(profile.api_key)}")
+    return 0
+
+
+def cmd_ask(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    profile = _selected_profile(cfg, args)
+    system_prompt = args.system or cfg.default_system_prompt
+    prompt = _read_prompt(args.prompt, args.stdin)
+    if not prompt:
+        raise ConfigError("Kein Prompt angegeben.")
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": prompt},
+    ]
+    response = _run_chat(profile, messages, stream=not args.no_stream)
+    if args.save:
+        store = ChatStore()
+        try:
+            session = store.create_session(
+                title=title_from_prompt(prompt),
+                profile=profile.name,
+                system_prompt=system_prompt,
+            )
+            store.add_message(session.id, "user", prompt)
+            store.add_message(session.id, "assistant", response)
+            print(f"\n[gespeichert: {session.id}]", file=sys.stderr)
+        finally:
+            store.close()
+    return 0
+
+
+def cmd_chat(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    profile = _selected_profile(cfg, args)
+    system_prompt = args.system or cfg.default_system_prompt
+    store = ChatStore()
+    try:
+        store.delete_empty_sessions()
+        session = None
+        if args.session and not args.new:
+            session = store.get_session(args.session)
+            if session is None:
+                raise ConfigError(f"Session nicht eindeutig gefunden: {args.session}")
+            system_prompt = session.system_prompt
+            print(f"{APP_TITLE}: Session {session.id} geladen: {session.title}")
+        if session is None:
+            session = store.create_session(
+                title="Neue Unterhaltung",
+                profile=profile.name,
+                system_prompt=system_prompt,
+            )
+            print(f"{APP_TITLE}: Neue Session {session.id}. /help zeigt Befehle.")
+
+        while True:
+            try:
+                user_input = input("Du> ").strip()
+            except EOFError:
+                print()
+                break
+            if not user_input:
+                continue
+            if user_input.startswith("/"):
+                keep_going, profile, system_prompt, session = _handle_command(
+                    user_input,
+                    cfg,
+                    store,
+                    profile,
+                    system_prompt,
+                    session,
+                    stream=not args.no_stream,
+                )
+                if not keep_going:
+                    break
+                continue
+
+            if session.title == "Neue Unterhaltung":
+                session = _retitle_session(store, session.id, title_from_prompt(user_input))
+            store.add_message(session.id, "user", user_input)
+            history = store.messages(session.id, limit=cfg.max_history_messages)
+            messages = messages_for_api(system_prompt, history)
+            try:
+                print("KI> ", end="", flush=True)
+                answer = _run_chat(profile, messages, stream=not args.no_stream)
+            except ApiError as exc:
+                print(f"\nFehler: {exc}", file=sys.stderr)
+                continue
+            store.add_message(session.id, "assistant", answer)
+    finally:
+        store.delete_empty_sessions()
+        store.close()
+    return 0
+
+
+def cmd_sessions(args: argparse.Namespace) -> int:
+    store = ChatStore()
+    try:
+        store.delete_empty_sessions()
+        sessions = store.list_sessions(
+            args.limit,
+            folder_id=_resolve_folder_filter(store, args.folder),
+            sort=SESSION_SORTS[args.sort],
+            query=args.query,
+        )
+        if not sessions:
+            print("Keine Sessions gespeichert.")
+            return 0
+        for session in sessions:
+            pin = "*" if session.pinned else " "
+            print(f"{pin} {session.id}  {session.profile:12}  {session.title}")
+    finally:
+        store.close()
+    return 0
+
+
+def _resolve_folder_filter(store: ChatStore, folder: str | None) -> str | None:
+    if not folder:
+        return None
+    clean = folder.strip()
+    lower = clean.lower()
+    if lower in {"all", "alle", "*"}:
+        return None
+    if lower in {"none", "ohne", "ohne ordner", "unfiled"}:
+        return "__none__"
+    matches = [
+        item
+        for item in store.list_folders()
+        if item.id == clean
+        or item.id.startswith(clean)
+        or item.name.lower() == lower
+    ]
+    if len(matches) != 1:
+        raise ConfigError(f"Ordner nicht eindeutig gefunden: {folder}")
+    return matches[0].id
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    store = ChatStore()
+    try:
+        session = store.get_session(args.session)
+        if session is None:
+            raise ConfigError(f"Session nicht eindeutig gefunden: {args.session}")
+        markdown = store.export_markdown(session.id)
+        if args.output:
+            args.output.write_text(markdown, encoding="utf-8")
+            print(args.output)
+        else:
+            print(markdown, end="")
+    finally:
+        store.close()
+    return 0
+
+
+def cmd_doctor(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    profile = cfg.profile(args.profile)
+    print(f"{APP_TITLE} doctor")
+    print(f"Config: {cfg.path}")
+    print(f"SQLite: {db_path()}")
+    print(f"Profil: {profile.name} ({profile.display_name})")
+    print(f"API: {profile.base_url}")
+    print(f"Model: {profile.model}")
+    print(f"API-Key: {redact_secret(profile.api_key)}")
+    client = OpenAICompatClient(profile, retries=1)
+    models = client.list_models()
+    print(f"/models: ok ({', '.join(models) if models else 'keine IDs gemeldet'})")
+    if args.chat:
+        messages = [
+            {"role": "system", "content": cfg.default_system_prompt},
+            {"role": "user", "content": "Antworte nur mit: OK"},
+        ]
+        result = client.chat(messages, stream=False)
+        assert isinstance(result, ChatResult)
+        label = "/responses" if profile.api_mode == "responses" else "/chat/completions"
+        if profile.api_mode == "codex":
+            label = "codex exec"
+        print(f"{label}: ok ({result.content[:80]!r})")
+    return 0
+
+
+def cmd_gtk_gui(args: argparse.Namespace) -> int:
+    from .gtkgui import main as gtk_main
+
+    return gtk_main([])
+
+
+def cmd_tk_gui(args: argparse.Namespace) -> int:
+    from .tkgui import main as tk_main
+
+    return tk_main([])
+
+
+def _selected_profile(cfg: object, args: argparse.Namespace) -> Profile:
+    profile = cfg.profile(args.profile)
+    return profile.with_overrides(
+        model=args.model,
+        temperature=args.temperature,
+        max_tokens=args.max_tokens,
+        stream=False if args.no_stream else None,
+    )
+
+
+def _read_prompt(parts: Iterable[str], read_stdin: bool) -> str:
+    if read_stdin:
+        return sys.stdin.read().strip()
+    joined = " ".join(parts).strip()
+    if joined:
+        return joined
+    if not sys.stdin.isatty():
+        return sys.stdin.read().strip()
+    return input("Prompt> ").strip()
+
+
+def _run_chat(profile: Profile, messages: list[dict[str, str]], *, stream: bool) -> str:
+    client = OpenAICompatClient(profile, retries=1)
+    result = client.chat(messages, stream=stream)
+    if isinstance(result, ChatResult):
+        print(result.content)
+        return result.content
+    chunks = []
+    for chunk in result:
+        chunks.append(chunk)
+        print(chunk, end="", flush=True)
+    print()
+    return "".join(chunks)
+
+
+def _handle_command(
+    raw: str,
+    cfg: object,
+    store: ChatStore,
+    profile: Profile,
+    system_prompt: str,
+    session: object,
+    *,
+    stream: bool,
+) -> tuple[bool, Profile, str, object]:
+    command, _, rest = raw.partition(" ")
+    command = command.lower()
+    rest = rest.strip()
+    if command in {"/exit", "/quit", "/q"}:
+        return False, profile, system_prompt, session
+    if command == "/help":
+        print(
+            textwrap.dedent(
+                """
+                /help                 Befehle anzeigen
+                /exit                 Chat beenden
+                /new [Titel]          Neue Session starten
+                /sessions             Sessions anzeigen
+                /load <id-prefix>     Session laden
+                /pin                  Aktuelle Session anheften
+                /unpin                Aktuelle Session loesen
+                /regen                Letzte KI-Antwort neu generieren
+                /profile [name]       Profil anzeigen/wechseln
+                /profiles             Profile anzeigen
+                /system [prompt]      System-Prompt anzeigen/setzen
+                /history [n]          Letzte Nachrichten anzeigen
+                /export [datei.md]    Aktuelle Session exportieren
+                """
+            ).strip()
+        )
+    elif command == "/new":
+        title = rest or "Neue Unterhaltung"
+        session = store.create_session(
+            title=title, profile=profile.name, system_prompt=system_prompt
+        )
+        print(f"Neue Session: {session.id}")
+    elif command == "/sessions":
+        for item in store.list_sessions(20):
+            pin = "*" if item.pinned else " "
+            print(f"{pin} {item.id}  {item.profile:12}  {item.title}")
+    elif command == "/load":
+        if not rest:
+            print("Nutzung: /load <session-id-oder-prefix>")
+        else:
+            loaded = store.get_session(rest)
+            if loaded is None:
+                print("Session nicht eindeutig gefunden.")
+            else:
+                session = loaded
+                system_prompt = loaded.system_prompt
+                print(f"Geladen: {loaded.id} {loaded.title}")
+    elif command == "/pin":
+        session = store.set_session_pinned(session.id, True)
+        print("Session angeheftet.")
+    elif command == "/unpin":
+        session = store.set_session_pinned(session.id, False)
+        print("Session geloest.")
+    elif command in {"/regen", "/regenerate"}:
+        try:
+            _regenerate_session(
+                cfg=cfg,
+                store=store,
+                profile=profile,
+                system_prompt=system_prompt,
+                session=session,
+                stream=stream,
+            )
+        except ApiError as exc:
+            print(f"Fehler: {exc}", file=sys.stderr)
+    elif command == "/profile":
+        if not rest:
+            print(f"Aktiv: {profile.name} ({profile.display_name})")
+        else:
+            profile = cfg.profile(rest)
+            print(f"Aktiv: {profile.name} ({profile.display_name})")
+    elif command == "/profiles":
+        for name, item in sorted(cfg.profiles.items()):
+            marker = "*" if name == profile.name else " "
+            print(f"{marker} {name}: {item.base_url} model={item.model}")
+    elif command == "/system":
+        if rest:
+            system_prompt = rest
+            print("System-Prompt gesetzt.")
+        else:
+            print(system_prompt)
+    elif command == "/history":
+        limit = int(rest) if rest.isdigit() else 12
+        for message in store.messages(session.id, limit=limit):
+            who = "Du" if message.role == "user" else "KI"
+            print(f"{who}> {message.content}")
+    elif command == "/export":
+        output = Path(rest) if rest else Path(f"telachat-{session.id}.md")
+        output.write_text(store.export_markdown(session.id), encoding="utf-8")
+        print(output)
+    else:
+        print(f"Unbekannter Befehl: {command}. /help hilft.")
+    return True, profile, system_prompt, session
+
+
+def _retitle_session(store: ChatStore, session_id: str, title: str) -> object:
+    store.db.execute(
+        "UPDATE sessions SET title = ?, updated_at = strftime('%s','now') WHERE id = ?",
+        (title, session_id),
+    )
+    store.db.commit()
+    session = store.get_session(session_id)
+    if session is None:
+        raise ConfigError("Interner Fehler: Session nach Umbenennung fehlt.")
+    return session
+
+
+def _regenerate_session(
+    *,
+    cfg: object,
+    store: ChatStore,
+    profile: Profile,
+    system_prompt: str,
+    session: object,
+    stream: bool,
+) -> None:
+    store.delete_last_assistant_message(session.id)
+    history = store.messages(session.id, limit=cfg.max_history_messages)
+    if not any(message.role == "user" for message in history):
+        print("Keine Nutzernachricht zum Neu-Generieren vorhanden.")
+        return
+    messages = messages_for_api(system_prompt, history)
+    print("KI> ", end="", flush=True)
+    answer = _run_chat(profile, messages, stream=stream)
+    store.add_message(session.id, "assistant", answer)

@@ -1,0 +1,174 @@
+from __future__ import annotations
+
+import tempfile
+import threading
+import unittest
+import sqlite3
+from pathlib import Path
+
+from telachat.store import ChatStore, messages_for_api, title_from_prompt
+
+
+class StoreTests(unittest.TestCase):
+    def test_session_message_roundtrip(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                session = store.create_session(
+                    title="Test", profile="tki", system_prompt="System"
+                )
+                store.add_message(session.id, "user", "Hallo")
+                store.add_message(session.id, "assistant", "Hi")
+                messages = store.messages(session.id)
+                self.assertEqual([m.role for m in messages], ["user", "assistant"])
+                deleted = store.delete_last_assistant_message(session.id)
+                self.assertIsNotNone(deleted)
+                assert deleted is not None
+                self.assertEqual(deleted.content, "Hi")
+                self.assertEqual([m.role for m in store.messages(session.id)], ["user"])
+                self.assertIsNone(store.delete_last_assistant_message(session.id))
+                store.add_message(session.id, "assistant", "Hi")
+                messages = store.messages(session.id)
+                api_messages = messages_for_api("System", messages)
+                self.assertEqual(api_messages[0]["role"], "system")
+                self.assertEqual(api_messages[-1]["content"], "Hi")
+                exported = store.export_markdown(session.id)
+                self.assertIn("# Telachat Session", exported)
+                self.assertIn("Hallo", exported)
+            finally:
+                store.close()
+
+    def test_title_from_prompt(self) -> None:
+        self.assertEqual(title_from_prompt("  hallo   welt "), "hallo welt")
+        self.assertEqual(title_from_prompt(""), "Neue Unterhaltung")
+        self.assertLessEqual(len(title_from_prompt("x" * 200)), 64)
+
+    def test_folders_sorting_and_search(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                work = store.create_folder(" Arbeit ")
+                again = store.create_folder("arbeit")
+                self.assertEqual(work.id, again.id)
+
+                alpha = store.create_session(
+                    title="Alpha", profile="openai", system_prompt="System", folder_id=work.id
+                )
+                beta = store.create_session(
+                    title="Beta", profile="huggingface", system_prompt="System"
+                )
+                store.add_message(alpha.id, "user", "Projektplan")
+                store.add_message(beta.id, "user", "Notiz")
+
+                self.assertEqual(
+                    [session.id for session in store.list_sessions(folder_id=work.id)],
+                    [alpha.id],
+                )
+                self.assertEqual(
+                    [session.id for session in store.list_sessions(folder_id="__none__")],
+                    [beta.id],
+                )
+                self.assertEqual(
+                    [session.title for session in store.list_sessions(sort="title_asc")],
+                    ["Alpha", "Beta"],
+                )
+                pinned = store.set_session_pinned(beta.id, True)
+                self.assertTrue(pinned.pinned)
+                self.assertEqual(
+                    [session.title for session in store.list_sessions(sort="title_asc")],
+                    ["Beta", "Alpha"],
+                )
+                unpinned = store.set_session_pinned(beta.id, False)
+                self.assertFalse(unpinned.pinned)
+                self.assertEqual(
+                    [session.title for session in store.list_sessions(sort="title_asc")],
+                    ["Alpha", "Beta"],
+                )
+                self.assertEqual(
+                    [session.id for session in store.list_sessions(query="projekt")],
+                    [alpha.id],
+                )
+
+                moved = store.move_session(beta.id, work.id)
+                self.assertEqual(moved.folder_id, work.id)
+                self.assertEqual(len(store.list_sessions(folder_id=work.id)), 2)
+
+                renamed = store.update_session_title(alpha.id, "Alpha neu")
+                self.assertEqual(renamed.title, "Alpha neu")
+                renamed_folder = store.update_folder_name(work.id, "Projekte")
+                self.assertEqual(renamed_folder.name, "Projekte")
+                store.delete_folder(work.id)
+                self.assertEqual(store.list_folders(), [])
+                self.assertEqual(len(store.list_sessions(folder_id="__none__")), 2)
+                store.delete_session(alpha.id)
+                self.assertIsNone(store.get_session(alpha.id))
+            finally:
+                store.close()
+
+    def test_store_can_be_used_from_worker_thread(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            errors: list[BaseException] = []
+            try:
+                session = store.create_session(
+                    title="Thread", profile="tki", system_prompt="System"
+                )
+
+                def worker() -> None:
+                    try:
+                        store.add_message(session.id, "user", "Hallo aus dem Thread")
+                        store.messages(session.id)
+                    except BaseException as exc:
+                        errors.append(exc)
+
+                thread = threading.Thread(target=worker)
+                thread.start()
+                thread.join(timeout=5)
+                self.assertFalse(thread.is_alive())
+                self.assertEqual(errors, [])
+                self.assertEqual(len(store.messages(session.id)), 1)
+            finally:
+                store.close()
+
+    def test_legacy_database_adds_pinned_column(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "history.sqlite3"
+            db = sqlite3.connect(path)
+            try:
+                db.execute(
+                    """
+                    CREATE TABLE sessions (
+                        id TEXT PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        profile TEXT NOT NULL,
+                        system_prompt TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        folder_id TEXT
+                    )
+                    """
+                )
+                db.execute(
+                    """
+                    INSERT INTO sessions(id, title, profile, system_prompt, created_at, updated_at, folder_id)
+                    VALUES ('legacy', 'Legacy', 'tki', 'System', 1, 1, NULL)
+                    """
+                )
+                db.commit()
+            finally:
+                db.close()
+
+            store = ChatStore(path)
+            try:
+                session = store.get_session("legacy")
+                self.assertIsNotNone(session)
+                assert session is not None
+                self.assertFalse(session.pinned)
+                pinned = store.set_session_pinned(session.id, True)
+                self.assertTrue(pinned.pinned)
+            finally:
+                store.close()
+
+
+if __name__ == "__main__":
+    unittest.main()

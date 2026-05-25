@@ -1,0 +1,208 @@
+from __future__ import annotations
+
+import os
+import stat
+import tomllib
+from dataclasses import dataclass, replace
+from pathlib import Path
+from typing import Any
+
+from .defaults import DEFAULT_CONFIG, DEFAULT_PROFILE, DEFAULT_SYSTEM_PROMPT
+from .paths import config_path
+
+
+class ConfigError(RuntimeError):
+    pass
+
+
+@dataclass(frozen=True)
+class Profile:
+    name: str
+    label: str
+    base_url: str
+    api_key: str
+    model: str
+    models: list[str] | None = None
+    temperature: float = 0.2
+    top_p: float = 0.9
+    max_tokens: int = 512
+    timeout_seconds: int = 300
+    stream: bool = True
+    api_mode: str = "chat_completions"
+    extra_headers: dict[str, str] | None = None
+
+    @property
+    def display_name(self) -> str:
+        return self.label or self.name
+
+    def resolved_api_key(self) -> str:
+        key = self.api_key or ""
+        if key.startswith("env:"):
+            env_name = key[4:].strip()
+            return os.environ.get(env_name, "")
+        if key.startswith("envfile:"):
+            return _read_envfile_secret(key[8:].strip())
+        if key.startswith("file:"):
+            file_name = key[5:].strip()
+            return Path(file_name).expanduser().read_text(encoding="utf-8").strip()
+        return key
+
+    def with_overrides(
+        self,
+        *,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        stream: bool | None = None,
+    ) -> "Profile":
+        updates: dict[str, Any] = {}
+        if model is not None:
+            updates["model"] = model
+        if temperature is not None:
+            updates["temperature"] = temperature
+        if max_tokens is not None:
+            updates["max_tokens"] = max_tokens
+        if stream is not None:
+            updates["stream"] = stream
+        return replace(self, **updates)
+
+
+@dataclass(frozen=True)
+class AppConfig:
+    path: Path
+    default_profile: str
+    default_system_prompt: str
+    max_history_messages: int
+    profiles: dict[str, Profile]
+
+    def profile(self, name: str | None = None) -> Profile:
+        wanted = name or self.default_profile
+        try:
+            return self.profiles[wanted]
+        except KeyError as exc:
+            available = ", ".join(sorted(self.profiles)) or "<none>"
+            raise ConfigError(
+                f"Profil '{wanted}' existiert nicht. Verfuegbar: {available}"
+            ) from exc
+
+
+def ensure_default_config(path: Path | None = None, *, force: bool = False) -> Path:
+    target = path or config_path()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists() and not force:
+        return target
+    target.write_text(DEFAULT_CONFIG, encoding="utf-8")
+    try:
+        target.chmod(stat.S_IRUSR | stat.S_IWUSR)
+    except PermissionError:
+        pass
+    return target
+
+
+def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
+    target = path or config_path()
+    if create:
+        ensure_default_config(target)
+    if not target.exists():
+        raise ConfigError(f"Konfigurationsdatei fehlt: {target}")
+    try:
+        raw = tomllib.loads(target.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as exc:
+        raise ConfigError(f"Ungueltige TOML-Konfiguration in {target}: {exc}") from exc
+
+    profile_blocks = raw.get("profiles")
+    if not isinstance(profile_blocks, dict) or not profile_blocks:
+        raise ConfigError("Konfiguration braucht mindestens einen [profiles.NAME]-Block.")
+
+    profiles: dict[str, Profile] = {}
+    for name, values in profile_blocks.items():
+        if not isinstance(values, dict):
+            raise ConfigError(f"Profil '{name}' ist kein TOML-Objekt.")
+        base_url = _required_string(values, "base_url", name).rstrip("/")
+        api_key = str(values.get("api_key", ""))
+        model = _required_string(values, "model", name)
+        headers = values.get("headers")
+        if headers is not None:
+            if not isinstance(headers, dict) or not all(
+                isinstance(k, str) and isinstance(v, str) for k, v in headers.items()
+            ):
+                raise ConfigError(f"Profil '{name}' hat ungueltige headers.")
+            extra_headers = dict(headers)
+        else:
+            extra_headers = None
+        profiles[name] = Profile(
+            name=name,
+            label=str(values.get("label", name)),
+            base_url=base_url,
+            api_key=api_key,
+            model=model,
+            models=_models(values, model, name),
+            temperature=float(values.get("temperature", 0.2)),
+            top_p=float(values.get("top_p", 0.9)),
+            max_tokens=int(values.get("max_tokens", 512)),
+            timeout_seconds=int(values.get("timeout_seconds", 300)),
+            stream=bool(values.get("stream", True)),
+            api_mode=str(values.get("api_mode", "chat_completions")),
+            extra_headers=extra_headers,
+        )
+
+    default_profile = str(raw.get("default_profile", DEFAULT_PROFILE))
+    if default_profile not in profiles:
+        default_profile = next(iter(profiles))
+    return AppConfig(
+        path=target,
+        default_profile=default_profile,
+        default_system_prompt=str(raw.get("default_system_prompt", DEFAULT_SYSTEM_PROMPT)),
+        max_history_messages=int(raw.get("max_history_messages", 24)),
+        profiles=profiles,
+    )
+
+
+def redact_secret(value: str) -> str:
+    if not value:
+        return "<empty>"
+    if value.startswith(("env:", "envfile:", "file:")):
+        return value
+    if len(value) <= 8:
+        return "<redacted>"
+    return f"{value[:3]}...{value[-3:]}"
+
+
+def _required_string(values: dict[str, Any], key: str, profile_name: str) -> str:
+    value = values.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise ConfigError(f"Profil '{profile_name}' braucht '{key}'.")
+    return value.strip()
+
+
+def _models(values: dict[str, Any], default_model: str, profile_name: str) -> list[str]:
+    raw = values.get("models")
+    if raw is None:
+        return [default_model]
+    if not isinstance(raw, list) or not all(isinstance(item, str) for item in raw):
+        raise ConfigError(f"Profil '{profile_name}' hat ungueltige models-Liste.")
+    clean = [item.strip() for item in raw if item.strip()]
+    if default_model not in clean:
+        clean.insert(0, default_model)
+    return clean
+
+
+def _read_envfile_secret(spec: str) -> str:
+    if "#" in spec:
+        file_name, env_name = spec.rsplit("#", 1)
+    elif ":" in spec:
+        file_name, env_name = spec.rsplit(":", 1)
+    else:
+        raise ConfigError("envfile braucht Format envfile:/pfad#VARIABLE.")
+    file_path = Path(file_name).expanduser()
+    wanted = env_name.strip()
+    if not wanted:
+        raise ConfigError("envfile braucht einen Variablennamen.")
+    for raw_line in file_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        name, value = line.split("=", 1)
+        if name.strip().removeprefix("export ").strip() == wanted:
+            return value.strip().strip("\"'")
+    return ""

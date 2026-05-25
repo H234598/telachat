@@ -1,0 +1,126 @@
+# Telachat architecture
+
+## Components
+
+- `telachat.config`
+  - Reads `config.toml` using `tomllib`.
+  - Validates provider profiles.
+  - Resolves API keys from literal values, `env:NAME`, or `file:/path`.
+- `telachat.client`
+  - Minimal OpenAI-compatible HTTP client.
+  - Supports `/models`, non-streaming chat, and SSE streaming chat.
+  - Reduces dependency risk by avoiding external SDKs.
+- `telachat.store`
+  - SQLite-backed session and message history.
+  - Enables folders, session listing, search, loading, and Markdown export.
+- `telachat.cli`
+  - `init`, `profiles`, `ask`, `chat`, `sessions`, `export`, `doctor`.
+- `telachat.controller`
+  - Shared application service for GUI frontends.
+- `telachat.gtkgui`
+  - Native GTK4/Libadwaita desktop GUI.
+- `telachat.tkgui`
+  - Native Tk/ttk desktop GUI and Windows packaging target.
+
+## Data model
+
+SQLite tables:
+
+- `sessions`
+  - `id`, `title`, `profile`, `system_prompt`, `created_at`, `updated_at`, `folder_id`, `pinned`
+- `folders`
+  - `id`, `name`, `created_at`, `updated_at`
+- `messages`
+  - `id`, `session_id`, `role`, `content`, `created_at`, `metadata`
+
+Only chat content is stored. API keys are not copied into SQLite.
+Empty sessions are pruned automatically when controllers start/close and by
+CLI cleanup paths, but GUI list refreshes keep freshly-created empty chats
+alive so "Neu" is not immediately undone.
+
+## Configuration
+
+Default path:
+
+```text
+~/.config/telachat/config.toml
+```
+
+Default profile:
+
+```toml
+[profiles.tki]
+label = "TKI"
+base_url = "https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1"
+api_key = "envfile:/home/teladi/.config/telachat/qwen.env#TELACHAT_QWEN_API_KEY"
+model = "gpt-4"
+```
+
+Additional built-in profiles:
+
+- `chatgpt`: OpenAI `/v1` Responses API using an env/envfile key, default model `gpt-5.5`.
+- `openai`: OpenAI `/v1` Responses API using an env/envfile key, default model `gpt-5.4-mini`.
+- `huggingface`: Hugging Face Space `/v1`, model list centered on Qwen.
+- `codex`: local `codex exec` bridge. This is not OpenAI-compatible HTTP.
+
+GUI frontends expose profiles as providers and `Profile.models` as the second
+model-selection step. They also expose folder filtering, sorting, text search,
+chat pinning, and a slash-command path through the same composer used for
+prompts. The left chat/provider pane and the right system pane are real
+resizable split panes rather than fixed sidebars.
+
+For real credentials, prefer:
+
+```toml
+api_key = "env:PROVIDER_API_KEY"
+```
+
+## Operational commands
+
+```sh
+telachat init
+telachat profiles
+telachat doctor
+telachat doctor --chat
+telachat ask "Hallo"
+telachat chat
+telachat-gtk
+telachat-tk
+telachat sessions
+telachat sessions --query TEXT
+telachat sessions --folder NAME
+telachat sessions --sort newest|oldest|title|title-desc|provider
+telachat export <session-id>
+```
+
+GUI slash commands:
+
+```text
+/new | /neu
+/rename TITLE
+/delete
+/pin | /unpin
+/regen | /regenerate
+/folder NAME | /ordner NAME
+/rename-folder NAME
+/delete-folder
+/move NAME | /ablegen NAME
+/unfile
+/sort newest|oldest|title|title-desc|provider
+/search TEXT
+/provider NAME
+/model NAME
+/left | /links
+/system
+```
+
+## Test strategy
+
+- Config parsing and secret redaction.
+- API client against a local fake OpenAI-compatible HTTP server.
+- Non-streaming and streaming SSE responses.
+- SQLite session/message roundtrip and Markdown export.
+- SQLite folder, sorting and history-search behavior.
+- CLI init/profile behavior with temporary XDG directories.
+- Bytecode compilation and zipapp packaging.
+- Optional live `doctor --chat` against the configured HF Space.

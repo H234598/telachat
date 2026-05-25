@@ -1,0 +1,835 @@
+from __future__ import annotations
+
+import argparse
+import threading
+
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
+
+from .controller import TelachatController
+from .store import Message, Session
+
+
+class GtkTelachatApp(Adw.Application):
+    def __init__(self) -> None:
+        super().__init__(
+            application_id="de.teladi.Telachat",
+            flags=Gio.ApplicationFlags.NON_UNIQUE,
+        )
+        self.controller: TelachatController | None = None
+        self.active_session: Session | None = None
+        self.messages: list[Message] = []
+        self.sessions: list[Session] = []
+        self.folder_display_to_id: dict[str, str | None] = {}
+        self.sort_keys = {
+            "Neueste zuerst": "updated_desc",
+            "Aelteste zuerst": "updated_asc",
+            "Titel A-Z": "title_asc",
+            "Titel Z-A": "title_desc",
+            "Provider": "profile_asc",
+        }
+        self.connect("activate", self.on_activate)
+
+    def on_activate(self, _app: Adw.Application) -> None:
+        self.controller = TelachatController()
+        self._install_css()
+        self.window = Adw.ApplicationWindow(application=self)
+        self.window.set_title("Telachat GTK")
+        self.window.set_default_size(1120, 720)
+        self.window.connect("close-request", self.on_close)
+
+        toolbar = Adw.ToolbarView()
+        header = Adw.HeaderBar()
+        header.set_title_widget(Gtk.Label(label="Telachat GTK"))
+        sidebar_button = Gtk.Button(label="☰")
+        sidebar_button.connect("clicked", self.on_toggle_sidebar)
+        header.pack_start(sidebar_button)
+        system_button = Gtk.Button(label="System")
+        system_button.connect("clicked", self.on_toggle_settings)
+        header.pack_end(system_button)
+        toolbar.add_top_bar(header)
+
+        self.outer_paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.outer_paned.set_wide_handle(True)
+        self.outer_paned.set_resize_start_child(False)
+        self.outer_paned.set_resize_end_child(True)
+        self.outer_paned.set_shrink_start_child(False)
+        self.outer_paned.set_shrink_end_child(False)
+
+        self.inner_paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.inner_paned.set_wide_handle(True)
+        self.inner_paned.set_resize_start_child(True)
+        self.inner_paned.set_resize_end_child(False)
+        self.inner_paned.set_shrink_start_child(False)
+        self.inner_paned.set_shrink_end_child(False)
+
+        toolbar.set_content(self.outer_paned)
+        self.window.set_content(toolbar)
+
+        self.sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.sidebar.set_size_request(280, -1)
+        self.sidebar.set_margin_top(14)
+        self.sidebar.set_margin_bottom(14)
+        self.sidebar.set_margin_start(14)
+        self.sidebar.set_margin_end(14)
+        self.outer_paned.set_start_child(self.sidebar)
+        self.outer_paned.set_end_child(self.inner_paned)
+
+        self.status = Gtk.Label(label="Bereit", xalign=0)
+        self.status.add_css_class("dim-label")
+        self.sidebar.append(self.status)
+
+        self.profile_names = []
+        profile_labels = []
+        for name, profile in sorted(self.controller.profiles().items()):
+            self.profile_names.append(name)
+            profile_labels.append(profile.display_name)
+        self.sidebar.append(Gtk.Label(label="Provider", xalign=0))
+        self.profile_dropdown = Gtk.DropDown.new(Gtk.StringList.new(profile_labels), None)
+        try:
+            selected = self.profile_names.index(self.controller.default_profile_name())
+        except ValueError:
+            selected = 0
+        self.profile_dropdown.set_selected(selected)
+        self.profile_dropdown.connect("notify::selected", self.on_profile_changed)
+        self.sidebar.append(self.profile_dropdown)
+
+        self.sidebar.append(Gtk.Label(label="Modell", xalign=0))
+        self.model_names: list[str] = []
+        self.model_dropdown = Gtk.DropDown()
+        self.sidebar.append(self.model_dropdown)
+        self.refresh_models()
+
+        self.sidebar.append(Gtk.Label(label="Ordner", xalign=0))
+        self.folder_dropdown = Gtk.DropDown()
+        self.folder_dropdown.connect("notify::selected", self.on_filter_changed)
+        self.sidebar.append(self.folder_dropdown)
+
+        self.sidebar.append(Gtk.Label(label="Sortierung", xalign=0))
+        self.sort_dropdown = Gtk.DropDown.new(Gtk.StringList.new(list(self.sort_keys)), None)
+        self.sort_dropdown.set_selected(0)
+        self.sort_dropdown.connect("notify::selected", self.on_filter_changed)
+        self.sidebar.append(self.sort_dropdown)
+
+        self.sidebar.append(Gtk.Label(label="Suche", xalign=0))
+        self.search_entry = Gtk.SearchEntry()
+        self.search_entry.connect("search-changed", self.on_filter_changed)
+        self.sidebar.append(self.search_entry)
+
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.sidebar.append(row)
+        new_button = Gtk.Button(label="Neu")
+        new_button.connect("clicked", self.on_new)
+        row.append(new_button)
+        check_button = Gtk.Button(label="Check")
+        check_button.connect("clicked", self.on_doctor)
+        row.append(check_button)
+
+        folder_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.sidebar.append(folder_row)
+        create_folder_button = Gtk.Button(label="Ordner +")
+        create_folder_button.connect("clicked", self.on_create_folder)
+        folder_row.append(create_folder_button)
+        move_button = Gtk.Button(label="Ablegen")
+        move_button.connect("clicked", self.on_move_active_to_folder)
+        folder_row.append(move_button)
+
+        folder_manage_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.sidebar.append(folder_manage_row)
+        rename_folder_button = Gtk.Button(label="Ordner um")
+        rename_folder_button.connect("clicked", self.on_rename_selected_folder)
+        folder_manage_row.append(rename_folder_button)
+        delete_folder_button = Gtk.Button(label="Ordner -")
+        delete_folder_button.connect("clicked", self.on_delete_selected_folder)
+        folder_manage_row.append(delete_folder_button)
+
+        self.session_list = Gtk.ListBox()
+        self.session_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self.session_list.connect("row-selected", self.on_session_selected)
+        sc_sessions = Gtk.ScrolledWindow()
+        sc_sessions.set_child(self.session_list)
+        sc_sessions.set_vexpand(True)
+        self.sidebar.append(sc_sessions)
+
+        main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        main.set_margin_top(14)
+        main.set_margin_bottom(14)
+        main.set_margin_start(10)
+        main.set_margin_end(10)
+        main.set_hexpand(True)
+        self.inner_paned.set_start_child(main)
+
+        top = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        main.append(top)
+        self.title_label = Gtk.Label(label="Neue Unterhaltung", xalign=0)
+        self.title_label.add_css_class("title-2")
+        self.title_label.set_hexpand(True)
+        top.append(self.title_label)
+        self.pin_button = Gtk.Button(label="Pin")
+        self.pin_button.connect("clicked", self.on_toggle_pin_active_session)
+        top.append(self.pin_button)
+        regenerate_button = Gtk.Button(label="Regenerieren")
+        regenerate_button.connect("clicked", self.on_regenerate_active_session)
+        top.append(regenerate_button)
+        rename_button = Gtk.Button(label="Titel")
+        rename_button.connect("clicked", self.on_rename_active_session)
+        top.append(rename_button)
+        delete_button = Gtk.Button(label="Loeschen")
+        delete_button.connect("clicked", self.on_delete_active_session)
+        top.append(delete_button)
+        export_button = Gtk.Button(label="Export")
+        export_button.connect("clicked", self.on_export)
+        top.append(export_button)
+
+        self.chat_view = Gtk.TextView()
+        self.chat_view.set_editable(False)
+        self.chat_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self.chat_buffer = self.chat_view.get_buffer()
+        sc_chat = Gtk.ScrolledWindow()
+        sc_chat.set_child(self.chat_view)
+        sc_chat.set_vexpand(True)
+        main.append(sc_chat)
+
+        composer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        main.append(composer)
+        self.input_view = Gtk.TextView()
+        self.input_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self.input_view.set_size_request(-1, 90)
+        self.input_view.set_hexpand(True)
+        input_keys = Gtk.EventControllerKey()
+        input_keys.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        input_keys.connect("key-pressed", self.on_input_key_pressed)
+        self.input_view.add_controller(input_keys)
+        composer.append(self.input_view)
+        self.send_button = Gtk.Button(label="Senden")
+        self.send_button.connect("clicked", self.on_send)
+        composer.append(self.send_button)
+
+        self.settings = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        self.settings.set_size_request(300, -1)
+        self.settings.set_margin_top(14)
+        self.settings.set_margin_bottom(14)
+        self.settings.set_margin_start(10)
+        self.settings.set_margin_end(14)
+        self.inner_paned.set_end_child(self.settings)
+        self.settings.append(Gtk.Label(label="System", xalign=0))
+        self.system_view = Gtk.TextView()
+        self.system_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self.system_buffer = self.system_view.get_buffer()
+        self.system_buffer.set_text(self.controller.system_prompt())
+        sc_system = Gtk.ScrolledWindow()
+        sc_system.set_child(self.system_view)
+        sc_system.set_vexpand(True)
+        self.settings.append(sc_system)
+
+        self.refresh_folders()
+        self.refresh_sessions()
+        if self.sessions:
+            self.load_session(self.sessions[0].id)
+        else:
+            self.render_messages()
+        self.window.present()
+        GLib.idle_add(self._set_initial_panes)
+
+    def _install_css(self) -> None:
+        provider = Gtk.CssProvider()
+        provider.load_from_data(
+            b"""
+            paned > separator {
+                background: alpha(@theme_fg_color, 0.18);
+                min-width: 12px;
+                min-height: 12px;
+            }
+            paned > separator:hover {
+                background: alpha(@accent_color, 0.45);
+            }
+            """
+        )
+        display = Gdk.Display.get_default()
+        if display is not None:
+            Gtk.StyleContext.add_provider_for_display(
+                display,
+                provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+            )
+
+    def on_close(self, _window: Adw.ApplicationWindow) -> bool:
+        if self.controller:
+            self.controller.close()
+        return False
+
+    def selected_profile(self) -> str:
+        selected = self.profile_dropdown.get_selected()
+        if selected < len(self.profile_names):
+            return self.profile_names[selected]
+        return self.controller.default_profile_name()
+
+    def selected_model(self) -> str:
+        selected = self.model_dropdown.get_selected()
+        if selected < len(self.model_names):
+            return self.model_names[selected]
+        return self.controller.config.profile(self.selected_profile()).model
+
+    def refresh_models(self) -> None:
+        profile = self.controller.config.profile(self.selected_profile())
+        self.model_names = profile.models or [profile.model]
+        self.model_dropdown.set_model(Gtk.StringList.new(self.model_names))
+        try:
+            selected = self.model_names.index(profile.model)
+        except ValueError:
+            selected = 0
+        self.model_dropdown.set_selected(selected)
+
+    def on_profile_changed(self, *_args: object) -> None:
+        self.refresh_models()
+
+    def on_filter_changed(self, *_args: object) -> None:
+        self.refresh_sessions()
+
+    def selected_sort(self) -> str:
+        selected = self.sort_dropdown.get_selected()
+        labels = list(self.sort_keys)
+        if selected < len(labels):
+            return self.sort_keys[labels[selected]]
+        return "updated_desc"
+
+    def selected_folder_id(self, *, for_new: bool = False) -> str | None:
+        selected = self.folder_dropdown.get_selected()
+        labels = list(self.folder_display_to_id)
+        if selected >= len(labels):
+            return None
+        value = self.folder_display_to_id[labels[selected]]
+        if value in {"__all__", "__none__"}:
+            return None if for_new else value
+        return value
+
+    def selected_folder_value(self) -> str | None:
+        selected = self.folder_dropdown.get_selected()
+        labels = list(self.folder_display_to_id)
+        if selected < len(labels):
+            return self.folder_display_to_id[labels[selected]]
+        return "__all__"
+
+    def refresh_folders(self) -> None:
+        selected_value = self.selected_folder_value() if hasattr(self, "folder_dropdown") else "__all__"
+        self.folder_display_to_id = {"Alle": "__all__", "Ohne Ordner": "__none__"}
+        for folder in self.controller.list_folders():
+            self.folder_display_to_id[folder.name] = folder.id
+        labels = list(self.folder_display_to_id)
+        self.folder_dropdown.set_model(Gtk.StringList.new(labels))
+        try:
+            selected = list(self.folder_display_to_id.values()).index(selected_value)
+        except ValueError:
+            selected = 0
+        self.folder_dropdown.set_selected(selected)
+
+    def select_folder(self, folder_id: str | None) -> None:
+        values = list(self.folder_display_to_id.values())
+        try:
+            selected = values.index("__none__" if folder_id is None else folder_id)
+        except ValueError:
+            selected = 0
+        self.folder_dropdown.set_selected(selected)
+
+    def system_prompt(self) -> str:
+        start = self.system_buffer.get_start_iter()
+        end = self.system_buffer.get_end_iter()
+        return self.system_buffer.get_text(start, end, True).strip()
+
+    def input_prompt(self) -> str:
+        buffer = self.input_view.get_buffer()
+        start = buffer.get_start_iter()
+        end = buffer.get_end_iter()
+        return buffer.get_text(start, end, True).strip()
+
+    def clear_input(self) -> None:
+        self.input_view.get_buffer().set_text("")
+
+    def set_busy(self, busy: bool, text: str) -> None:
+        self.status.set_text(text)
+        self.send_button.set_sensitive(not busy)
+
+    def refresh_sessions(self) -> None:
+        self.sessions = self.controller.list_sessions(
+            80,
+            folder_id=self.selected_folder_id(),
+            sort=self.selected_sort(),
+            query=self.search_entry.get_text() if hasattr(self, "search_entry") else "",
+        )
+        while row := self.session_list.get_row_at_index(0):
+            self.session_list.remove(row)
+        for session in self.sessions:
+            row = Gtk.ListBoxRow()
+            row.session_id = session.id
+            label = Gtk.Label(label=self.session_label(session), xalign=0)
+            label.set_margin_top(8)
+            label.set_margin_bottom(8)
+            label.set_margin_start(8)
+            label.set_margin_end(8)
+            row.set_child(label)
+            self.session_list.append(row)
+
+    def load_session(self, session_id: str) -> None:
+        self.active_session, self.messages = self.controller.get_session(session_id)
+        self.update_active_title()
+        self.render_messages()
+
+    def render_messages(self) -> None:
+        parts = []
+        if not self.messages:
+            parts.append("Bereit.\n")
+        for message in self.messages:
+            label = "Du" if message.role == "user" else "KI"
+            parts.append(f"{label}\n{message.content}\n\n")
+        self.chat_buffer.set_text("".join(parts))
+
+    def session_label(self, session: Session) -> str:
+        return ("* " if session.pinned else "") + session.title
+
+    def update_active_title(self) -> None:
+        if self.active_session:
+            self.title_label.set_text(self.session_label(self.active_session))
+            self.pin_button.set_label("Unpin" if self.active_session.pinned else "Pin")
+        else:
+            self.title_label.set_text("Neue Unterhaltung")
+            self.pin_button.set_label("Pin")
+
+    def on_session_selected(self, _listbox: Gtk.ListBox, row: Gtk.ListBoxRow | None) -> None:
+        if row is not None and hasattr(row, "session_id"):
+            self.load_session(row.session_id)
+
+    def on_new(self, _button: Gtk.Button) -> None:
+        self.active_session, self.messages = self.controller.new_session(
+            profile_name=self.selected_profile(),
+            system_prompt=self.system_prompt(),
+            folder_id=self.selected_folder_id(for_new=True),
+        )
+        self.update_active_title()
+        self.refresh_sessions()
+        self.render_messages()
+
+    def on_send(self, _button: Gtk.Button) -> None:
+        prompt = self.input_prompt()
+        if not prompt:
+            return
+        if prompt.startswith("/"):
+            self.clear_input()
+            self.handle_command(prompt)
+            return
+        profile_name = self.selected_profile()
+        model = self.selected_model()
+        system_prompt = self.system_prompt()
+        session_id = self.active_session.id if self.active_session else None
+        folder_id = self.selected_folder_id(for_new=True)
+        self.clear_input()
+        self.set_busy(True, "Denke...")
+        threading.Thread(
+            target=self._send_worker,
+            args=(prompt, profile_name, model, system_prompt, session_id, folder_id),
+            daemon=True,
+        ).start()
+
+    def on_input_key_pressed(
+        self,
+        _controller: Gtk.EventControllerKey,
+        keyval: int,
+        _keycode: int,
+        state: Gdk.ModifierType,
+    ) -> bool:
+        enter_pressed = keyval in {Gdk.KEY_Return, Gdk.KEY_KP_Enter}
+        if enter_pressed and state & Gdk.ModifierType.SHIFT_MASK:
+            self.on_send(self.send_button)
+            return True
+        return False
+
+    def _send_worker(
+        self,
+        prompt: str,
+        profile_name: str,
+        model: str,
+        system_prompt: str,
+        session_id: str | None,
+        folder_id: str | None,
+    ) -> None:
+        try:
+            payload = self.controller.send(
+                session_id=session_id,
+                profile_name=profile_name,
+                model=model,
+                system_prompt=system_prompt,
+                prompt=prompt,
+                folder_id=folder_id,
+            )
+            GLib.idle_add(self._send_done, payload)
+        except Exception as exc:
+            GLib.idle_add(self._error, exc)
+
+    def on_regenerate_active_session(self, _button: Gtk.Button) -> None:
+        if not self.active_session:
+            return
+        self.set_busy(True, "Generiere neu...")
+        threading.Thread(
+            target=self._regenerate_worker,
+            args=(
+                self.active_session.id,
+                self.selected_profile(),
+                self.selected_model(),
+                self.system_prompt(),
+            ),
+            daemon=True,
+        ).start()
+
+    def _regenerate_worker(
+        self,
+        session_id: str,
+        profile_name: str,
+        model: str,
+        system_prompt: str,
+    ) -> None:
+        try:
+            payload = self.controller.regenerate(
+                session_id=session_id,
+                profile_name=profile_name,
+                model=model,
+                system_prompt=system_prompt,
+            )
+            GLib.idle_add(self._send_done, payload)
+        except Exception as exc:
+            GLib.idle_add(self._error, exc)
+
+    def _send_done(self, payload: object) -> bool:
+        self.active_session = payload.session
+        self.messages = payload.messages
+        self.update_active_title()
+        self.refresh_sessions()
+        self.render_messages()
+        self.set_busy(False, "Bereit")
+        return GLib.SOURCE_REMOVE
+
+    def on_doctor(self, _button: Gtk.Button) -> None:
+        profile_name = self.selected_profile()
+        model = self.selected_model()
+        self.set_busy(True, "Pruefe...")
+        threading.Thread(target=self._doctor_worker, args=(profile_name, model), daemon=True).start()
+
+    def _doctor_worker(self, profile_name: str, model: str) -> None:
+        try:
+            models = self.controller.doctor(profile_name, model)
+            GLib.idle_add(self._doctor_done, models)
+        except Exception as exc:
+            GLib.idle_add(self._error, exc)
+
+    def _doctor_done(self, models: list[str]) -> bool:
+        self.set_busy(False, "OK: " + (", ".join(models) or "Modelle erreichbar"))
+        return GLib.SOURCE_REMOVE
+
+    def on_create_folder(self, _button: Gtk.Button) -> None:
+        self._entry_dialog(
+            title="Ordner anlegen",
+            label="Ordnername",
+            initial="",
+            callback=self.create_folder_from_name,
+        )
+
+    def create_folder_from_name(self, name: str) -> None:
+        folder = self.controller.create_folder(name)
+        self.refresh_folders()
+        self.select_folder(folder.id)
+        self.refresh_sessions()
+
+    def _entry_dialog(
+        self,
+        *,
+        title: str,
+        label: str,
+        initial: str,
+        callback: object,
+    ) -> None:
+        dialog = Gtk.Window(title=title)
+        dialog.set_transient_for(self.window)
+        dialog.set_modal(True)
+        dialog.set_default_size(340, 120)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        box.set_margin_top(14)
+        box.set_margin_bottom(14)
+        box.set_margin_start(14)
+        box.set_margin_end(14)
+        dialog.set_child(box)
+        entry = Gtk.Entry()
+        entry.set_text(initial)
+        box.append(Gtk.Label(label=label, xalign=0))
+        box.append(entry)
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        row.set_halign(Gtk.Align.END)
+        box.append(row)
+        cancel = Gtk.Button(label="Abbrechen")
+        cancel.connect("clicked", lambda _button: dialog.close())
+        row.append(cancel)
+        save = Gtk.Button(label="Anlegen")
+
+        def save_value(_button: Gtk.Button) -> None:
+            value = entry.get_text().strip()
+            if not value:
+                self.status.set_text("Eingabe fehlt.")
+                return
+            callback(value)
+            dialog.close()
+
+        save.connect("clicked", save_value)
+        row.append(save)
+        dialog.present()
+
+    def on_rename_selected_folder(self, _button: Gtk.Button) -> None:
+        selected = self.selected_folder_value()
+        labels = list(self.folder_display_to_id)
+        selected_index = self.folder_dropdown.get_selected()
+        if selected in {"__all__", "__none__", None} or selected_index >= len(labels):
+            self.status.set_text("Ordner waehlen.")
+            return
+
+        def rename(name: str) -> None:
+            folder = self.controller.rename_folder(selected, name)
+            self.refresh_folders()
+            self.select_folder(folder.id)
+            self.refresh_sessions()
+
+        self._entry_dialog(
+            title="Ordner umbenennen",
+            label="Neuer Ordnername",
+            initial=labels[selected_index],
+            callback=rename,
+        )
+
+    def on_delete_selected_folder(self, _button: Gtk.Button) -> None:
+        selected = self.selected_folder_value()
+        if selected in {"__all__", "__none__", None}:
+            self.status.set_text("Ordner waehlen.")
+            return
+        dialog = Adw.MessageDialog.new(self.window, "Telachat", "Ordner loeschen?")
+        dialog.add_response("cancel", "Abbrechen")
+        dialog.add_response("delete", "Loeschen")
+        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+
+        def on_response(_dialog: Adw.MessageDialog, response: str) -> None:
+            if response == "delete":
+                self.controller.delete_folder(selected)
+                self.refresh_folders()
+                self.folder_dropdown.set_selected(0)
+                self.refresh_sessions()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
+    def on_move_active_to_folder(self, _button: Gtk.Button) -> None:
+        if not self.active_session:
+            return
+        selected = self.selected_folder_value()
+        if selected == "__all__":
+            self.status.set_text("Ordner waehlen oder /move NAME nutzen.")
+            return
+        folder_id = None if selected == "__none__" else selected
+        self.active_session = self.controller.move_session(self.active_session.id, folder_id)
+        self.refresh_sessions()
+        self.status.set_text("Chat abgelegt.")
+
+    def on_rename_active_session(self, _button: Gtk.Button) -> None:
+        if not self.active_session:
+            return
+
+        def rename(title: str) -> None:
+            self.active_session = self.controller.rename_session(self.active_session.id, title)
+            self.update_active_title()
+            self.refresh_sessions()
+
+        self._entry_dialog(
+            title="Chat umbenennen",
+            label="Neuer Titel",
+            initial=self.active_session.title,
+            callback=rename,
+        )
+
+    def on_toggle_pin_active_session(self, _button: Gtk.Button) -> None:
+        if not self.active_session:
+            return
+        self.active_session = self.controller.set_session_pinned(
+            self.active_session.id,
+            not self.active_session.pinned,
+        )
+        self.update_active_title()
+        self.refresh_sessions()
+        self.status.set_text("Chat angeheftet." if self.active_session.pinned else "Chat geloest.")
+
+    def on_delete_active_session(self, _button: Gtk.Button) -> None:
+        if not self.active_session:
+            return
+        dialog = Adw.MessageDialog.new(self.window, "Telachat", "Chat loeschen?")
+        dialog.add_response("cancel", "Abbrechen")
+        dialog.add_response("delete", "Loeschen")
+        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+
+        def on_response(_dialog: Adw.MessageDialog, response: str) -> None:
+            if response == "delete" and self.active_session:
+                self.controller.delete_session(self.active_session.id)
+                self._select_first_session_or_empty()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
+    def _select_first_session_or_empty(self) -> None:
+        self.refresh_sessions()
+        if self.sessions:
+            self.load_session(self.sessions[0].id)
+        else:
+            self.active_session = None
+            self.messages = []
+            self.update_active_title()
+            self.render_messages()
+
+    def on_toggle_sidebar(self, _button: Gtk.Button) -> None:
+        self.sidebar.set_visible(not self.sidebar.get_visible())
+
+    def on_toggle_settings(self, _button: Gtk.Button) -> None:
+        self.settings.set_visible(not self.settings.get_visible())
+
+    def _set_initial_panes(self) -> bool:
+        width = max(self.window.get_width(), 1000)
+        self.outer_paned.set_position(300)
+        self.inner_paned.set_position(max(420, width - 620))
+        return GLib.SOURCE_REMOVE
+
+    def handle_command(self, raw: str) -> None:
+        command, _, rest = raw.partition(" ")
+        command = command.lower()
+        rest = rest.strip()
+        if command in {"/help", "/hilfe"}:
+            dialog = Adw.MessageDialog.new(
+                self.window,
+                "Telachat Kommandos",
+                "/new | /neu\n/rename TITLE\n/delete\n/pin | /unpin\n/regen | /regenerate\n/folder NAME | /ordner NAME\n/rename-folder NAME\n/delete-folder\n/move NAME | /ablegen NAME\n/unfile\n/sort newest|oldest|title|title-desc|provider\n/search TEXT\n/provider NAME\n/model NAME\n/left | /links\n/system",
+            )
+            dialog.add_response("ok", "OK")
+            dialog.present()
+        elif command in {"/new", "/neu"}:
+            self.on_new(self.send_button)
+        elif command == "/rename":
+            if rest and self.active_session:
+                self.active_session = self.controller.rename_session(self.active_session.id, rest)
+                self.update_active_title()
+                self.refresh_sessions()
+        elif command == "/delete":
+            self.on_delete_active_session(self.send_button)
+        elif command == "/pin":
+            if self.active_session and not self.active_session.pinned:
+                self.on_toggle_pin_active_session(self.send_button)
+        elif command == "/unpin":
+            if self.active_session and self.active_session.pinned:
+                self.on_toggle_pin_active_session(self.send_button)
+        elif command in {"/regen", "/regenerate"}:
+            self.on_regenerate_active_session(self.send_button)
+        elif command in {"/folder", "/ordner"}:
+            if rest:
+                folder = self.controller.create_folder(rest)
+                self.refresh_folders()
+                self.select_folder(folder.id)
+                self.refresh_sessions()
+        elif command == "/rename-folder":
+            selected = self.selected_folder_value()
+            if rest and selected not in {"__all__", "__none__", None}:
+                folder = self.controller.rename_folder(selected, rest)
+                self.refresh_folders()
+                self.select_folder(folder.id)
+                self.refresh_sessions()
+        elif command == "/delete-folder":
+            self.on_delete_selected_folder(self.send_button)
+        elif command in {"/move", "/ablegen"}:
+            if rest and self.active_session:
+                folder = self.controller.create_folder(rest)
+                self.active_session = self.controller.move_session(self.active_session.id, folder.id)
+                self.refresh_folders()
+                self.select_folder(folder.id)
+                self.refresh_sessions()
+        elif command == "/unfile":
+            if self.active_session:
+                self.active_session = self.controller.move_session(self.active_session.id, None)
+                self.select_folder(None)
+                self.refresh_sessions()
+        elif command == "/sort":
+            mapping = {
+                "newest": "Neueste zuerst",
+                "oldest": "Aelteste zuerst",
+                "title": "Titel A-Z",
+                "title-desc": "Titel Z-A",
+                "provider": "Provider",
+            }
+            label = mapping.get(rest)
+            if label:
+                labels = list(self.sort_keys)
+                self.sort_dropdown.set_selected(labels.index(label))
+                self.refresh_sessions()
+        elif command == "/search":
+            self.search_entry.set_text(rest)
+            self.refresh_sessions()
+        elif command == "/provider":
+            for index, name in enumerate(self.profile_names):
+                label = self.controller.profiles()[name].display_name
+                if rest.lower() in {name.lower(), label.lower()}:
+                    self.profile_dropdown.set_selected(index)
+                    self.refresh_models()
+                    break
+        elif command == "/model":
+            for index, model in enumerate(self.model_names):
+                if rest.lower() == model.lower():
+                    self.model_dropdown.set_selected(index)
+                    break
+        elif command in {"/left", "/links"}:
+            self.sidebar.set_visible(not self.sidebar.get_visible())
+        elif command == "/system":
+            self.settings.set_visible(not self.settings.get_visible())
+        else:
+            self.status.set_text(f"Unbekanntes Kommando: {command}")
+
+    def on_export(self, _button: Gtk.Button) -> None:
+        if not self.active_session:
+            return
+        chooser = Gtk.FileChooserNative.new(
+            "Export",
+            self.window,
+            Gtk.FileChooserAction.SAVE,
+            "Speichern",
+            "Abbrechen",
+        )
+        chooser.set_current_name(f"telachat-{self.active_session.id}.md")
+        chooser.connect("response", self._export_response)
+        chooser.show()
+
+    def _export_response(self, chooser: Gtk.FileChooserNative, response: int) -> None:
+        if response == Gtk.ResponseType.ACCEPT and self.active_session:
+            file = chooser.get_file()
+            path = file.get_path() if file else None
+            if path:
+                with open(path, "w", encoding="utf-8") as handle:
+                    handle.write(self.controller.export_markdown(self.active_session.id))
+                self.status.set_text(f"Exportiert: {path}")
+        chooser.destroy()
+
+    def _error(self, exc: Exception) -> bool:
+        self.set_busy(False, "Fehler")
+        dialog = Adw.MessageDialog.new(self.window, "Telachat", str(exc))
+        dialog.add_response("ok", "OK")
+        dialog.present()
+        return GLib.SOURCE_REMOVE
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="telachat-gtk")
+    parser.parse_args(argv)
+    app = GtkTelachatApp()
+    return app.run(None)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

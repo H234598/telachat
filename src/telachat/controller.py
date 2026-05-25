@@ -1,0 +1,172 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from .client import ChatResult, OpenAICompatClient
+from .config import AppConfig, Profile, load_config
+from .store import ChatStore, Folder, Message, Session, messages_for_api, title_from_prompt
+
+
+@dataclass(frozen=True)
+class ChatPayload:
+    session: Session
+    messages: list[Message]
+    answer: str
+
+
+class TelachatController:
+    def __init__(self) -> None:
+        self.config: AppConfig = load_config()
+        self.store = ChatStore()
+        self.store.delete_empty_sessions()
+
+    def close(self) -> None:
+        self.store.delete_empty_sessions()
+        self.store.close()
+
+    def profiles(self) -> dict[str, Profile]:
+        return self.config.profiles
+
+    def default_profile_name(self) -> str:
+        return self.config.default_profile
+
+    def system_prompt(self) -> str:
+        return self.config.default_system_prompt
+
+    def list_sessions(
+        self,
+        limit: int = 40,
+        *,
+        folder_id: str | None = None,
+        sort: str = "updated_desc",
+        query: str | None = None,
+    ) -> list[Session]:
+        return self.store.list_sessions(
+            limit,
+            folder_id=folder_id,
+            sort=sort,
+            query=query,
+        )
+
+    def list_folders(self) -> list[Folder]:
+        return self.store.list_folders()
+
+    def create_folder(self, name: str) -> Folder:
+        return self.store.create_folder(name)
+
+    def move_session(self, session_id: str, folder_id: str | None) -> Session:
+        return self.store.move_session(session_id, folder_id)
+
+    def rename_session(self, session_id: str, title: str) -> Session:
+        return self.store.update_session_title(session_id, title)
+
+    def delete_session(self, session_id: str) -> None:
+        self.store.delete_session(session_id)
+
+    def set_session_pinned(self, session_id: str, pinned: bool) -> Session:
+        return self.store.set_session_pinned(session_id, pinned)
+
+    def rename_folder(self, folder_id: str, name: str) -> Folder:
+        return self.store.update_folder_name(folder_id, name)
+
+    def delete_folder(self, folder_id: str) -> None:
+        self.store.delete_folder(folder_id)
+
+    def get_session(self, session_id: str) -> tuple[Session, list[Message]]:
+        session = self.store.get_session(session_id)
+        if session is None:
+            raise KeyError(session_id)
+        return session, self.store.messages(session.id)
+
+    def new_session(
+        self,
+        *,
+        profile_name: str | None = None,
+        system_prompt: str | None = None,
+        title: str = "Neue Unterhaltung",
+        folder_id: str | None = None,
+    ) -> tuple[Session, list[Message]]:
+        session = self.store.create_session(
+            title=title,
+            profile=profile_name or self.default_profile_name(),
+            system_prompt=system_prompt or self.system_prompt(),
+            folder_id=folder_id,
+        )
+        return session, []
+
+    def send(
+        self,
+        *,
+        session_id: str | None,
+        profile_name: str | None,
+        model: str | None,
+        system_prompt: str,
+        prompt: str,
+        folder_id: str | None = None,
+    ) -> ChatPayload:
+        clean = prompt.strip()
+        if not clean:
+            raise ValueError("Nachricht fehlt.")
+        profile = self.config.profile(profile_name).with_overrides(model=model)
+        session = self.store.get_session(session_id or "") if session_id else None
+        if session is None:
+            session = self.store.create_session(
+                title=title_from_prompt(clean),
+                profile=profile.name,
+                system_prompt=system_prompt,
+                folder_id=folder_id,
+            )
+        elif session.title == "Neue Unterhaltung":
+            session = self.store.update_session_title(session.id, title_from_prompt(clean))
+
+        self.store.add_message(session.id, "user", clean)
+        history = self.store.messages(session.id, limit=self.config.max_history_messages)
+        api_messages = messages_for_api(system_prompt, history)
+        result = OpenAICompatClient(profile, retries=1).chat(api_messages, stream=False)
+        if isinstance(result, ChatResult):
+            answer = result.content
+        else:
+            answer = "".join(result)
+        self.store.add_message(session.id, "assistant", answer)
+        return ChatPayload(
+            session=session,
+            messages=self.store.messages(session.id),
+            answer=answer,
+        )
+
+    def regenerate(
+        self,
+        *,
+        session_id: str,
+        profile_name: str | None,
+        model: str | None,
+        system_prompt: str | None = None,
+    ) -> ChatPayload:
+        session = self.store.get_session(session_id)
+        if session is None:
+            raise KeyError(session_id)
+        profile = self.config.profile(profile_name or session.profile).with_overrides(model=model)
+        self.store.delete_last_assistant_message(session.id)
+        history = self.store.messages(session.id, limit=self.config.max_history_messages)
+        if not any(message.role == "user" for message in history):
+            raise ValueError("Keine Nutzernachricht zum Neu-Generieren vorhanden.")
+        api_messages = messages_for_api(system_prompt or session.system_prompt, history)
+        result = OpenAICompatClient(profile, retries=1).chat(api_messages, stream=False)
+        if isinstance(result, ChatResult):
+            answer = result.content
+        else:
+            answer = "".join(result)
+        self.store.add_message(session.id, "assistant", answer)
+        updated = self.store.get_session(session.id) or session
+        return ChatPayload(
+            session=updated,
+            messages=self.store.messages(session.id),
+            answer=answer,
+        )
+
+    def doctor(self, profile_name: str | None = None, model: str | None = None) -> list[str]:
+        profile = self.config.profile(profile_name).with_overrides(model=model)
+        return OpenAICompatClient(profile, retries=1).list_models()
+
+    def export_markdown(self, session_id: str) -> str:
+        return self.store.export_markdown(session_id)

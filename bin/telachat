@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+set -eu
+
+TELACHAT_HOME="${TELACHAT_HOME:-/home/teladi/telachat}"
+PYTHONPATH="$TELACHAT_HOME/src${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH
+exec python3 -m telachat "$@"
