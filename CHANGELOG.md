@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.32.1 - 2026-05-25
+
+- Add focused GUI regression coverage for Tk/GTK archive-filter session refresh.
+
 ## 0.32.0 - 2026-05-25
 
 - Add visible GUI archive filters in both Tk and GTK sidebars.

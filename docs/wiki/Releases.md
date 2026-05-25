@@ -1,5 +1,10 @@
 # Releases
 
+## 0.32.1 - 2026-05-25
+
+- Ergaenzt fokussierte Regressionstests fuer den sichtbaren Archivfilter in
+  Tk und GTK.
+
 ## 0.32.0 - 2026-05-25
 
 - GTK und Tk haben jetzt einen sichtbaren Archivfilter in der Seitenleiste.
