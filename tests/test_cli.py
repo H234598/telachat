@@ -389,6 +389,27 @@ class CliTests(unittest.TestCase):
                     {"input_tokens": 9, "output_tokens": 3, "total_tokens": 12},
                 )
                 self.assertEqual(client_cls.return_value.chat.call_args.kwargs["stream"], False)
+
+                out = io.StringIO()
+                err = io.StringIO()
+                with redirect_stdout(out), redirect_stderr(err), mock.patch(
+                    "telachat.cli.OpenAICompatClient",
+                ) as client_cls:
+                    client_cls.return_value.chat.return_value = ChatResult("Gespeichert", {})
+                    self.assertEqual(main(["ask", "--json", "--save", "Bitte merken"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["answer"], "Gespeichert")
+                self.assertIn("saved_session_id", payload)
+                self.assertEqual("", err.getvalue())
+                store = ChatStore()
+                try:
+                    messages = store.messages(str(payload["saved_session_id"]))
+                finally:
+                    store.close()
+                self.assertEqual(
+                    [(message.role, message.content) for message in messages],
+                    [("user", "Bitte merken"), ("assistant", "Gespeichert")],
+                )
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
