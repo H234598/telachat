@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import stat
 import tomllib
 from dataclasses import dataclass, replace
@@ -121,8 +122,9 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
         ensure_default_config(target)
     if not target.exists():
         raise ConfigError(f"Konfigurationsdatei fehlt: {target}")
+    raw_text = _escape_secret_source_backslashes(target.read_text(encoding="utf-8"))
     try:
-        raw = tomllib.loads(target.read_text(encoding="utf-8"))
+        raw = tomllib.loads(raw_text)
     except tomllib.TOMLDecodeError as exc:
         raise ConfigError(f"Ungueltige TOML-Konfiguration in {target}: {exc}") from exc
 
@@ -296,6 +298,33 @@ def _prompt_templates(raw: object) -> dict[str, str]:
             raise ConfigError(f"Prompt-Template '{clean_name}' braucht Text.")
         templates[clean_name] = value.strip()
     return dict(sorted(templates.items()))
+
+
+def _escape_secret_source_backslashes(text: str) -> str:
+    return re.sub(
+        r'(=\s*")((?:envfile|file):[^"\n]*\\[^"\n]*)(")',
+        lambda match: match.group(1)
+        + _escape_lone_backslashes(match.group(2))
+        + match.group(3),
+        text,
+    )
+
+
+def _escape_lone_backslashes(value: str) -> str:
+    escaped: list[str] = []
+    index = 0
+    while index < len(value):
+        char = value[index]
+        if char != "\\":
+            escaped.append(char)
+            index += 1
+            continue
+        escaped.append("\\\\")
+        if index + 1 < len(value) and value[index + 1] == "\\":
+            index += 2
+        else:
+            index += 1
+    return "".join(escaped)
 
 
 def _read_envfile_secret(spec: str) -> str:

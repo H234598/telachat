@@ -177,6 +177,36 @@ model = "demo"
             cfg = load_config(path)
             self.assertEqual(cfg.profile().resolved_api_key(), "envfile-secret")
 
+    def test_secret_sources_preserve_windows_backslashes_in_basic_strings(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            env_path = Path(tmp) / r"C:\new\test.env"
+            file_path = Path(tmp) / r"C:\new\file-secret.txt"
+            env_path.write_text(
+                "OPENAI_API_KEY=windows-envfile-secret\n",
+                encoding="utf-8",
+            )
+            file_path.write_text("windows-file-secret\n", encoding="utf-8")
+            path = Path(tmp) / "config.toml"
+            path.write_text(
+                f"""
+default_profile = "envfile"
+
+[profiles.envfile]
+base_url = "https://api.openai.com/v1"
+api_key = "envfile:{env_path}#OPENAI_API_KEY"
+model = "demo"
+
+[profiles.file]
+base_url = "https://api.openai.com/v1"
+api_key = "file:{file_path}"
+model = "demo"
+""".strip(),
+                encoding="utf-8",
+            )
+            cfg = load_config(path)
+            self.assertEqual(cfg.profile("envfile").resolved_api_key(), "windows-envfile-secret")
+            self.assertEqual(cfg.profile("file").resolved_api_key(), "windows-file-secret")
+
     def test_missing_secret_files_raise_config_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config_path = Path(tmp) / "config.toml"
