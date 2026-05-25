@@ -1418,6 +1418,44 @@ stream = false
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_chat_send_reports_secret_source_errors_without_exiting(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                config_dir = Path(tmp) / "config" / "telachat"
+                config_dir.mkdir(parents=True)
+                missing_envfile = config_dir / "missing.env"
+                (config_dir / "config.toml").write_text(
+                    f"""
+default_profile = "broken"
+
+[profiles.broken]
+label = "Broken"
+base_url = "http://127.0.0.1:9/v1"
+api_key = "envfile:{missing_envfile}#TELACHAT_TEST_KEY"
+model = "demo"
+stream = false
+""".strip(),
+                    encoding="utf-8",
+                )
+
+                err = io.StringIO()
+                with (
+                    redirect_stdout(io.StringIO()),
+                    redirect_stderr(err),
+                    mock.patch("builtins.input", side_effect=["Hallo", "/exit"]),
+                ):
+                    self.assertEqual(main(["chat", "--no-stream"]), 0)
+
+                self.assertIn("Fehler:", err.getvalue())
+                self.assertIn("missing.env", err.getvalue())
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_chat_theme_command_rejects_unknown_theme_without_changing_config(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

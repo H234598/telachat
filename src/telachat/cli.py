@@ -720,7 +720,7 @@ def cmd_chat(args: argparse.Namespace) -> int:
             try:
                 print("KI> ", end="", flush=True)
                 answer = _run_chat(profile, messages, stream=not args.no_stream)
-            except ApiError as exc:
+            except (ApiError, ConfigError, OSError) as exc:
                 print(f"\nFehler: {exc}", file=sys.stderr)
                 continue
             store.add_message(session.id, "assistant", answer)
@@ -1944,7 +1944,7 @@ def _handle_command(
                 session=session,
                 stream=stream,
             )
-        except ApiError as exc:
+        except (ApiError, ConfigError, OSError) as exc:
             print(f"Fehler: {exc}", file=sys.stderr)
     elif command == "/templates":
         if not cfg.prompt_templates:
@@ -1972,7 +1972,7 @@ def _handle_command(
                 try:
                     print("KI> ", end="", flush=True)
                     answer = _run_chat(profile, messages, stream=stream)
-                except ApiError as exc:
+                except (ApiError, ConfigError, OSError) as exc:
                     print(f"\nFehler: {exc}", file=sys.stderr)
                 else:
                     store.add_message(session.id, "assistant", answer)
