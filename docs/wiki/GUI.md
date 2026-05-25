@@ -10,12 +10,13 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 
 ## Bedienung
 
-- Links: Provider, Modell, Chats, Ordner, Suche und Sortierung.
+- Links: Provider, Modell, Chats, Ordner, Tagfilter, Suche und Sortierung.
 - Mitte: Chatverlauf und Eingabe.
 - Rechts: Systemprompt.
 - Linke Seite und Systemprompt sind einklappbar.
 - Die Seitenbreiten sind per Splitter anpassbar.
 - Der Archivfilter `Aktiv / Archiv / Alle` sitzt in der linken Seitenleiste.
+- Der Tagfilter zeigt vorhandene Tags mit Zaehlern und filtert die Chatliste.
 - `Check` fragt `/models` live fuer den gewaehlten Provider ab und ergaenzt die
   Modellauswahl mit den gemeldeten IDs.
 - `Shift+Enter` sendet eine Nachricht.
@@ -33,7 +34,8 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 ## Chatverwaltung
 
 - Chats koennen in Ordner verschoben werden.
-- Chats koennen Tags tragen; die Tags erscheinen in der Chatliste.
+- Chats koennen Tags tragen; die Tags erscheinen in der Chatliste und sind
+  direkt ueber den Tagfilter auswaehlbar.
 - Chats koennen archiviert werden; der sichtbare Archivfilter wechselt
   zwischen aktiven, archivierten und allen Chats.
 - Ordner koennen umbenannt und geloescht werden.

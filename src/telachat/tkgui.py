@@ -21,6 +21,7 @@ class TkTelachatApp:
         self.messages: list[Message] = []
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
         self.folder_display_to_id: dict[str, str | None] = {}
+        self.tag_display_to_value: dict[str, str | None] = {"Alle Tags": None}
         self.sidebar_visible = True
         self.settings_visible = True
         self.sort_keys = {
@@ -45,6 +46,7 @@ class TkTelachatApp:
         self._configure_style()
         self._build()
         self.refresh_profiles()
+        self.refresh_tag_filter()
         self.refresh_sessions()
         sessions = self.controller.list_sessions(1)
         if sessions:
@@ -91,7 +93,7 @@ class TkTelachatApp:
         self.paned.grid(row=0, column=0, sticky="nsew")
 
         self.sidebar = ttk.Frame(self.paned, style="Sidebar.TFrame", padding=14, width=300)
-        self.sidebar.rowconfigure(20, weight=1)
+        self.sidebar.rowconfigure(22, weight=1)
 
         title = ttk.Label(self.sidebar, text="Telachat", font=("Sans", 22, "bold"))
         title.grid(row=0, column=0, columnspan=2, sticky="w")
@@ -133,7 +135,19 @@ class TkTelachatApp:
         self.archive_filter_combo.grid(row=9, column=0, columnspan=2, sticky="ew", pady=(4, 10))
         self.archive_filter_combo.bind("<<ComboboxSelected>>", lambda _event: self.refresh_sessions())
 
-        ttk.Label(self.sidebar, text="Sortierung").grid(row=10, column=0, sticky="w")
+        ttk.Label(self.sidebar, text="Tag").grid(row=10, column=0, sticky="w")
+        self.tag_filter_var = tk.StringVar(value="Alle Tags")
+        self.tag_filter_combo = ttk.Combobox(
+            self.sidebar,
+            textvariable=self.tag_filter_var,
+            state="readonly",
+            values=list(self.tag_display_to_value),
+            width=24,
+        )
+        self.tag_filter_combo.grid(row=11, column=0, columnspan=2, sticky="ew", pady=(4, 10))
+        self.tag_filter_combo.bind("<<ComboboxSelected>>", lambda _event: self.refresh_sessions())
+
+        ttk.Label(self.sidebar, text="Sortierung").grid(row=12, column=0, sticky="w")
         self.sort_var = tk.StringVar(value="Neueste zuerst")
         self.sort_combo = ttk.Combobox(
             self.sidebar,
@@ -142,16 +156,16 @@ class TkTelachatApp:
             values=list(self.sort_keys),
             width=24,
         )
-        self.sort_combo.grid(row=11, column=0, columnspan=2, sticky="ew", pady=(4, 10))
+        self.sort_combo.grid(row=13, column=0, columnspan=2, sticky="ew", pady=(4, 10))
         self.sort_combo.bind("<<ComboboxSelected>>", lambda _event: self.refresh_sessions())
 
-        ttk.Label(self.sidebar, text="Suche").grid(row=12, column=0, sticky="w")
+        ttk.Label(self.sidebar, text="Suche").grid(row=14, column=0, sticky="w")
         self.search_var = tk.StringVar()
         self.search_entry = ttk.Entry(self.sidebar, textvariable=self.search_var)
-        self.search_entry.grid(row=13, column=0, columnspan=2, sticky="ew", pady=(4, 10))
+        self.search_entry.grid(row=15, column=0, columnspan=2, sticky="ew", pady=(4, 10))
         self.search_entry.bind("<KeyRelease>", lambda _event: self.refresh_sessions())
 
-        ttk.Label(self.sidebar, text="Vorlage").grid(row=14, column=0, sticky="w")
+        ttk.Label(self.sidebar, text="Vorlage").grid(row=16, column=0, sticky="w")
         self.template_var = tk.StringVar()
         self.template_combo = ttk.Combobox(
             self.sidebar,
@@ -160,33 +174,33 @@ class TkTelachatApp:
             values=list(self.controller.prompt_templates()),
             width=24,
         )
-        self.template_combo.grid(row=15, column=0, sticky="ew", pady=(4, 0), padx=(0, 6))
+        self.template_combo.grid(row=17, column=0, sticky="ew", pady=(4, 0), padx=(0, 6))
         ttk.Button(self.sidebar, text="Einsetzen", command=self.insert_template).grid(
-            row=15, column=1, sticky="ew", pady=(4, 0)
+            row=17, column=1, sticky="ew", pady=(4, 0)
         )
         if self.controller.prompt_templates():
             self.template_var.set(next(iter(self.controller.prompt_templates())))
 
         ttk.Button(self.sidebar, text="Neu", command=self.new_session).grid(
-            row=16, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
-        )
-        ttk.Button(self.sidebar, text="Check", command=self.doctor).grid(
-            row=16, column=1, sticky="ew", pady=(8, 0)
-        )
-        ttk.Button(self.sidebar, text="Ordner +", command=self.create_folder_dialog).grid(
-            row=17, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
-        )
-        ttk.Button(self.sidebar, text="Ablegen", command=self.move_active_to_folder).grid(
-            row=17, column=1, sticky="ew", pady=(8, 0)
-        )
-        ttk.Button(self.sidebar, text="Ordner um", command=self.rename_selected_folder).grid(
             row=18, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
         )
-        ttk.Button(self.sidebar, text="Ordner -", command=self.delete_selected_folder).grid(
+        ttk.Button(self.sidebar, text="Check", command=self.doctor).grid(
             row=18, column=1, sticky="ew", pady=(8, 0)
         )
+        ttk.Button(self.sidebar, text="Ordner +", command=self.create_folder_dialog).grid(
+            row=19, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
+        )
+        ttk.Button(self.sidebar, text="Ablegen", command=self.move_active_to_folder).grid(
+            row=19, column=1, sticky="ew", pady=(8, 0)
+        )
+        ttk.Button(self.sidebar, text="Ordner um", command=self.rename_selected_folder).grid(
+            row=20, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
+        )
+        ttk.Button(self.sidebar, text="Ordner -", command=self.delete_selected_folder).grid(
+            row=20, column=1, sticky="ew", pady=(8, 0)
+        )
         ttk.Button(self.sidebar, text="Ordner-Prompt", command=self.save_selected_folder_prompt).grid(
-            row=19, column=0, columnspan=2, sticky="ew", pady=(8, 0)
+            row=21, column=0, columnspan=2, sticky="ew", pady=(8, 0)
         )
 
         self.session_list = tk.Listbox(
@@ -201,7 +215,7 @@ class TkTelachatApp:
             selectbackground=palette.selection,
             selectforeground=palette.selection_fg,
         )
-        self.session_list.grid(row=20, column=0, columnspan=2, sticky="nsew", pady=(14, 0))
+        self.session_list.grid(row=22, column=0, columnspan=2, sticky="nsew", pady=(14, 0))
         self.session_list.bind("<<ListboxSelect>>", self._on_session_select)
 
         self.main = ttk.Frame(self.paned, padding=16)
@@ -411,6 +425,7 @@ class TkTelachatApp:
             sort=self.sort_keys.get(self.sort_var.get(), "updated_desc"),
             query=self.search_var.get(),
             archive=self.selected_archive_filter(),
+            tag=self.selected_tag_filter(),
         )
         self.session_list.delete(0, tk.END)
         for session in self.sessions:
@@ -651,6 +666,23 @@ class TkTelachatApp:
         if not self.folder_var.get():
             self.folder_var.set("Alle")
 
+    def refresh_tag_filter(self) -> None:
+        current_value = self.selected_tag_filter() if hasattr(self, "tag_filter_var") else None
+        self.tag_display_to_value = {"Alle Tags": None}
+        for tag, count in self.controller.list_tags():
+            self.tag_display_to_value[f"#{tag} ({count})"] = tag
+        if hasattr(self, "tag_filter_combo"):
+            self.tag_filter_combo.configure(values=list(self.tag_display_to_value))
+            matching = [
+                label
+                for label, value in self.tag_display_to_value.items()
+                if value == current_value
+            ]
+            if matching:
+                self.tag_filter_var.set(matching[0])
+            else:
+                self.tag_filter_var.set("Alle Tags")
+
     def on_folder_filter_changed(self, _event: object) -> None:
         self.refresh_sessions()
         if self.active_session is None:
@@ -664,6 +696,9 @@ class TkTelachatApp:
 
     def selected_archive_filter(self) -> str:
         return self.archive_filter_keys.get(self.archive_filter_var.get(), "active")
+
+    def selected_tag_filter(self) -> str | None:
+        return self.tag_display_to_value.get(self.tag_filter_var.get())
 
     def selected_real_folder_id(self) -> str | None:
         selected = self.selected_folder_id(for_new=True)
@@ -869,6 +904,7 @@ class TkTelachatApp:
                         return
                     else:
                         self.update_active_title()
+                        self.refresh_tag_filter()
                         self.refresh_sessions()
                 self.set_status(
                     "Tags: "
@@ -891,6 +927,7 @@ class TkTelachatApp:
                         return
                     else:
                         self.update_active_title()
+                        self.refresh_tag_filter()
                         self.refresh_sessions()
                         self.set_status(
                             "Tags: "

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.33.0 - 2026-05-25
+
+- Add visible Tk/GTK tag filters in the sidebar, including tag counts.
+- Preserve the selected tag filter when `/tag` or `/untag` changes counts.
+- Cover GUI refresh propagation and Tk tag-filter selection preservation.
+
 ## 0.32.1 - 2026-05-25
 
 - Add focused GUI regression coverage for Tk/GTK archive-filter session refresh.

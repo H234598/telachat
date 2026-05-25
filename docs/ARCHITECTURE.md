@@ -198,8 +198,9 @@ that folder as a portable data bundle.
 
 Sessions can also carry normalized tags in the `session_tags` table. Tags are
 many-to-one labels independent of folders; session search can match tags,
-`sessions --tag TAG` filters by one tag, and JSON/Markdown exports preserve
-tags for additive imports, forks, and backup restores.
+`sessions --tag TAG` and the GUI sidebar tag filter filter by one tag, and
+JSON/Markdown exports preserve tags for additive imports, forks, and backup
+restores.
 
 Sessions can be archived with `telachat archive` or `/archive`. Archived
 sessions stay in SQLite and in backups, but `list_sessions()` defaults to

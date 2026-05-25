@@ -30,6 +30,7 @@ class GtkTelachatApp(Adw.Application):
         self.messages: list[Message] = []
         self.sessions: list[Session] = []
         self.folder_display_to_id: dict[str, str | None] = {}
+        self.tag_filter_values: dict[str, str | None] = {"Alle Tags": None}
         self.sort_keys = {
             "Neueste zuerst": "updated_desc",
             "Aelteste zuerst": "updated_asc",
@@ -130,6 +131,15 @@ class GtkTelachatApp(Adw.Application):
         self.archive_filter_dropdown.set_selected(0)
         self.archive_filter_dropdown.connect("notify::selected", self.on_filter_changed)
         self.sidebar.append(self.archive_filter_dropdown)
+
+        self.sidebar.append(Gtk.Label(label="Tag", xalign=0))
+        self.tag_filter_dropdown = Gtk.DropDown.new(
+            Gtk.StringList.new(list(self.tag_filter_values)),
+            None,
+        )
+        self.tag_filter_dropdown.set_selected(0)
+        self.tag_filter_dropdown.connect("notify::selected", self.on_filter_changed)
+        self.sidebar.append(self.tag_filter_dropdown)
 
         self.sidebar.append(Gtk.Label(label="Sortierung", xalign=0))
         self.sort_dropdown = Gtk.DropDown.new(Gtk.StringList.new(list(self.sort_keys)), None)
@@ -290,6 +300,7 @@ class GtkTelachatApp(Adw.Application):
         self.settings.append(sc_system)
 
         self.refresh_folders()
+        self.refresh_tag_filter()
         self.refresh_sessions()
         if self.sessions:
             self.load_session(self.sessions[0].id)
@@ -451,6 +462,13 @@ class GtkTelachatApp(Adw.Application):
             return self.archive_filter_keys[labels[selected]]
         return "active"
 
+    def selected_tag_filter(self) -> str | None:
+        selected = self.tag_filter_dropdown.get_selected()
+        labels = list(self.tag_filter_values)
+        if selected < len(labels):
+            return self.tag_filter_values[labels[selected]]
+        return None
+
     def selected_folder_value(self) -> str | None:
         selected = self.folder_dropdown.get_selected()
         labels = list(self.folder_display_to_id)
@@ -470,6 +488,20 @@ class GtkTelachatApp(Adw.Application):
         except ValueError:
             selected = 0
         self.folder_dropdown.set_selected(selected)
+
+    def refresh_tag_filter(self) -> None:
+        selected = self.tag_filter_dropdown.get_selected() if hasattr(self, "tag_filter_dropdown") else 0
+        current = None
+        labels = list(self.tag_filter_values)
+        if selected < len(labels):
+            current = self.tag_filter_values[labels[selected]]
+        self.tag_filter_values = {"Alle Tags": None}
+        for tag, count in self.controller.list_tags():
+            self.tag_filter_values[f"#{tag} ({count})"] = tag
+        labels = list(self.tag_filter_values)
+        self.tag_filter_dropdown.set_model(Gtk.StringList.new(labels))
+        values = list(self.tag_filter_values.values())
+        self.tag_filter_dropdown.set_selected(values.index(current) if current in values else 0)
 
     def select_folder(self, folder_id: str | None) -> None:
         values = list(self.folder_display_to_id.values())
@@ -548,6 +580,7 @@ class GtkTelachatApp(Adw.Application):
             sort=self.selected_sort(),
             query=self.search_entry.get_text() if hasattr(self, "search_entry") else "",
             archive=self.selected_archive_filter(),
+            tag=self.selected_tag_filter(),
         )
         while row := self.session_list.get_row_at_index(0):
             self.session_list.remove(row)
@@ -1012,6 +1045,7 @@ class GtkTelachatApp(Adw.Application):
                         return
                     else:
                         self.update_active_title()
+                        self.refresh_tag_filter()
                         self.refresh_sessions()
                 self.status.set_text(
                     "Tags: "
@@ -1034,6 +1068,7 @@ class GtkTelachatApp(Adw.Application):
                         return
                     else:
                         self.update_active_title()
+                        self.refresh_tag_filter()
                         self.refresh_sessions()
                         self.status.set_text(
                             "Tags: "

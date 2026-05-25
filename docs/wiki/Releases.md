@@ -1,5 +1,12 @@
 # Releases
 
+## 0.33.0 - 2026-05-25
+
+- GTK und Tk haben jetzt einen sichtbaren Tagfilter in der Seitenleiste.
+- Die Tagauswahl zeigt Zaehler und bleibt erhalten, wenn `/tag` oder `/untag`
+  nur die Zaehler veraendert.
+- Neue GUI-Regressionstests pruefen Tagfilter-Weitergabe und Auswahl-Erhalt.
+
 ## 0.32.1 - 2026-05-25
 
 - Ergaenzt fokussierte Regressionstests fuer den sichtbaren Archivfilter in
