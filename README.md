@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.9.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.10.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -28,6 +28,7 @@ cd /home/teladi/telachat
 make install
 telachat init
 telachat config-check
+telachat backup
 telachat doctor
 ```
 
@@ -131,7 +132,14 @@ telachat sessions --folder Arbeit
 telachat sessions --sort title
 telachat export-folder Arbeit -o ./arbeit-export
 telachat export-folder Arbeit --single-file -o arbeit.md
+telachat backup -o ./backups
+telachat backup -o telachat-backup.zip
 ```
+
+`backup` erzeugt ein ZIP mit konsistenter `history.sqlite3`, redaktierter
+`config.redacted.toml` und `manifest.json`. Envfiles und rohe Secret-Werte
+werden nicht in das Backup geschrieben; potentiell geheime Headerwerte werden
+redaktiert.
 
 Ordner und ihre Projekt-Systemprompts lassen sich ebenfalls in der CLI
 verwalten:

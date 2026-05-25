@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
+import sqlite3
 import sys
 import textwrap
+import tempfile
+import zipfile
 from collections.abc import Iterable
+from datetime import datetime
 from pathlib import Path
 
 from .client import ApiError, ChatResult, OpenAICompatClient
@@ -16,7 +21,7 @@ from .commands import (
 )
 from .config import ConfigError, Profile, ensure_default_config, load_config, redact_secret
 from .defaults import APP_TITLE
-from .paths import config_path, db_path
+from .paths import config_path, db_path, state_dir
 from .store import ChatStore, messages_for_api, title_from_prompt
 
 
@@ -135,6 +140,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Alle Chats in eine Markdown-Datei schreiben",
     )
     p_export_folder.set_defaults(func=cmd_export_folder)
+
+    p_backup = sub.add_parser("backup", help="SQLite-Historie und redaktierte Config sichern")
+    p_backup.add_argument("-o", "--output", type=Path, help="Backup-Zip oder Zielverzeichnis")
+    p_backup.set_defaults(func=cmd_backup)
 
     p_doctor = sub.add_parser("doctor", help="Konfiguration/API pruefen")
     p_doctor.add_argument("-p", "--profile", help="Profilname")
@@ -466,6 +475,32 @@ def cmd_export_folder(args: argparse.Namespace) -> int:
         return 0
     finally:
         store.close()
+
+
+def cmd_backup(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    store = ChatStore()
+    try:
+        store.delete_empty_sessions()
+    finally:
+        store.close()
+
+    target = _backup_target(args.output)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    source_db = db_path()
+    with tempfile.TemporaryDirectory() as tmp:
+        backup_db = Path(tmp) / "history.sqlite3"
+        _sqlite_backup(source_db, backup_db)
+        manifest = _backup_manifest(cfg, backup_db)
+        with zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.write(backup_db, "history.sqlite3")
+            archive.writestr("config.redacted.toml", _redacted_config_toml(cfg))
+            archive.writestr(
+                "manifest.json",
+                json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+            )
+    print(target)
+    return 0
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
@@ -955,3 +990,117 @@ def _export_sessions_markdown(store: ChatStore, sessions: list[object], title: s
 def _safe_filename(value: str) -> str:
     clean = re.sub(r"[^A-Za-z0-9._-]+", "-", value.strip().lower()).strip(".-_")
     return clean[:80] or "telachat"
+
+
+def _backup_target(output: Path | None) -> Path:
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    default_name = f"telachat-backup-{stamp}.zip"
+    if output is None:
+        return state_dir() / "backups" / default_name
+    target = output.expanduser()
+    if target.suffix.lower() == ".zip":
+        return target
+    return target / default_name
+
+
+def _sqlite_backup(source: Path, target: Path) -> None:
+    source.parent.mkdir(parents=True, exist_ok=True)
+    src = sqlite3.connect(source)
+    dst = sqlite3.connect(target)
+    try:
+        src.backup(dst)
+    finally:
+        dst.close()
+        src.close()
+
+
+def _backup_manifest(cfg: object, backup_db: Path) -> dict[str, object]:
+    counts = {"sessions": 0, "folders": 0, "messages": 0}
+    db = sqlite3.connect(backup_db)
+    try:
+        for table in counts:
+            try:
+                counts[table] = int(db.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
+            except sqlite3.Error:
+                counts[table] = 0
+    finally:
+        db.close()
+    return {
+        "app": "telachat",
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "config_path": str(cfg.path),
+        "database_path": str(db_path()),
+        "default_profile": cfg.default_profile,
+        "profiles": {
+            name: {
+                "api_mode": profile.api_mode,
+                "base_url": profile.base_url,
+                "model": profile.model,
+                "models": list(profile.models or [profile.model]),
+                "api_key": redact_secret(profile.api_key),
+            }
+            for name, profile in sorted(cfg.profiles.items())
+        },
+        "prompt_templates": sorted(cfg.prompt_templates),
+        "counts": counts,
+    }
+
+
+def _redacted_config_toml(cfg: object) -> str:
+    lines = [
+        "# Redacted Telachat config backup.",
+        "# Secret values are not included.",
+        f"default_profile = {_toml_string(cfg.default_profile)}",
+        f"default_system_prompt = {_toml_string(cfg.default_system_prompt)}",
+        f"max_history_messages = {cfg.max_history_messages}",
+        "",
+    ]
+    if cfg.prompt_templates:
+        lines.append("[prompt_templates]")
+        for name, template in sorted(cfg.prompt_templates.items()):
+            lines.append(f"{_toml_key(name)} = {_toml_string(template)}")
+        lines.append("")
+    for name, profile in sorted(cfg.profiles.items()):
+        lines.append(f"[profiles.{_toml_key(name)}]")
+        lines.append(f"label = {_toml_string(profile.label)}")
+        lines.append(f"base_url = {_toml_string(profile.base_url)}")
+        lines.append(f"api_key = {_toml_string(redact_secret(profile.api_key))}")
+        lines.append(f"model = {_toml_string(profile.model)}")
+        lines.append(
+            "models = ["
+            + ", ".join(_toml_string(item) for item in (profile.models or [profile.model]))
+            + "]"
+        )
+        lines.append(f"temperature = {profile.temperature}")
+        lines.append(f"top_p = {profile.top_p}")
+        lines.append(f"max_tokens = {profile.max_tokens}")
+        if profile.reasoning_effort:
+            lines.append(f"reasoning_effort = {_toml_string(profile.reasoning_effort)}")
+        lines.append(f"timeout_seconds = {profile.timeout_seconds}")
+        lines.append(f"stream = {str(profile.stream).lower()}")
+        lines.append(f"api_mode = {_toml_string(profile.api_mode)}")
+        if profile.extra_headers:
+            lines.append("")
+            lines.append(f"[profiles.{_toml_key(name)}.headers]")
+            for header, value in sorted(profile.extra_headers.items()):
+                lines.append(
+                    f"{_toml_key(header)} = {_toml_string(_redacted_header_value(header, value))}"
+                )
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _toml_string(value: str) -> str:
+    return json.dumps(value, ensure_ascii=False)
+
+
+def _toml_key(value: str) -> str:
+    if re.fullmatch(r"[A-Za-z0-9_-]+", value):
+        return value
+    return _toml_string(value)
+
+
+def _redacted_header_value(header: str, value: str) -> str:
+    if re.search(r"auth|key|secret|token", header, re.IGNORECASE):
+        return redact_secret(value)
+    return value

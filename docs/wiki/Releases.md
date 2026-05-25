@@ -1,5 +1,16 @@
 # Releases
 
+## 0.10.0 - 2026-05-25
+
+- Neuer Befehl `telachat backup` fuer lokale Backup-ZIP-Dateien.
+- Nutzt die SQLite-Backup-API fuer eine konsistente `history.sqlite3`.
+- Enthält `config.redacted.toml` und `manifest.json`, aber keine rohen
+  Secret-Werte oder Envfiles.
+- Redaktiert potentiell geheime Headerwerte und bleibt auch mit Bindestrich-
+  Namen parsebares TOML.
+- `-o DIR` und `-o FILE.zip` werden unterstuetzt.
+- Tests pruefen ZIP-Inhalte und Secret-Redaction.
+
 ## 0.9.0 - 2026-05-25
 
 - Neuer Offline-Befehl `telachat config-check` mit Alias `telachat config`.

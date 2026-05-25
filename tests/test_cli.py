@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import io
+import json
 import os
 import tempfile
+import tomllib
 import unittest
+import zipfile
 from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
@@ -250,6 +253,84 @@ model = "demo"
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
+
+    def test_backup_writes_redacted_config_manifest_and_database(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            old_state = os.environ.get("XDG_STATE_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            os.environ["XDG_STATE_HOME"] = str(Path(tmp) / "state")
+            try:
+                config_dir = Path(tmp) / "config" / "telachat"
+                config_dir.mkdir(parents=True)
+                envfile = config_dir / "secret.env"
+                envfile.write_text("TELACHAT_TEST_KEY=super-secret-value\n", encoding="utf-8")
+                (config_dir / "config.toml").write_text(
+                    f"""
+                default_profile = "local-profile"
+                default_system_prompt = "System"
+
+[prompt_templates]
+quick-note = "Summarize"
+
+[profiles.local-profile]
+label = "Local"
+base_url = "http://127.0.0.1:9/v1"
+api_key = "envfile:{envfile}#TELACHAT_TEST_KEY"
+model = "demo"
+models = ["demo", "demo-large"]
+
+[profiles.local-profile.headers]
+Authorization = "Bearer super-secret-value"
+X-Test-Header = "yes"
+""".strip(),
+                    encoding="utf-8",
+                )
+                store = ChatStore()
+                try:
+                    session = store.create_session(
+                        title="Backup",
+                        profile="local-profile",
+                        model="demo-large",
+                        system_prompt="System",
+                    )
+                    store.add_message(session.id, "user", "Hallo Backup")
+                finally:
+                    store.close()
+
+                output_dir = Path(tmp) / "backup"
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["backup", "-o", str(output_dir)]), 0)
+                backup_path = Path(out.getvalue().strip())
+                self.assertTrue(backup_path.exists())
+                self.assertEqual(backup_path.parent, output_dir)
+                with zipfile.ZipFile(backup_path) as archive:
+                    names = set(archive.namelist())
+                    self.assertEqual(names, {"history.sqlite3", "config.redacted.toml", "manifest.json"})
+                    redacted = archive.read("config.redacted.toml").decode("utf-8")
+                    manifest = json.loads(archive.read("manifest.json").decode("utf-8"))
+                self.assertIn("envfile:", redacted)
+                self.assertNotIn("super-secret-value", redacted)
+                self.assertNotIn("super-secret-value", json.dumps(manifest))
+                parsed = tomllib.loads(redacted)
+                self.assertEqual(parsed["prompt_templates"]["quick-note"], "Summarize")
+                self.assertEqual(
+                    parsed["profiles"]["local-profile"]["headers"]["Authorization"],
+                    "Bea...lue",
+                )
+                self.assertEqual(
+                    parsed["profiles"]["local-profile"]["headers"]["X-Test-Header"],
+                    "yes",
+                )
+                self.assertEqual(manifest["counts"]["sessions"], 1)
+                self.assertEqual(manifest["counts"]["messages"], 1)
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+                _restore_env("XDG_STATE_HOME", old_state)
 
     def test_chat_regenerate_command_replaces_last_answer(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

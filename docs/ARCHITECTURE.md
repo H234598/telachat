@@ -18,7 +18,7 @@
   - Enables folders, session listing, search, loading, and Markdown export.
 - `telachat.cli`
   - `init`, `profiles`, `config-check`, `ask`, `chat`, `sessions`,
-    `export`, `export-folder`, `doctor`.
+    `export`, `export-folder`, `backup`, `doctor`.
   - Interactive `chat` installs optional Readline completion for slash commands
     and context values when stdin is a TTY.
 - `telachat.commands`
@@ -111,12 +111,21 @@ telachat sessions --sort newest|oldest|title|title-desc|provider
 telachat export <session-id>
 telachat export-folder <folder-name-or-id>
 telachat export-folder <folder-name-or-id> --single-file
+telachat backup
+telachat backup -o DIR
+telachat backup -o FILE.zip
 ```
 
 `config-check` is intentionally offline: it validates the loaded TOML shape,
 profile modes, model metadata, and whether configured secret sources resolve to
 a value. It prints only redacted secret references. `doctor` remains the live
 network/API check.
+
+`backup` creates a ZIP bundle with a consistent SQLite copy, a redacted TOML
+config reconstruction, and a JSON manifest. It intentionally does not include
+raw envfiles, raw API keys, or the user's original config file. The redacted
+TOML writer quotes keys when needed and redacts potentially secret header
+values.
 
 Interactive CLI chat supports Tab completion for slash commands, provider names,
 model IDs, prompt templates, folders, session references, sort modes, and common
@@ -156,6 +165,7 @@ GUI slash commands:
 - SQLite session/message roundtrip, Markdown export, and selective folder export.
 - SQLite folder prompts, sorting and history-search behavior.
 - SQLite session model metadata, legacy migration, exports, and backend restore.
+- Backup ZIP content and secret redaction.
 - CLI init/profile behavior with temporary XDG directories.
 - Shared slash-command catalog behavior.
 - Interactive CLI Readline completion and documented terminal command actions.

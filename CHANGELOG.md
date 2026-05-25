@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.0 - 2026-05-25
+
+- Add `telachat backup` for local, secret-aware backup bundles.
+- Create a consistent SQLite history backup via SQLite's backup API.
+- Include `config.redacted.toml` and `manifest.json` without raw secret values.
+- Keep redacted TOML parseable for dashed profile/template/header names and
+  redact potentially secret header values.
+- Support `telachat backup -o DIR` and `telachat backup -o FILE.zip`.
+- Add deterministic ZIP inspection coverage for backup contents and redaction.
+
 ## 0.9.0 - 2026-05-25
 
 - Add `telachat config-check` with alias `telachat config`.

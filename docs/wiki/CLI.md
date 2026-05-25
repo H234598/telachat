@@ -14,6 +14,7 @@ telachat doctor
 telachat doctor --chat
 telachat ask "Deine Frage"
 telachat chat
+telachat backup -o ./backups
 ```
 
 ## Provider und Template
@@ -27,6 +28,8 @@ telachat ask --template explain "SQLite WAL"
 `telachat config-check` prueft lokale Profile, Modelle und Secret-Quellen ohne
 API-Anfrage. `telachat config-check --strict` liefert einen Fehlercode, wenn
 eine nicht-lokale Secret-Quelle fehlt.
+`telachat backup` schreibt ein ZIP mit SQLite-Historie, redaktierter Config und
+Manifest; rohe Secrets und Envfiles bleiben draussen.
 
 ## Sessions
 

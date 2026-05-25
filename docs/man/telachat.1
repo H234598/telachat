@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.9.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.10.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -47,6 +47,11 @@ Export one session as Markdown.
 .B export-folder
 Export a selected folder as Markdown files or a single bundled Markdown file.
 .TP
+.B backup
+Create a local ZIP backup containing a consistent SQLite history copy,
+\fIconfig.redacted.toml\fR, and \fImanifest.json\fR. Raw API keys and envfiles are
+not included.
+.TP
 .B doctor
 Check profile configuration and the configured API.
 .TP
@@ -67,6 +72,7 @@ telachat ask --template summarize "Langer Text"
 telachat folders --create Arbeit --system "Antworte projektbezogen."
 telachat export-folder Arbeit -o ./arbeit-export
 telachat export-folder Arbeit --single-file -o arbeit.md
+telachat backup -o ./backups
 telachat-tk
 telachat-gtk
 .fi
