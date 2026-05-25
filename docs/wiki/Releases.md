@@ -1,5 +1,12 @@
 # Releases
 
+## 0.34.0 - 2026-05-25
+
+- GTK und Tk haben jetzt sichtbare Generierungsregler fuer Temperatur und
+  maximale Antworttokens.
+- Send und Regenerate nutzen diese Werte pro Anfrage.
+- Der OpenAI-Responses-Pfad sendet Temperatur und `top_p` jetzt ebenfalls.
+
 ## 0.33.0 - 2026-05-25
 
 - GTK und Tk haben jetzt einen sichtbaren Tagfilter in der Seitenleiste.

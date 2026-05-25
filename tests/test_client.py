@@ -124,12 +124,17 @@ class ClientTests(unittest.TestCase):
         self.assertIn("codex", run.call_args.args[0][0])
 
     def test_responses_profile_extracts_output_text(self) -> None:
-        profile = self.profile(stream=False).with_overrides(stream=False)
+        profile = self.profile(stream=False).with_overrides(
+            max_tokens=77,
+            stream=False,
+            temperature=0.35,
+        )
         profile = Profile(
             **{
                 **profile.__dict__,
                 "api_mode": "responses",
                 "reasoning_effort": "high",
+                "top_p": 0.55,
             }
         )
         client = OpenAICompatClient(profile)
@@ -143,7 +148,11 @@ class ClientTests(unittest.TestCase):
         assert isinstance(result, ChatResult)
         self.assertEqual(result.content, "Response OK")
         self.assertEqual(request.call_args.args[1], "/responses")
-        self.assertEqual(request.call_args.args[2]["reasoning"], {"effort": "high"})
+        body = request.call_args.args[2]
+        self.assertEqual(body["max_output_tokens"], 77)
+        self.assertEqual(body["temperature"], 0.35)
+        self.assertEqual(body["top_p"], 0.55)
+        self.assertEqual(body["reasoning"], {"effort": "high"})
 
 
 if __name__ == "__main__":

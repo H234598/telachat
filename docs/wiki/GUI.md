@@ -12,11 +12,13 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 
 - Links: Provider, Modell, Chats, Ordner, Tagfilter, Suche und Sortierung.
 - Mitte: Chatverlauf und Eingabe.
-- Rechts: Systemprompt.
+- Rechts: Systemprompt sowie Temperatur- und Token-Limit-Regler.
 - Linke Seite und Systemprompt sind einklappbar.
 - Die Seitenbreiten sind per Splitter anpassbar.
 - Der Archivfilter `Aktiv / Archiv / Alle` sitzt in der linken Seitenleiste.
 - Der Tagfilter zeigt vorhandene Tags mit Zaehlern und filtert die Chatliste.
+- Temperatur und maximale Antworttokens koennen pro Anfrage im rechten Bereich
+  angepasst werden.
 - `Check` fragt `/models` live fuer den gewaehlten Provider ab und ergaenzt die
   Modellauswahl mit den gemeldeten IDs.
 - `Shift+Enter` sendet eine Nachricht.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.34.0 - 2026-05-25
+
+- Add visible Tk/GTK generation controls for temperature and max output tokens.
+- Pass GUI generation overrides through Controller send/regenerate calls.
+- Send temperature/top_p on OpenAI Responses API requests so CLI and GUI
+  parameters behave consistently.
+
 ## 0.33.0 - 2026-05-25
 
 - Add visible Tk/GTK tag filters in the sidebar, including tag counts.

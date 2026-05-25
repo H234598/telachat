@@ -14,7 +14,8 @@
 - `telachat.client`
   - Minimal OpenAI-compatible HTTP client.
   - Supports `/models`, non-streaming chat, and SSE streaming chat.
-  - Sends Responses API `reasoning.effort` when configured.
+  - Sends Responses API `reasoning.effort`, temperature, top-p, and
+    max-output settings when configured.
   - Reduces dependency risk by avoiding external SDKs.
 - `telachat.store`
   - SQLite-backed session and message history.
@@ -32,6 +33,8 @@
   - Current-chat match formatting is shared by CLI and GUI `/find`.
 - `telachat.controller`
   - Shared application service for GUI frontends.
+  - Applies transient GUI generation overrides without rewriting config or
+    session metadata.
 - `telachat.gtkgui`
   - Native GTK4/Libadwaita desktop GUI.
 - `telachat.tkgui`

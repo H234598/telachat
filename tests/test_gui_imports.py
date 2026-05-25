@@ -129,6 +129,21 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(app.tag_filter_var.get(), "#projekt (2)")
         self.assertEqual(app.tag_filter_combo.values, ["Alle Tags", "#projekt (2)", "#review (1)"])
 
+    def test_tk_generation_inputs_normalize_to_supported_ranges(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        profile = SimpleNamespace(temperature=0.7, max_tokens=2048)
+        app = SimpleNamespace(
+            controller=SimpleNamespace(profiles=lambda: {"test": profile}),
+            selected_profile=lambda: "test",
+            temperature_var=_FakeText("2,7"),
+            max_tokens_var=_FakeText("0"),
+        )
+
+        self.assertEqual(module.TkTelachatApp.selected_temperature(app), 2.0)
+        self.assertEqual(module.TkTelachatApp.selected_max_tokens(app), 1)
+        self.assertEqual(app.temperature_var.get(), "2")
+        self.assertEqual(app.max_tokens_var.get(), "1")
+
 
 if __name__ == "__main__":
     unittest.main()

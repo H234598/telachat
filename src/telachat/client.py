@@ -76,6 +76,8 @@ class OpenAICompatClient:
                 and item.get("content")
             ],
             "max_output_tokens": self.profile.max_tokens,
+            "temperature": self.profile.temperature,
+            "top_p": self.profile.top_p,
         }
         if self.profile.reasoning_effort:
             body["reasoning"] = {"effort": self.profile.reasoning_effort}

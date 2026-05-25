@@ -177,11 +177,17 @@ class TelachatController:
         system_prompt: str,
         prompt: str,
         folder_id: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
     ) -> ChatPayload:
         clean = prompt.strip()
         if not clean:
             raise ValueError("Nachricht fehlt.")
-        profile = self.config.profile(profile_name).with_overrides(model=model)
+        profile = self.config.profile(profile_name).with_overrides(
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
         session = self.store.get_session(session_id or "") if session_id else None
         effective_system_prompt = system_prompt
         if session is None:
@@ -220,12 +226,16 @@ class TelachatController:
         profile_name: str | None,
         model: str | None,
         system_prompt: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
     ) -> ChatPayload:
         session = self.store.get_session(session_id)
         if session is None:
             raise KeyError(session_id)
         profile = self.config.profile(profile_name or session.profile).with_overrides(
-            model=model or session.model or None
+            model=model or session.model or None,
+            temperature=temperature,
+            max_tokens=max_tokens,
         )
         if session.profile != profile.name or session.model != profile.model:
             session = self.store.update_session_backend(session.id, profile.name, profile.model)

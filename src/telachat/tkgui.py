@@ -301,7 +301,7 @@ class TkTelachatApp:
         self.send_button.grid(row=0, column=1, sticky="ns")
 
         self.settings = ttk.Frame(self.paned, padding=14, width=320)
-        self.settings.rowconfigure(3, weight=1)
+        self.settings.rowconfigure(7, weight=1)
         ttk.Label(self.settings, text="Theme").grid(row=0, column=0, sticky="w")
         self.theme_display_to_name = {
             label: name for name, label in self.controller.theme_labels().items()
@@ -317,7 +317,29 @@ class TkTelachatApp:
         self.theme_combo.grid(row=1, column=0, sticky="ew", pady=(4, 12))
         self.theme_combo.bind("<<ComboboxSelected>>", self.on_theme_changed)
         self.theme_var.set(self.controller.theme_labels()[self.theme.name])
-        ttk.Label(self.settings, text="System").grid(row=2, column=0, sticky="w")
+        ttk.Label(self.settings, text="Temperatur").grid(row=2, column=0, sticky="w")
+        self.temperature_var = tk.StringVar()
+        self.temperature_spin = ttk.Spinbox(
+            self.settings,
+            from_=0.0,
+            to=2.0,
+            increment=0.1,
+            textvariable=self.temperature_var,
+            width=8,
+        )
+        self.temperature_spin.grid(row=3, column=0, sticky="ew", pady=(4, 10))
+        ttk.Label(self.settings, text="Max Tokens").grid(row=4, column=0, sticky="w")
+        self.max_tokens_var = tk.StringVar()
+        self.max_tokens_spin = ttk.Spinbox(
+            self.settings,
+            from_=1,
+            to=32768,
+            increment=128,
+            textvariable=self.max_tokens_var,
+            width=8,
+        )
+        self.max_tokens_spin.grid(row=5, column=0, sticky="ew", pady=(4, 12))
+        ttk.Label(self.settings, text="System").grid(row=6, column=0, sticky="w")
         self.system_text = tk.Text(
             self.settings,
             width=32,
@@ -328,7 +350,7 @@ class TkTelachatApp:
             insertbackground=palette.text,
             highlightbackground=palette.border,
         )
-        self.system_text.grid(row=3, column=0, sticky="nsew", pady=(4, 0))
+        self.system_text.grid(row=7, column=0, sticky="nsew", pady=(4, 0))
         self.system_text.insert("1.0", self.controller.system_prompt())
         self._apply_theme_to_widgets()
         self._layout_panes()
@@ -394,6 +416,14 @@ class TkTelachatApp:
         models = profile.models or [profile.model]
         self.model_combo.configure(values=models)
         self.model_var.set(profile.model)
+        self.refresh_generation_defaults()
+
+    def refresh_generation_defaults(self) -> None:
+        if not hasattr(self, "temperature_var"):
+            return
+        profile = self.controller.profiles()[self.selected_profile()]
+        self.temperature_var.set(f"{profile.temperature:.2f}".rstrip("0").rstrip("."))
+        self.max_tokens_var.set(str(profile.max_tokens))
 
     def update_model_choices_from_live(self, live_models: list[str]) -> None:
         selected = self.model_var.get()
@@ -464,12 +494,23 @@ class TkTelachatApp:
         system_prompt = self.system_text.get("1.0", tk.END).strip()
         session_id = self.active_session.id if self.active_session else None
         folder_id = self.selected_folder_id(for_new=True)
+        temperature = self.selected_temperature()
+        max_tokens = self.selected_max_tokens()
         self.input_text.delete("1.0", tk.END)
         self.hide_command_suggestions()
         self.set_busy(True, "Denke...")
         threading.Thread(
             target=self._send_worker,
-            args=(prompt, profile_name, model, system_prompt, session_id, folder_id),
+            args=(
+                prompt,
+                profile_name,
+                model,
+                system_prompt,
+                session_id,
+                folder_id,
+                temperature,
+                max_tokens,
+            ),
             daemon=True,
         ).start()
 
@@ -481,6 +522,8 @@ class TkTelachatApp:
         system_prompt: str,
         session_id: str | None,
         folder_id: str | None,
+        temperature: float,
+        max_tokens: int,
     ) -> None:
         try:
             payload = self.controller.send(
@@ -490,6 +533,8 @@ class TkTelachatApp:
                 system_prompt=system_prompt,
                 prompt=prompt,
                 folder_id=folder_id,
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
             self.events.put(("sent", payload))
         except Exception as exc:
@@ -506,6 +551,8 @@ class TkTelachatApp:
                 self.selected_profile(),
                 self.model_var.get(),
                 self.system_text.get("1.0", tk.END).strip(),
+                self.selected_temperature(),
+                self.selected_max_tokens(),
             ),
             daemon=True,
         ).start()
@@ -516,6 +563,8 @@ class TkTelachatApp:
         profile_name: str,
         model: str,
         system_prompt: str,
+        temperature: float,
+        max_tokens: int,
     ) -> None:
         try:
             payload = self.controller.regenerate(
@@ -523,6 +572,8 @@ class TkTelachatApp:
                 profile_name=profile_name,
                 model=model,
                 system_prompt=system_prompt,
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
             self.events.put(("sent", payload))
         except Exception as exc:
@@ -699,6 +750,24 @@ class TkTelachatApp:
 
     def selected_tag_filter(self) -> str | None:
         return self.tag_display_to_value.get(self.tag_filter_var.get())
+
+    def selected_temperature(self) -> float:
+        try:
+            value = float(self.temperature_var.get().replace(",", "."))
+        except ValueError:
+            value = self.controller.profiles()[self.selected_profile()].temperature
+        value = min(2.0, max(0.0, value))
+        self.temperature_var.set(f"{value:.2f}".rstrip("0").rstrip("."))
+        return value
+
+    def selected_max_tokens(self) -> int:
+        try:
+            value = int(float(self.max_tokens_var.get()))
+        except ValueError:
+            value = self.controller.profiles()[self.selected_profile()].max_tokens
+        value = min(32768, max(1, value))
+        self.max_tokens_var.set(str(value))
+        return value
 
     def selected_real_folder_id(self) -> str | None:
         selected = self.selected_folder_id(for_new=True)

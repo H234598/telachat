@@ -288,6 +288,17 @@ class GtkTelachatApp(Adw.Application):
         self.theme_dropdown.connect("notify::selected", self.on_theme_changed)
         self.settings.append(self.theme_dropdown)
 
+        self.settings.append(Gtk.Label(label="Temperatur", xalign=0))
+        self.temperature_spin = Gtk.SpinButton.new_with_range(0.0, 2.0, 0.1)
+        self.temperature_spin.set_digits(2)
+        self.settings.append(self.temperature_spin)
+
+        self.settings.append(Gtk.Label(label="Max Tokens", xalign=0))
+        self.max_tokens_spin = Gtk.SpinButton.new_with_range(1, 32768, 128)
+        self.max_tokens_spin.set_digits(0)
+        self.settings.append(self.max_tokens_spin)
+        self.refresh_generation_defaults()
+
         self.settings.append(Gtk.Label(label="System", xalign=0))
         self.system_view = Gtk.TextView()
         self.system_view.add_css_class("telachat-input")
@@ -394,6 +405,12 @@ class GtkTelachatApp(Adw.Application):
             return self.model_names[selected]
         return self.controller.config.profile(self.selected_profile()).model
 
+    def selected_temperature(self) -> float:
+        return float(self.temperature_spin.get_value())
+
+    def selected_max_tokens(self) -> int:
+        return int(self.max_tokens_spin.get_value_as_int())
+
     def refresh_models(self) -> None:
         profile = self.controller.config.profile(self.selected_profile())
         self.model_names = profile.models or [profile.model]
@@ -403,6 +420,14 @@ class GtkTelachatApp(Adw.Application):
         except ValueError:
             selected = 0
         self.model_dropdown.set_selected(selected)
+        self.refresh_generation_defaults()
+
+    def refresh_generation_defaults(self) -> None:
+        if not hasattr(self, "temperature_spin"):
+            return
+        profile = self.controller.config.profile(self.selected_profile())
+        self.temperature_spin.set_value(profile.temperature)
+        self.max_tokens_spin.set_value(profile.max_tokens)
 
     def update_model_choices_from_live(self, live_models: list[str]) -> None:
         selected = self.selected_model()
@@ -657,12 +682,23 @@ class GtkTelachatApp(Adw.Application):
         system_prompt = self.system_prompt()
         session_id = self.active_session.id if self.active_session else None
         folder_id = self.selected_folder_id(for_new=True)
+        temperature = self.selected_temperature()
+        max_tokens = self.selected_max_tokens()
         self.clear_input()
         self.hide_command_suggestions()
         self.set_busy(True, "Denke...")
         threading.Thread(
             target=self._send_worker,
-            args=(prompt, profile_name, model, system_prompt, session_id, folder_id),
+            args=(
+                prompt,
+                profile_name,
+                model,
+                system_prompt,
+                session_id,
+                folder_id,
+                temperature,
+                max_tokens,
+            ),
             daemon=True,
         ).start()
 
@@ -729,6 +765,8 @@ class GtkTelachatApp(Adw.Application):
         system_prompt: str,
         session_id: str | None,
         folder_id: str | None,
+        temperature: float,
+        max_tokens: int,
     ) -> None:
         try:
             payload = self.controller.send(
@@ -738,6 +776,8 @@ class GtkTelachatApp(Adw.Application):
                 system_prompt=system_prompt,
                 prompt=prompt,
                 folder_id=folder_id,
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
             GLib.idle_add(self._send_done, payload)
         except Exception as exc:
@@ -754,6 +794,8 @@ class GtkTelachatApp(Adw.Application):
                 self.selected_profile(),
                 self.selected_model(),
                 self.system_prompt(),
+                self.selected_temperature(),
+                self.selected_max_tokens(),
             ),
             daemon=True,
         ).start()
@@ -764,6 +806,8 @@ class GtkTelachatApp(Adw.Application):
         profile_name: str,
         model: str,
         system_prompt: str,
+        temperature: float,
+        max_tokens: int,
     ) -> None:
         try:
             payload = self.controller.regenerate(
@@ -771,6 +815,8 @@ class GtkTelachatApp(Adw.Application):
                 profile_name=profile_name,
                 model=model,
                 system_prompt=system_prompt,
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
             GLib.idle_add(self._send_done, payload)
         except Exception as exc:

@@ -24,6 +24,12 @@ uses model specs to define curated model entries and defaults. Msty separates
 local model management from online provider setup. Telachat should keep its
 model inventory scriptable first, then reuse the same shape for GUI refreshes.
 
+Open WebUI exposes chat parameters as a first-class chat feature, and Msty
+surfaces advanced model/conversation configuration alongside normal chat
+controls. Telachat already had CLI/config knobs for temperature and output
+length; the native GUIs should expose the same request controls without forcing
+users to edit TOML for every experiment.
+
 Jan and LM Studio validate the native-desktop/local-first direction. Jan exposes
 a desktop app with local models and cloud providers configured by user-owned API
 keys. LM Studio's server path is OpenAI-compatible and keeps tool/function-use
@@ -99,7 +105,6 @@ and local state under `$XDG_STATE_HOME`.
 
 ## Feature ideas kept for later
 
-- Per-session model/temperature overrides.
 - Stop/cancel in-flight request.
 - Config editor with validation and secret redaction.
 - Markdown rendering with copy buttons.
@@ -113,9 +118,12 @@ and local state under `$XDG_STATE_HOME`.
 - Open WebUI OpenAI-compatible docs: https://docs.openwebui.com/getting-started/quick-start/connect-a-provider/starting-with-openai-compatible/
 - Open WebUI import/export docs: https://docs.openwebui.com/features/chat-conversations/data-controls/import-export/
 - Open WebUI chat features overview: https://docs.openwebui.com/features/chat-conversations/chat-features/
+- Open WebUI history/search: https://docs.openwebui.com/features/chat-conversations/chat-features/history-search/
+- Open WebUI chat parameters overview: https://docs.openwebui.com/features/chat-conversations/chat-features/
 - Open WebUI folders/projects: https://docs.openwebui.com/features/chat-conversations/chat-features/conversation-organization
 - Open WebUI prompts/slash commands: https://docs.openwebui.com/features/workspace/prompts/
 - Open WebUI model workspace: https://docs.openwebui.com/features/workspace/models/
+- LibreChat feature overview: https://www.librechat.ai/docs/features
 - LibreChat custom endpoints: https://www.librechat.ai/docs/quick_start/custom_endpoints
 - LibreChat model specs: https://www.librechat.ai/docs/configuration/librechat_yaml/object_structure/model_specs
 - LibreChat import conversations: https://www.librechat.ai/docs/features/import_convos
@@ -123,6 +131,7 @@ and local state under `$XDG_STATE_HOME`.
 - Jan model/provider management: https://www.jan.ai/docs/desktop/manage-models
 - Jan local API server: https://www.jan.ai/docs/desktop/api-server
 - Msty Studio organization docs: https://docs.msty.studio/workspaces/organize
+- Msty Studio conversations: https://docs.msty.studio/conversations/main-chat
 - Jan API reference: https://www.jan.ai/docs/desktop/api-preference
 - Ollama OpenAI compatibility: https://docs.ollama.com/openai
 - LM Studio tool use/server API: https://www.lmstudio.ai/docs/advanced/tool-use
@@ -135,4 +144,5 @@ and local state under `$XDG_STATE_HOME`.
 - OpenAI streaming responses: https://developers.openai.com/api/docs/guides/streaming-responses
 - OpenAI GPT-5.5 model docs: https://developers.openai.com/api/docs/models/gpt-5.5
 - OpenAI Responses API reasoning docs: https://platform.openai.com/docs/api-reference/responses/compact?lang=curl
+- OpenAI Responses API request fields: https://platform.openai.com/docs/api-reference/responses/create?api-mode=responses
 - XDG Base Directory Specification: https://specifications.freedesktop.org/basedir-spec/0.8/

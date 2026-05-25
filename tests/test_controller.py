@@ -120,8 +120,13 @@ class ControllerTests(unittest.TestCase):
                             profile_name="test",
                             model="demo-large",
                             system_prompt="System",
+                            temperature=0.25,
+                            max_tokens=123,
                         )
 
+                    selected_profile = client_cls.call_args.args[0]
+                    self.assertEqual(selected_profile.temperature, 0.25)
+                    self.assertEqual(selected_profile.max_tokens, 123)
                     self.assertEqual(payload.answer, "Neu")
                     self.assertEqual(payload.session.model, "demo-large")
                     self.assertEqual(
@@ -279,7 +284,12 @@ class ControllerTests(unittest.TestCase):
                             model="demo-large",
                             system_prompt="System",
                             prompt="Hallo",
+                            temperature=0.45,
+                            max_tokens=321,
                         )
+                    selected_profile = client_cls.call_args.args[0]
+                    self.assertEqual(selected_profile.temperature, 0.45)
+                    self.assertEqual(selected_profile.max_tokens, 321)
                     self.assertEqual(payload.session.profile, "test")
                     self.assertEqual(payload.session.model, "demo-large")
                     stored = controller.store.get_session(payload.session.id)
