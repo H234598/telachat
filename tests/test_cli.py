@@ -645,6 +645,12 @@ model = "other-model"
                         system_prompt="System",
                         folder_id=work.id,
                     )
+                    archived = store.create_session(
+                        title="Gamma Archiv",
+                        profile="tki",
+                        system_prompt="System",
+                        folder_id=work.id,
+                    )
                     beta = store.create_session(
                         title="Beta Notiz",
                         profile="tki",
@@ -652,6 +658,8 @@ model = "other-model"
                     )
                     store.add_message(alpha.id, "user", "Projektplan")
                     store.add_message(alpha.id, "assistant", "Antwort")
+                    store.add_message(archived.id, "user", "Archivierter Projektplan")
+                    store.set_session_archived(archived.id, True)
                     store.add_message(beta.id, "user", "Nicht im Export")
                 finally:
                     store.close()
@@ -667,6 +675,7 @@ model = "other-model"
                 self.assertEqual(len(exported), 1)
                 self.assertIn("Projektplan", exported[0].read_text(encoding="utf-8"))
                 self.assertNotIn("Nicht im Export", (export_dir / "index.md").read_text(encoding="utf-8"))
+                self.assertNotIn("gamma-archiv", "\n".join(path.name for path in export_dir.iterdir()))
 
                 out = io.StringIO()
                 with redirect_stdout(out):
@@ -677,6 +686,7 @@ model = "other-model"
                 text = bundle.read_text(encoding="utf-8")
                 self.assertIn("Telachat Export: Arbeit", text)
                 self.assertIn("Projektplan", text)
+                self.assertNotIn("Archivierter Projektplan", text)
                 self.assertNotIn("Nicht im Export", text)
 
                 out = io.StringIO()
@@ -700,8 +710,36 @@ model = "other-model"
                     [("user", "Projektplan"), ("assistant", "Antwort")],
                 )
                 encoded = json.dumps(payload, sort_keys=True)
+                self.assertNotIn("Archivierter Projektplan", encoded)
                 self.assertNotIn("Nicht im Export", encoded)
                 self.assertNotIn("api_key", encoded)
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["export-folder", "Arbeit", "--archived", "--json"]),
+                        0,
+                    )
+                archived_payload = json.loads(out.getvalue())
+                self.assertEqual(
+                    [item["session"]["title"] for item in archived_payload["sessions"]],
+                    ["Gamma Archiv"],
+                )
+                self.assertTrue(archived_payload["sessions"][0]["session"]["archived"])
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["export-folder", "Arbeit", "--all", "--json"]), 0)
+                all_payload = json.loads(out.getvalue())
+                self.assertEqual(
+                    [item["session"]["title"] for item in all_payload["sessions"]],
+                    ["Alpha Plan", "Gamma Archiv"],
+                )
+
+                err = io.StringIO()
+                with redirect_stderr(err):
+                    self.assertEqual(main(["export-folder", "Arbeit", "--archived", "--all"]), 1)
+                self.assertIn("--archived und --all schliessen sich aus", err.getvalue())
 
                 out = io.StringIO()
                 with redirect_stdout(out):
