@@ -1,5 +1,12 @@
 # Releases
 
+## 0.47.2 - 2026-05-25
+
+- Ergaenzt einen Workflow-Regressionstest, der rohe Wildcards direkt in
+  `gh release upload`-Kommandos verhindert.
+- Sichert damit den bei Windows-Packaging-PRs gefundenen Release-Upload-
+  Blocker dauerhaft ab.
+
 ## 0.47.1 - 2026-05-25
 
 - Ergaenzt eine Legacy-SQLite-Migration fuer sehr alte `messages`-Tabellen ohne

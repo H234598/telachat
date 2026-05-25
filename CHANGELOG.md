@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.47.2 - 2026-05-25
+
+- Add workflow regression coverage that rejects raw wildcards passed directly to `gh release upload`.
+- Guard the Windows packaging release-upload path so assets must be resolved and validated before upload.
+
 ## 0.47.1 - 2026-05-25
 
 - Add a legacy SQLite migration for old `messages` tables that do not yet have the `metadata` column.
