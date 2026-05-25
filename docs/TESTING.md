@@ -11,6 +11,7 @@ PYTHONPATH=src python3 -m telachat models --json
 PYTHONPATH=src python3 -m telachat theme
 PYTHONPATH=src python3 -m telachat backup -o /tmp/telachat-backups
 PYTHONPATH=src python3 -m telachat restore --dry-run /tmp/telachat-backups/FILE.zip
+make check
 make compile
 make test3
 make zipapp
@@ -20,6 +21,9 @@ man ./docs/man/telachat.1
 The fake OpenAI-compatible HTTP server in `tests/test_client.py` binds to
 `127.0.0.1`. If a sandbox blocks local sockets, run the tests outside that
 sandbox. No external API key is needed.
+`make check` runs bytecode compilation, the full offline suite, and
+`git diff --check`; `make test3` repeats the suite three times to catch state
+leaks.
 
 ## Live endpoint tests
 

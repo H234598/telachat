@@ -1,10 +1,13 @@
-.PHONY: all test test3 compile zipapp install clean doctor
+.PHONY: all check test test3 compile zipapp install clean doctor
 
 PYTHON ?= python3
 PREFIX ?= $(HOME)/.local
 APP := telachat
 
 all: compile test zipapp
+
+check: compile test
+	git diff --check
 
 compile:
 	$(PYTHON) -m compileall -q src tests
