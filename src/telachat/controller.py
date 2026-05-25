@@ -5,7 +5,15 @@ from dataclasses import dataclass, replace
 
 from .client import ChatResult, OpenAICompatClient
 from .config import AppConfig, Profile, load_config, set_config_theme
-from .store import ChatStore, Folder, Message, Session, messages_for_api, title_from_prompt
+from .store import (
+    ChatStore,
+    Folder,
+    Message,
+    Session,
+    StoreStats,
+    messages_for_api,
+    title_from_prompt,
+)
 from .themes import Theme, normalize_theme_name, theme_by_name, theme_labels
 
 
@@ -137,6 +145,9 @@ class TelachatController:
 
     def list_tags(self) -> list[tuple[str, int]]:
         return self.store.list_tags()
+
+    def stats(self) -> StoreStats:
+        return self.store.stats()
 
     def rename_folder(self, folder_id: str, name: str) -> Folder:
         return self.store.update_folder_name(folder_id, name)

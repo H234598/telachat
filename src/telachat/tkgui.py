@@ -6,7 +6,13 @@ import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
-from .commands import format_message_matches, slash_command_help, slash_command_suggestions
+from .commands import (
+    format_message_matches,
+    format_stats_lines,
+    format_stats_summary,
+    slash_command_help,
+    slash_command_suggestions,
+)
 from .config import redact_secret
 from .controller import TelachatController
 from .model_choices import merge_model_choices
@@ -1011,6 +1017,13 @@ class TkTelachatApp:
         elif command == "/tags":
             tags = self.controller.list_tags()
             self.set_status(", ".join(f"#{tag} ({count})" for tag, count in tags) or "Keine Tags.")
+        elif command == "/stats":
+            stats = self.controller.stats()
+            messagebox.showinfo(
+                "Telachat Statistik",
+                "\n".join(format_stats_lines(stats, include_database=False)),
+            )
+            self.set_status(format_stats_summary(stats))
         elif command in {"/edit-last", "/edit"}:
             if not rest:
                 self.set_status("Nutzung: /edit-last TEXT")

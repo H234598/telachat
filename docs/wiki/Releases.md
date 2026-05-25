@@ -1,5 +1,11 @@
 # Releases
 
+## 0.37.0 - 2026-05-25
+
+- `/stats` funktioniert jetzt im interaktiven CLI-Prompt sowie in Tk und GTK.
+- CLI und GUI teilen die content-freie Statistikformatierung.
+- Tests decken Command-Katalog, Terminal-Slash-Befehl und Tk-Dialog ab.
+
 ## 0.36.1 - 2026-05-25
 
 - Ergaenzt Regressionstests fuer `telachat stats` auf einer leeren Historie.

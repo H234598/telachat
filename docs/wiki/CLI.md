@@ -107,6 +107,7 @@ Im interaktiven Chat funktionieren unter anderem:
 /tag TAG [TAG...]
 /untag TAG [TAG...]
 /tags [SESSION]
+/stats
 /edit-last TEXT
 /fork [TITLE]
 /regen

@@ -1270,6 +1270,7 @@ X-Test-Header = "yes"
                         "/unarchive",
                         "/tag Projekt Review",
                         "/tags",
+                        "/stats",
                         "/untag Review",
                         "/folder-system Ordnerkontext",
                         "/unfile",
@@ -1291,6 +1292,7 @@ X-Test-Header = "yes"
                 self.assertIn("Session wiederhergestellt.", text)
                 self.assertIn("Tags: #projekt #review", text)
                 self.assertIn("#projekt  1", text)
+                self.assertIn("Nachrichten: 0 gesamt", text)
                 self.assertIn("Tags: #projekt", text)
                 self.assertIn("Ordner-Systemprompt gesetzt: Arbeit", text)
                 self.assertIn("Session geloescht:", text)

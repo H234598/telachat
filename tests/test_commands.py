@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import unittest
+from types import SimpleNamespace
 
 from telachat.commands import (
     canonical_slash_command,
     format_message_matches,
+    format_stats_lines,
+    format_stats_summary,
     slash_command_help,
     slash_command_name_suggestions,
     slash_command_suggestions,
@@ -36,14 +39,46 @@ class CommandCatalogTests(unittest.TestCase):
         self.assertIn("/provider NAME", help_text)
         self.assertIn("/theme [NAME]", help_text)
         self.assertIn("/find TEXT", help_text)
+        self.assertIn("/stats", help_text)
 
     def test_command_name_suggestions_include_aliases(self) -> None:
         self.assertIn("/permissions", slash_command_name_suggestions("/per"))
         self.assertIn("/theme", slash_command_name_suggestions("/the"))
+        self.assertIn("/stats", slash_command_name_suggestions("/sta"))
         self.assertIn("/edit", slash_command_name_suggestions("/ed"))
         self.assertIn("/quit", slash_command_name_suggestions("/qu"))
         self.assertEqual(canonical_slash_command("/ablegen"), "/move")
         self.assertEqual(canonical_slash_command("/edit"), "/edit-last")
+
+    def test_stats_formatting_is_content_free(self) -> None:
+        stats = SimpleNamespace(
+            database_path="/tmp/history.sqlite3",
+            sessions_total=2,
+            sessions_active=1,
+            sessions_archived=1,
+            sessions_pinned=1,
+            sessions_unfiled=1,
+            folders_total=1,
+            folders_with_system_prompt=0,
+            tags_total=1,
+            tag_links_total=2,
+            tagged_sessions=2,
+            messages_total=4,
+            message_roles=(("assistant", 2), ("user", 2)),
+            session_profiles=(("tki", 2),),
+            session_models=(("", 2),),
+        )
+
+        lines = format_stats_lines(stats, include_database=False)
+
+        self.assertEqual(
+            format_stats_summary(stats),
+            "Sessions 2 | Nachrichten 4 | Ordner 1 | Tags 1",
+        )
+        self.assertNotIn("SQLite:", "\n".join(lines))
+        self.assertIn("Sessions: 2 gesamt, 1 aktiv, 1 archiviert", lines[0])
+        self.assertIn("assistant=2", lines[1])
+        self.assertIn("Modelle: ohne Modell=2", lines[-1])
 
     def test_message_match_formatting_is_compact(self) -> None:
         messages = [

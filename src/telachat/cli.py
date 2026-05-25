@@ -19,6 +19,7 @@ from .client import ApiError, ChatResult, OpenAICompatClient
 from .commands import (
     canonical_slash_command,
     format_message_matches,
+    format_stats_lines,
     slash_command_help,
     slash_command_name_suggestions,
 )
@@ -702,33 +703,8 @@ def cmd_stats(args: argparse.Namespace) -> int:
             print(json.dumps(_stats_record(stats), indent=2, sort_keys=True))
             return 0
         print(f"{APP_TITLE} stats")
-        print(f"SQLite: {stats.database_path}")
-        print(
-            "Sessions: "
-            f"{stats.sessions_total} gesamt, "
-            f"{stats.sessions_active} aktiv, "
-            f"{stats.sessions_archived} archiviert, "
-            f"{stats.sessions_pinned} angeheftet, "
-            f"{stats.sessions_unfiled} ohne Ordner"
-        )
-        print(
-            "Nachrichten: "
-            f"{stats.messages_total} gesamt"
-            f"{_format_count_suffix(stats.message_roles)}"
-        )
-        print(
-            "Ordner: "
-            f"{stats.folders_total} gesamt, "
-            f"{stats.folders_with_system_prompt} mit System-Prompt"
-        )
-        print(
-            "Tags: "
-            f"{stats.tags_total} Tags, "
-            f"{stats.tag_links_total} Zuweisungen, "
-            f"{stats.tagged_sessions} getaggte Sessions"
-        )
-        print(f"Profile: {_format_count_pairs(stats.session_profiles)}")
-        print(f"Modelle: {_format_count_pairs(stats.session_models, empty_label='ohne Modell')}")
+        for line in format_stats_lines(stats):
+            print(line)
     finally:
         store.close()
     return 0
@@ -916,23 +892,6 @@ def _stats_record(stats: StoreStats) -> dict[str, object]:
             for model, count in stats.session_models
         ],
     }
-
-
-def _format_count_suffix(pairs: Iterable[tuple[str, int]]) -> str:
-    text = _format_count_pairs(pairs)
-    return f" ({text})" if text != "-" else ""
-
-
-def _format_count_pairs(
-    pairs: Iterable[tuple[str, int]],
-    *,
-    empty_label: str = "leer",
-) -> str:
-    labels = [
-        f"{label or empty_label}={count}"
-        for label, count in pairs
-    ]
-    return ", ".join(labels) if labels else "-"
 
 
 def _format_session_line(session: Session) -> str:
@@ -1722,6 +1681,9 @@ def _handle_command(
     elif command == "/sessions":
         for item in store.list_sessions(20):
             print(_format_session_line(item))
+    elif command == "/stats":
+        for line in format_stats_lines(store.stats(), include_database=False):
+            print(line)
     elif command == "/archives":
         items = store.list_sessions(20, archive="archived")
         if not items:

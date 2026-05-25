@@ -4,6 +4,7 @@ import importlib
 import unittest
 import warnings
 from types import SimpleNamespace
+from unittest import mock
 
 
 class _FakeController:
@@ -17,6 +18,9 @@ class _FakeController:
 
     def list_tags(self) -> list[tuple[str, int]]:
         return self.tags
+
+    def stats(self) -> object:
+        return _fake_stats()
 
 
 class _FakeList:
@@ -182,6 +186,20 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(status, "Antwort in 1.2s")
 
+    def test_tk_stats_command_shows_summary_without_database_path(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        app = SimpleNamespace(controller=_FakeController(), statuses=[])
+        app.set_status = lambda text: app.statuses.append(text)
+
+        with mock.patch.object(module.messagebox, "showinfo") as showinfo:
+            module.TkTelachatApp.handle_command(app, "/stats")
+
+        showinfo.assert_called_once()
+        self.assertEqual(showinfo.call_args.args[0], "Telachat Statistik")
+        self.assertIn("Sessions: 2 gesamt", showinfo.call_args.args[1])
+        self.assertNotIn("SQLite:", showinfo.call_args.args[1])
+        self.assertEqual(app.statuses[-1], "Sessions 2 | Nachrichten 4 | Ordner 1 | Tags 1")
+
     def test_gtk_response_status_reports_elapsed_time(self) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -198,6 +216,26 @@ class GuiImportTests(unittest.TestCase):
         )
 
         self.assertEqual(status, "Antwort in 2.0s")
+
+
+def _fake_stats() -> object:
+    return SimpleNamespace(
+        database_path="/tmp/history.sqlite3",
+        sessions_total=2,
+        sessions_active=1,
+        sessions_archived=1,
+        sessions_pinned=1,
+        sessions_unfiled=1,
+        folders_total=1,
+        folders_with_system_prompt=0,
+        tags_total=1,
+        tag_links_total=2,
+        tagged_sessions=2,
+        messages_total=4,
+        message_roles=(("assistant", 2), ("user", 2)),
+        session_profiles=(("tki", 2),),
+        session_models=(("", 2),),
+    )
 
 
 if __name__ == "__main__":

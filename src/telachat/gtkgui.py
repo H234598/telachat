@@ -11,7 +11,13 @@ gi.require_version("Adw", "1")
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
-from .commands import format_message_matches, slash_command_help, slash_command_suggestions
+from .commands import (
+    format_message_matches,
+    format_stats_lines,
+    format_stats_summary,
+    slash_command_help,
+    slash_command_suggestions,
+)
 from .config import redact_secret
 from .controller import TelachatController
 from .model_choices import merge_model_choices
@@ -1135,6 +1141,16 @@ class GtkTelachatApp(Adw.Application):
         elif command == "/tags":
             tags = self.controller.list_tags()
             self.status.set_text(", ".join(f"#{tag} ({count})" for tag, count in tags) or "Keine Tags.")
+        elif command == "/stats":
+            stats = self.controller.stats()
+            dialog = Adw.MessageDialog.new(
+                self.window,
+                "Telachat Statistik",
+                "\n".join(format_stats_lines(stats, include_database=False)),
+            )
+            dialog.add_response("ok", "OK")
+            dialog.present()
+            self.status.set_text(format_stats_summary(stats))
         elif command in {"/edit-last", "/edit"}:
             if not rest:
                 self.status.set_text("Nutzung: /edit-last TEXT")

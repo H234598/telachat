@@ -31,6 +31,7 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - `/fork [TITLE]` kopiert den aktuellen Chat und laedt den neuen Fork.
 - `/archive`, `/unarchive` und `/archives` verwalten erledigte Chats.
 - `/tag`, `/untag` und `/tags` verwalten flexible Chat-Markierungen.
+- `/stats` zeigt lokale Historienzaehler ohne Chat-Inhalte.
 - `/theme [NAME]` wechselt das GUI-Theme direkt aus dem Prompt.
 - `/find TEXT` zeigt Treffer in der aktuell geladenen Unterhaltung.
 
@@ -72,6 +73,7 @@ Slash-Commands funktionieren ebenfalls:
 /archive
 /archives
 /tag projekt review
+/stats
 /folder-system Projektkontext
 /permissions
 ```

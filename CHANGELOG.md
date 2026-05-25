@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.37.0 - 2026-05-25
+
+- Add `/stats` to interactive CLI, Tk, and GTK prompt command paths.
+- Share content-free statistics formatting across CLI and GUI output.
+- Cover command catalog, terminal slash-command, and Tk `/stats` behavior.
+
 ## 0.36.1 - 2026-05-25
 
 - Add regression coverage for zero-count `telachat stats` behavior on an empty

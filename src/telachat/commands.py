@@ -29,6 +29,7 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/tag", "/tag TAG [TAG...]", "Tags zum aktuellen Chat hinzufuegen"),
     SlashCommand("/untag", "/untag TAG [TAG...]", "Tags vom aktuellen Chat entfernen"),
     SlashCommand("/tags", "/tags [SESSION]", "Tags anzeigen"),
+    SlashCommand("/stats", "/stats", "Lokale Historienstatistik anzeigen"),
     SlashCommand(
         "/edit-last",
         "/edit-last TEXT",
@@ -71,6 +72,55 @@ def slash_command_help() -> str:
     )
 
 
+def format_stats_lines(stats: object, *, include_database: bool = True) -> list[str]:
+    lines = []
+    if include_database:
+        lines.append(f"SQLite: {getattr(stats, 'database_path')}")
+    lines.extend(
+        [
+            (
+                "Sessions: "
+                f"{getattr(stats, 'sessions_total')} gesamt, "
+                f"{getattr(stats, 'sessions_active')} aktiv, "
+                f"{getattr(stats, 'sessions_archived')} archiviert, "
+                f"{getattr(stats, 'sessions_pinned')} angeheftet, "
+                f"{getattr(stats, 'sessions_unfiled')} ohne Ordner"
+            ),
+            (
+                "Nachrichten: "
+                f"{getattr(stats, 'messages_total')} gesamt"
+                f"{_format_count_suffix(getattr(stats, 'message_roles'))}"
+            ),
+            (
+                "Ordner: "
+                f"{getattr(stats, 'folders_total')} gesamt, "
+                f"{getattr(stats, 'folders_with_system_prompt')} mit System-Prompt"
+            ),
+            (
+                "Tags: "
+                f"{getattr(stats, 'tags_total')} Tags, "
+                f"{getattr(stats, 'tag_links_total')} Zuweisungen, "
+                f"{getattr(stats, 'tagged_sessions')} getaggte Sessions"
+            ),
+            f"Profile: {_format_count_pairs(getattr(stats, 'session_profiles'))}",
+            (
+                "Modelle: "
+                f"{_format_count_pairs(getattr(stats, 'session_models'), empty_label='ohne Modell')}"
+            ),
+        ]
+    )
+    return lines
+
+
+def format_stats_summary(stats: object) -> str:
+    return (
+        f"Sessions {getattr(stats, 'sessions_total')} | "
+        f"Nachrichten {getattr(stats, 'messages_total')} | "
+        f"Ordner {getattr(stats, 'folders_total')} | "
+        f"Tags {getattr(stats, 'tags_total')}"
+    )
+
+
 def slash_command_suggestions(prefix: str, *, limit: int = 8) -> list[SlashCommand]:
     clean = prefix.strip().lower()
     if not clean.startswith("/"):
@@ -105,6 +155,23 @@ def canonical_slash_command(name: str) -> str:
         if clean in command.names:
             return command.name
     return clean
+
+
+def _format_count_suffix(pairs: Iterable[tuple[str, int]]) -> str:
+    text = _format_count_pairs(pairs)
+    return f" ({text})" if text != "-" else ""
+
+
+def _format_count_pairs(
+    pairs: Iterable[tuple[str, int]],
+    *,
+    empty_label: str = "leer",
+) -> str:
+    labels = [
+        f"{label or empty_label}={count}"
+        for label, count in pairs
+    ]
+    return ", ".join(labels) if labels else "-"
 
 
 def format_message_matches(
