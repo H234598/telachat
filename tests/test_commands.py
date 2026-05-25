@@ -4,6 +4,7 @@ import unittest
 from types import SimpleNamespace
 
 from telachat.commands import (
+    SLASH_COMMANDS,
     canonical_slash_command,
     format_message_matches,
     format_stats_lines,
@@ -51,6 +52,15 @@ class CommandCatalogTests(unittest.TestCase):
         self.assertIn("/quit", slash_command_name_suggestions("/qu"))
         self.assertEqual(canonical_slash_command("/ablegen"), "/move")
         self.assertEqual(canonical_slash_command("/edit"), "/edit-last")
+
+    def test_declared_aliases_resolve_to_canonical_commands(self) -> None:
+        for command in SLASH_COMMANDS:
+            self.assertEqual(canonical_slash_command(command.name), command.name)
+            for alias in command.aliases:
+                with self.subTest(alias=alias):
+                    self.assertEqual(canonical_slash_command(alias), command.name)
+
+        self.assertEqual(canonical_slash_command("/unknown"), "/unknown")
 
     def test_stats_formatting_is_content_free(self) -> None:
         stats = SimpleNamespace(
