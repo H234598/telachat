@@ -75,6 +75,37 @@ class StoreTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_add_message_returns_metadata_copy(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                session = store.create_session(
+                    title="Metadata Copy",
+                    profile="tki",
+                    system_prompt="System",
+                )
+                metadata = {"usage": {"input_tokens": 1}}
+
+                message = store.add_message(
+                    session.id,
+                    "assistant",
+                    "Hi",
+                    metadata=metadata,
+                )
+                metadata["usage"]["input_tokens"] = 99
+                usage = message.metadata["usage"]
+                self.assertIsInstance(usage, dict)
+                assert isinstance(usage, dict)
+                usage["output_tokens"] = 2
+
+                self.assertEqual(usage["input_tokens"], 1)
+                self.assertEqual(
+                    store.messages(session.id)[0].metadata,
+                    {"usage": {"input_tokens": 1}},
+                )
+            finally:
+                store.close()
+
     def test_title_from_prompt(self) -> None:
         self.assertEqual(title_from_prompt("  hallo   welt "), "hallo welt")
         self.assertEqual(title_from_prompt(""), "Neue Unterhaltung")

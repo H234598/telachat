@@ -770,19 +770,27 @@ class ChatStore:
     ) -> Message:
         with self._lock:
             now = int(time.time())
+            metadata_text = json.dumps(metadata or {}, sort_keys=True)
             cur = self.db.execute(
                 """
                 INSERT INTO messages(session_id, role, content, created_at, metadata)
                 VALUES (?, ?, ?, ?, ?)
                 """,
-                (session_id, role, content, now, json.dumps(metadata or {}, sort_keys=True)),
+                (session_id, role, content, now, metadata_text),
             )
             self.db.execute(
                 "UPDATE sessions SET updated_at = ? WHERE id = ?",
                 (now, session_id),
             )
             self.db.commit()
-            return Message(int(cur.lastrowid), session_id, role, content, now, metadata or {})
+            return Message(
+                int(cur.lastrowid),
+                session_id,
+                role,
+                content,
+                now,
+                _json_object(metadata_text),
+            )
 
     def messages(self, session_id: str, *, limit: int | None = None) -> list[Message]:
         with self._lock:
