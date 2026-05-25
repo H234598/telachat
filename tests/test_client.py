@@ -243,6 +243,18 @@ class ClientTests(unittest.TestCase):
         )
         self.assertEqual(format_token_usage(None), "")
         self.assertEqual(token_usage_record(None), {})
+        malformed = TokenUsage(
+            input_tokens=-1,
+            output_tokens=0,
+            total_tokens=-5,
+            cached_input_tokens=-2,
+            reasoning_tokens=0,
+        )
+        self.assertEqual(format_token_usage(malformed), "Tokens: 0 out")
+        self.assertEqual(
+            token_usage_record(malformed),
+            {"output_tokens": 0, "reasoning_tokens": 0},
+        )
 
 
 if __name__ == "__main__":
