@@ -114,8 +114,10 @@ api_key = "env:PROVIDER_API_KEY"
 ```sh
 telachat init
 telachat profiles
+telachat profiles --json
 telachat config-check
 telachat config-check --strict
+telachat config-check --json
 telachat theme
 telachat theme dark
 telachat templates
@@ -130,6 +132,7 @@ telachat sessions
 telachat sessions --query TEXT
 telachat sessions --folder NAME
 telachat sessions --sort newest|oldest|title|title-desc|provider
+telachat sessions --json
 telachat fork <session-id-or-prefix>
 telachat export <session-id>
 telachat export-folder <folder-name-or-id>
@@ -145,6 +148,9 @@ telachat import-backup [--dry-run] FILE.zip
 profile modes, model metadata, and whether configured secret sources resolve to
 a value. It prints only redacted secret references. `doctor` remains the live
 network/API check.
+`profiles`, `config-check`, `sessions`, and `folders` also support `--json`
+for agent/script consumption. JSON output is redacted; folder system prompts
+are included only when `folders --show-system --json` is requested.
 
 `backup` creates a ZIP bundle with a consistent SQLite copy, a redacted TOML
 config reconstruction, and a JSON manifest. It intentionally does not include
@@ -195,6 +201,7 @@ GUI slash commands:
 - Theme config parsing, env overrides, CLI setting, and GUI controller
   persistence.
 - Offline config-check behavior and strict missing-secret handling.
+- Redacted JSON output for profiles, config-check, sessions, and folders.
 - API client against a local fake OpenAI-compatible HTTP server.
 - Non-streaming and streaming SSE responses.
 - SQLite session/message roundtrip, Markdown export, and selective folder export.

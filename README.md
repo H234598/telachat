@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.14.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.15.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -28,6 +28,7 @@ cd /home/teladi/telachat
 make install
 telachat init
 telachat config-check
+telachat config-check --json
 telachat theme
 telachat backup
 telachat doctor
@@ -131,6 +132,8 @@ Nuetzliche Chat-Befehle:
 Im interaktiven Terminal-Chat nutzt Telachat Readline-Completion: `Tab`
 vervollstaendigt Slash-Befehle und passende Kontextwerte wie Profile, Modelle,
 Templates, Ordner, Session-IDs, Session-Titel und Sortiermodi.
+Fuer Skripte und Agenten liefern `profiles --json`, `config-check --json`,
+`sessions --json` und `folders --json` strukturierte, redaktierte Daten.
 
 GUI-Themes werden dauerhaft ueber `theme = "system"` in `config.toml`
 gesteuert. Verfuegbar sind `system`, `light`, `dark` und `high-contrast`.
@@ -150,6 +153,7 @@ telachat sessions --query projekt
 telachat sessions --query gpt-5.5
 telachat sessions --folder Arbeit
 telachat sessions --sort title
+telachat sessions --json
 telachat fork SESSION_ID --title "Variante A"
 telachat export-folder Arbeit -o ./arbeit-export
 telachat export-folder Arbeit --single-file -o arbeit.md
@@ -175,6 +179,7 @@ telachat folders
 telachat folders --create Arbeit --system "Antworte knapp und projektbezogen."
 telachat folders --set-system Arbeit "Nutze den Projektkontext."
 telachat folders --show-system
+telachat folders --json --show-system
 ```
 
 Prompt-Templates kommen aus `[prompt_templates]` in `config.toml` und koennen
@@ -184,6 +189,7 @@ per CLI oder GUI eingesetzt werden:
 telachat templates
 telachat config-check
 telachat config-check --strict
+telachat config-check --json
 telachat ask --template summarize "Langer Text..."
 ```
 

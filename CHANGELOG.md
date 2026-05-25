@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.15.0 - 2026-05-25
+
+- Add redacted JSON output for `telachat profiles --json`.
+- Add redacted JSON output for `telachat config-check --json`.
+- Add JSON output for `telachat sessions --json` and `telachat folders --json`.
+- Keep folder system prompts out of folder JSON unless `--show-system` is used.
+- Add CLI regression coverage for JSON output and secret redaction.
+- Add store regression coverage for SQLite foreign-key protection.
+
 ## 0.14.0 - 2026-05-25
 
 - Add `telachat fork SESSION [--title TITLE]` to copy a saved chat into a new

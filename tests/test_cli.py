@@ -35,6 +35,14 @@ class CliTests(unittest.TestCase):
                 self.assertIn("tki", text)
                 self.assertIn("Qwen/Qwen2.5-1.5B-Instruct", text)
                 self.assertNotIn("sk-", text)
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["profiles", "--json"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["default_profile"], "tki")
+                self.assertTrue(any(profile["name"] == "tki" for profile in payload["profiles"]))
+                self.assertNotIn("sk-", out.getvalue())
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
@@ -87,6 +95,16 @@ class CliTests(unittest.TestCase):
                 text = out.getvalue()
                 self.assertLess(text.index("Beta"), text.index("Alpha"))
                 self.assertIn("* ", text)
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["sessions", "--json", "--sort", "title"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertEqual(
+                    [session["title"] for session in payload["sessions"]],
+                    ["Beta", "Alpha"],
+                )
+                self.assertTrue(payload["sessions"][0]["pinned"])
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
@@ -158,9 +176,33 @@ model = "demo"
                 out = io.StringIO()
                 with redirect_stdout(out):
                     self.assertEqual(
+                        main(["--config", str(config), "config-check", "--json"]),
+                        0,
+                    )
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["missing_secrets"], 1)
+                profiles = {profile["name"]: profile for profile in payload["profiles"]}
+                self.assertEqual(profiles["missing"]["api_key"], "env:TELACHAT_MISSING_TEST_KEY")
+                self.assertNotIn("secret-value", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
                         main(["--config", str(config), "config-check", "--strict"]),
                         1,
                     )
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["--config", str(config), "config-check", "--json", "--strict"]),
+                        1,
+                    )
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["missing_secrets"], 1)
+                profiles = {profile["name"]: profile for profile in payload["profiles"]}
+                self.assertFalse(profiles["missing"]["secret_ok"])
+                self.assertNotIn("secret-value", out.getvalue())
             finally:
                 _restore_env("TELACHAT_MISSING_TEST_KEY", old_missing)
 
@@ -217,6 +259,21 @@ model = "demo"
                 text = out.getvalue()
                 self.assertIn("system", text)
                 self.assertIn("Nur kurz.", text)
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["folders", "--json"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["folders"][0]["name"], "Projekt")
+                self.assertTrue(payload["folders"][0]["has_system_prompt"])
+                self.assertNotIn("system_prompt", payload["folders"][0])
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["folders", "--json", "--show-system"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["folders"][0]["name"], "Projekt")
+                self.assertEqual(payload["folders"][0]["system_prompt"], "Nur kurz.")
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)

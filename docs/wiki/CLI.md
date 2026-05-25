@@ -8,6 +8,7 @@ Telachat kann komplett aus dem Terminal genutzt werden.
 telachat init
 telachat profiles
 telachat config-check
+telachat config-check --json
 telachat theme
 telachat templates
 telachat folders
@@ -36,6 +37,9 @@ temporäre Starts kann `TELACHAT_THEME=dark telachat-tk` genutzt werden.
 Manifest; rohe Secrets und Envfiles bleiben draussen.
 `telachat restore` importiert die Backup-Historie additiv in die bestehende
 SQLite-Datenbank. Mit `--dry-run` wird nur gezaehlt.
+`profiles --json`, `config-check --json`, `sessions --json` und
+`folders --json` liefern strukturierte, redaktierte Daten fuer Skripte und
+Agenten.
 
 ## Sessions
 
@@ -45,10 +49,12 @@ telachat sessions --query TEXT
 telachat sessions --query gpt-5.5
 telachat sessions --folder NAME
 telachat sessions --sort newest
+telachat sessions --json
 telachat fork SESSION_ID --title "Variante A"
 telachat folders --create Projekt --system "Projektkontext"
 telachat folders --set-system Projekt "Neuer Projektkontext"
 telachat folders --show-system
+telachat folders --json --show-system
 telachat export SESSION_ID
 telachat export-folder Projekt -o ./projekt-export
 telachat export-folder Projekt --single-file -o projekt.md

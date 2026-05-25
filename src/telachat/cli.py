@@ -30,7 +30,14 @@ from .config import (
 )
 from .defaults import APP_TITLE
 from .paths import config_path, db_path, state_dir
-from .store import ChatStore, HistoryImportSummary, messages_for_api, title_from_prompt
+from .store import (
+    ChatStore,
+    Folder,
+    HistoryImportSummary,
+    Session,
+    messages_for_api,
+    title_from_prompt,
+)
 from .themes import theme_labels
 
 
@@ -70,6 +77,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_init.set_defaults(func=cmd_init)
 
     p_profiles = sub.add_parser("profiles", help="Profile anzeigen")
+    p_profiles.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_profiles.set_defaults(func=cmd_profiles)
 
     p_config = sub.add_parser(
@@ -82,6 +90,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Mit Fehlercode beenden, wenn Secret-Quellen fehlen",
     )
+    p_config.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_config.set_defaults(func=cmd_config_check)
 
     p_theme = sub.add_parser("theme", help="GUI-Theme anzeigen oder setzen")
@@ -105,6 +114,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Ordner-Systemprompts voll anzeigen",
     )
+    p_folders.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_folders.set_defaults(func=cmd_folders)
 
     p_ask = sub.add_parser("ask", help="Einzelne Frage stellen")
@@ -131,6 +141,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="newest",
         help="Sortierung der Sessionliste",
     )
+    p_sessions.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_sessions.set_defaults(func=cmd_sessions)
 
     p_fork = sub.add_parser("fork", help="Session kopieren/verzweigen")
@@ -213,6 +224,22 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 def cmd_profiles(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "config": str(cfg.path),
+                    "default_profile": cfg.default_profile,
+                    "profiles": [
+                        _profile_record(name, profile, is_default=name == cfg.default_profile)
+                        for name, profile in sorted(cfg.profiles.items())
+                    ],
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
     print(f"Config: {cfg.path}")
     for name in sorted(cfg.profiles):
         profile = cfg.profiles[name]
@@ -228,22 +255,49 @@ def cmd_profiles(args: argparse.Namespace) -> int:
 
 def cmd_config_check(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
-    print(f"{APP_TITLE} config")
-    print(f"Config: {cfg.path}")
-    print(f"SQLite: {db_path()}")
-    print(f"Default profile: {cfg.default_profile}")
-    print(f"Theme: {cfg.theme}")
     missing = 0
+    profile_rows = []
     for name in sorted(cfg.profiles):
         profile = cfg.profiles[name]
         ok, detail = _secret_status(profile)
         if not ok:
             missing += 1
-        marker = "*" if name == cfg.default_profile else " "
-        model_count = len(profile.models or [profile.model])
+        profile_rows.append(
+            {
+                **_profile_record(name, profile, is_default=name == cfg.default_profile),
+                "secret_ok": ok,
+                "secret_status": detail,
+                "model_count": len(profile.models or [profile.model]),
+            }
+        )
+    if args.json:
         print(
-            f"{marker} {name}: mode={profile.api_mode} model={profile.model} "
-            f"models={model_count} key={detail}"
+            json.dumps(
+                {
+                    "app": APP_TITLE,
+                    "config": str(cfg.path),
+                    "sqlite": str(db_path()),
+                    "default_profile": cfg.default_profile,
+                    "theme": cfg.theme,
+                    "prompt_templates": len(cfg.prompt_templates),
+                    "missing_secrets": missing,
+                    "profiles": profile_rows,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 1 if args.strict and missing else 0
+    print(f"{APP_TITLE} config")
+    print(f"Config: {cfg.path}")
+    print(f"SQLite: {db_path()}")
+    print(f"Default profile: {cfg.default_profile}")
+    print(f"Theme: {cfg.theme}")
+    for row in profile_rows:
+        marker = "*" if row["default"] else " "
+        print(
+            f"{marker} {row['name']}: mode={row['api_mode']} model={row['model']} "
+            f"models={row['model_count']} key={row['secret_status']}"
         )
     print(f"Prompt templates: {len(cfg.prompt_templates)}")
     if missing:
@@ -280,13 +334,29 @@ def cmd_folders(args: argparse.Namespace) -> int:
     try:
         if args.create:
             folder = store.create_folder(args.create, system_prompt=args.system or "")
-            print(f"Ordner bereit: {folder.id} {folder.name}")
+            if not args.json:
+                print(f"Ordner bereit: {folder.id} {folder.name}")
         if args.set_system:
             folder_ref, prompt = args.set_system
             folder_id = _resolve_real_folder(store, folder_ref)
             folder = store.update_folder_system_prompt(folder_id, prompt)
-            print(f"System-Prompt gesetzt: {folder.name}")
+            if not args.json:
+                print(f"System-Prompt gesetzt: {folder.name}")
         folders = store.list_folders()
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "folders": [
+                            _folder_record(folder, include_system_prompt=args.show_system)
+                            for folder in folders
+                        ]
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+            return 0
         if not folders:
             print("Keine Ordner vorhanden.")
             return 0
@@ -413,6 +483,15 @@ def cmd_sessions(args: argparse.Namespace) -> int:
             sort=SESSION_SORTS[args.sort],
             query=args.query,
         )
+        if args.json:
+            print(
+                json.dumps(
+                    {"sessions": [_session_record(session) for session in sessions]},
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+            return 0
         if not sessions:
             print("Keine Sessions gespeichert.")
             return 0
@@ -422,6 +501,51 @@ def cmd_sessions(args: argparse.Namespace) -> int:
     finally:
         store.close()
     return 0
+
+
+def _profile_record(name: str, profile: Profile, *, is_default: bool) -> dict[str, object]:
+    return {
+        "name": name,
+        "label": profile.display_name,
+        "default": is_default,
+        "base_url": profile.base_url,
+        "api_mode": profile.api_mode,
+        "api_key": redact_secret(profile.api_key),
+        "model": profile.model,
+        "models": profile.models or [profile.model],
+        "temperature": profile.temperature,
+        "top_p": profile.top_p,
+        "max_tokens": profile.max_tokens,
+        "reasoning_effort": profile.reasoning_effort,
+        "timeout_seconds": profile.timeout_seconds,
+        "stream": profile.stream,
+    }
+
+
+def _session_record(session: Session) -> dict[str, object]:
+    return {
+        "id": session.id,
+        "title": session.title,
+        "profile": session.profile,
+        "model": session.model,
+        "folder_id": session.folder_id,
+        "pinned": session.pinned,
+        "created_at": session.created_at,
+        "updated_at": session.updated_at,
+    }
+
+
+def _folder_record(folder: Folder, *, include_system_prompt: bool) -> dict[str, object]:
+    record: dict[str, object] = {
+        "id": folder.id,
+        "name": folder.name,
+        "created_at": folder.created_at,
+        "updated_at": folder.updated_at,
+        "has_system_prompt": bool(folder.system_prompt),
+    }
+    if include_system_prompt:
+        record["system_prompt"] = folder.system_prompt
+    return record
 
 
 def cmd_fork(args: argparse.Namespace) -> int:

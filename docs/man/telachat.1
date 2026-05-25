@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.14.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.15.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -19,12 +19,13 @@ Markdown exports.
 Create the default configuration.
 .TP
 .B profiles
-Show configured provider profiles with redacted API keys.
+Show configured provider profiles with redacted API keys. Use \fB--json\fR for
+structured output.
 .TP
 .B config-check, config
 Check local configuration, model metadata, and secret references without an API
 request. Use \fB--strict\fR to fail when a non-Codex provider secret source is
-missing.
+missing. Use \fB--json\fR for redacted structured output.
 .TP
 .B theme
 Show or set the persistent GUI theme. Supported themes are \fIsystem\fR,
@@ -35,7 +36,9 @@ Show or set the persistent GUI theme. Supported themes are \fIsystem\fR,
 List configured prompt templates.
 .TP
 .B folders
-List or manage chat folders and folder-level system prompts.
+List or manage chat folders and folder-level system prompts. Use \fB--json\fR
+for structured output; system prompts are included only with
+\fB--show-system\fR.
 .TP
 .B ask
 Send a single prompt.
@@ -45,7 +48,8 @@ Start an interactive CLI chat.
 .TP
 .B sessions
 List saved sessions with optional search, folder filtering, and sorting.
-Session search also matches saved provider/model metadata.
+Session search also matches saved provider/model metadata. Use \fB--json\fR for
+structured output.
 .TP
 .B fork
 Copy a saved session into a new independent chat.
@@ -79,12 +83,14 @@ Start the Tk desktop frontend.
 telachat doctor --chat
 telachat config-check
 telachat config-check --strict
+telachat config-check --json
 telachat theme dark
 telachat ask -p tki "Hallo"
 telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
 telachat templates
 telachat ask --template summarize "Langer Text"
 telachat folders --create Arbeit --system "Antworte projektbezogen."
+telachat sessions --json
 telachat fork SESSION_ID --title "Variante A"
 telachat export-folder Arbeit -o ./arbeit-export
 telachat export-folder Arbeit --single-file -o arbeit.md

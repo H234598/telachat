@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import sqlite3
 import tempfile
 import threading
 import unittest
-import sqlite3
 from pathlib import Path
 
 from telachat.store import ChatStore, messages_for_api, title_from_prompt
@@ -40,6 +40,25 @@ class StoreTests(unittest.TestCase):
                 self.assertIn("# Telachat Session", exported)
                 self.assertIn("- Model: Qwen/Qwen2.5-1.5B-Instruct", exported)
                 self.assertIn("Hallo", exported)
+            finally:
+                store.close()
+
+    def test_session_foreign_keys_prevent_orphaned_messages(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                session = store.create_session(
+                    title="FK",
+                    profile="tki",
+                    system_prompt="System",
+                )
+                store.add_message(session.id, "user", "Hallo")
+
+                with self.assertRaises(sqlite3.IntegrityError):
+                    store.add_message("missing-session", "user", "Verwaist")
+
+                store.delete_session(session.id)
+                self.assertEqual(store.messages(session.id), [])
             finally:
                 store.close()
 

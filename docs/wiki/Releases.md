@@ -1,5 +1,13 @@
 # Releases
 
+## 0.15.0 - 2026-05-25
+
+- JSON-Ausgabe fuer `profiles`, `config-check`, `sessions` und `folders`.
+- `config-check --json` bleibt redaktiert und gibt Secret-Status strukturiert
+  aus.
+- `folders --json` enthaelt Systemprompts nur mit `--show-system`.
+- CLI-Tests pruefen JSON-Ausgabe und Secret-Redaction.
+
 ## 0.14.0 - 2026-05-25
 
 - Neuer Befehl `telachat fork SESSION [--title TITLE]`.
