@@ -1,5 +1,14 @@
 # Releases
 
+## 0.47.5 - 2026-05-25
+
+- Ignoriert negative Token-Usage-Werte beim Formatieren und Persistieren von
+  Provider-Metadaten.
+- Behaelt valide Nullwerte in strukturierten Usage-Records, ohne irrefuehrende
+  Textausgabe fuer leere Detailwerte zu erzeugen.
+- Ergaenzt Regression-Coverage fuer ungueltige Usage-Metadaten in lokalen
+  Statistiken und Client-Formatierung.
+
 ## 0.47.4 - 2026-05-25
 
 - Gibt aus `ChatStore.add_message()` eine gespeicherte Metadata-Kopie zurueck,

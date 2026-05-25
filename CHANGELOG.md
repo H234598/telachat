@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.47.5 - 2026-05-25
+
+- Ignore negative token-usage counts when formatting or persisting provider usage metadata.
+- Keep valid zero token counts in structured usage records while avoiding misleading text output.
+- Add regression coverage for invalid usage metadata in both local stats and client formatting.
+
 ## 0.47.4 - 2026-05-25
 
 - Return a stored metadata copy from `ChatStore.add_message()` so later caller-side dictionary mutations cannot affect the returned message state.
