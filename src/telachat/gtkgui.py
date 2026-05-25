@@ -39,6 +39,9 @@ class GtkTelachatApp(Adw.Application):
         self.active_session: Session | None = None
         self.messages: list[Message] = []
         self.sessions: list[Session] = []
+        self.operation_counter = 0
+        self.active_operation_id: int | None = None
+        self.cancelled_operation_ids: set[int] = set()
         self.folder_display_to_id: dict[str, str | None] = {}
         self.tag_filter_values: dict[str, str | None] = {"Alle Tags": None}
         self.sort_keys = {
@@ -272,6 +275,10 @@ class GtkTelachatApp(Adw.Application):
         self.send_button = Gtk.Button(label="Senden")
         self.send_button.connect("clicked", self.on_send)
         composer.append(self.send_button)
+        self.cancel_button = Gtk.Button(label="Abbrechen")
+        self.cancel_button.connect("clicked", self.cancel_active_request)
+        self.cancel_button.set_sensitive(False)
+        composer.append(self.cancel_button)
         self.command_popover = Gtk.Popover()
         self.command_popover.set_parent(self.input_view)
         self.command_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
@@ -607,6 +614,8 @@ class GtkTelachatApp(Adw.Application):
     def set_busy(self, busy: bool, text: str) -> None:
         self.status.set_text(text)
         self.send_button.set_sensitive(not busy)
+        if hasattr(self, "cancel_button"):
+            self.cancel_button.set_sensitive(busy)
 
     def refresh_sessions(self) -> None:
         self.sessions = self.controller.list_sessions(
@@ -696,10 +705,11 @@ class GtkTelachatApp(Adw.Application):
         max_tokens = self.selected_max_tokens()
         self.clear_input()
         self.hide_command_suggestions()
-        self.set_busy(True, "Denke...")
+        operation_id = self.begin_operation("Denke...")
         threading.Thread(
             target=self._send_worker,
             args=(
+                operation_id,
                 prompt,
                 profile_name,
                 model,
@@ -769,6 +779,7 @@ class GtkTelachatApp(Adw.Application):
 
     def _send_worker(
         self,
+        operation_id: int,
         prompt: str,
         profile_name: str,
         model: str,
@@ -789,17 +800,18 @@ class GtkTelachatApp(Adw.Application):
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-            GLib.idle_add(self._send_done, payload)
+            GLib.idle_add(self._send_done, operation_id, payload)
         except Exception as exc:
-            GLib.idle_add(self._error, exc)
+            GLib.idle_add(self._error, operation_id, exc)
 
     def on_regenerate_active_session(self, _button: Gtk.Button) -> None:
         if not self.active_session:
             return
-        self.set_busy(True, "Generiere neu...")
+        operation_id = self.begin_operation("Generiere neu...")
         threading.Thread(
             target=self._regenerate_worker,
             args=(
+                operation_id,
                 self.active_session.id,
                 self.selected_profile(),
                 self.selected_model(),
@@ -812,6 +824,7 @@ class GtkTelachatApp(Adw.Application):
 
     def _regenerate_worker(
         self,
+        operation_id: int,
         session_id: str,
         profile_name: str,
         model: str,
@@ -828,18 +841,48 @@ class GtkTelachatApp(Adw.Application):
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-            GLib.idle_add(self._send_done, payload)
+            GLib.idle_add(self._send_done, operation_id, payload)
         except Exception as exc:
-            GLib.idle_add(self._error, exc)
+            GLib.idle_add(self._error, operation_id, exc)
 
-    def _send_done(self, payload: object) -> bool:
+    def _send_done(self, operation_id: int, payload: object) -> bool:
+        if not self.operation_result_current(operation_id):
+            return GLib.SOURCE_REMOVE
         self.active_session = payload.session
         self.messages = payload.messages
         self.update_active_title()
         self.refresh_sessions()
         self.render_messages()
-        self.set_busy(False, self.response_status(payload))
+        self.finish_operation(operation_id, self.response_status(payload))
         return GLib.SOURCE_REMOVE
+
+    def begin_operation(self, text: str) -> int:
+        self.operation_counter += 1
+        operation_id = self.operation_counter
+        self.active_operation_id = operation_id
+        self.cancelled_operation_ids.discard(operation_id)
+        self.set_busy(True, text)
+        return operation_id
+
+    def cancel_active_request(self, _button: Gtk.Button | None = None) -> None:
+        operation_id = self.active_operation_id
+        if operation_id is None:
+            return
+        self.cancelled_operation_ids.add(operation_id)
+        self.active_operation_id = None
+        self.set_busy(False, "Abgebrochen; Ergebnis wird ignoriert")
+
+    def operation_result_current(self, operation_id: int) -> bool:
+        if operation_id in self.cancelled_operation_ids:
+            self.cancelled_operation_ids.discard(operation_id)
+            return False
+        return operation_id == self.active_operation_id
+
+    def finish_operation(self, operation_id: int, text: str) -> None:
+        self.cancelled_operation_ids.discard(operation_id)
+        if operation_id == self.active_operation_id:
+            self.active_operation_id = None
+        self.set_busy(False, text)
 
     def response_status(self, payload: object) -> str:
         elapsed = getattr(payload, "elapsed_seconds", None)
@@ -853,19 +896,25 @@ class GtkTelachatApp(Adw.Application):
     def doctor(self) -> None:
         profile_name = self.selected_profile()
         model = self.selected_model()
-        self.set_busy(True, "Pruefe...")
-        threading.Thread(target=self._doctor_worker, args=(profile_name, model), daemon=True).start()
+        operation_id = self.begin_operation("Pruefe...")
+        threading.Thread(
+            target=self._doctor_worker,
+            args=(operation_id, profile_name, model),
+            daemon=True,
+        ).start()
 
-    def _doctor_worker(self, profile_name: str, model: str) -> None:
+    def _doctor_worker(self, operation_id: int, profile_name: str, model: str) -> None:
         try:
             models = self.controller.doctor(profile_name, model)
-            GLib.idle_add(self._doctor_done, models)
+            GLib.idle_add(self._doctor_done, operation_id, models)
         except Exception as exc:
-            GLib.idle_add(self._error, exc)
+            GLib.idle_add(self._error, operation_id, exc)
 
-    def _doctor_done(self, models: list[str]) -> bool:
+    def _doctor_done(self, operation_id: int, models: list[str]) -> bool:
+        if not self.operation_result_current(operation_id):
+            return GLib.SOURCE_REMOVE
         self.update_model_choices_from_live(models)
-        self.set_busy(False, "OK: " + (", ".join(models) or "Modelle erreichbar"))
+        self.finish_operation(operation_id, "OK: " + (", ".join(models) or "Modelle erreichbar"))
         return GLib.SOURCE_REMOVE
 
     def on_create_folder(self, _button: Gtk.Button) -> None:
@@ -1358,8 +1407,10 @@ class GtkTelachatApp(Adw.Application):
                 self.status.set_text(f"Exportiert: {path}")
         chooser.destroy()
 
-    def _error(self, exc: Exception) -> bool:
-        self.set_busy(False, "Fehler")
+    def _error(self, operation_id: int, exc: Exception) -> bool:
+        if not self.operation_result_current(operation_id):
+            return GLib.SOURCE_REMOVE
+        self.finish_operation(operation_id, "Fehler")
         dialog = Adw.MessageDialog.new(self.window, "Telachat", str(exc))
         dialog.add_response("ok", "OK")
         dialog.present()

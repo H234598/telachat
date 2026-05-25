@@ -103,7 +103,9 @@ Check action.
 Command catalog tests assert that every declared alias resolves to its
 canonical command. GUI tests also cover shared alias normalization for `/q` and
 `/quit` closing Tk and GTK windows, plus `/regenerate` dispatching through the
-canonical command catalog.
+canonical command catalog. Tk and GTK cancellation regressions verify that late
+worker results from an `Abbrechen` operation are ignored instead of overwriting
+the active view.
 Backup tests inspect the ZIP bundle and verify that envfile secret values and
 secret-like header values are not included. GUI smoke and regression tests also
 cover construction of the slash-command autocomplete widgets, visible

@@ -30,6 +30,9 @@ class TkTelachatApp:
         self.active_session: Session | None = None
         self.messages: list[Message] = []
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
+        self.operation_counter = 0
+        self.active_operation_id: int | None = None
+        self.cancelled_operation_ids: set[int] = set()
         self.folder_display_to_id: dict[str, str | None] = {}
         self.tag_display_to_value: dict[str, str | None] = {"Alle Tags": None}
         self.sidebar_visible = True
@@ -309,6 +312,13 @@ class TkTelachatApp:
         self.command_suggestions.bind("<Return>", self.on_command_suggestion_selected)
         self.send_button = ttk.Button(composer, text="Senden", command=self.send_message)
         self.send_button.grid(row=0, column=1, sticky="ns")
+        self.cancel_button = ttk.Button(
+            composer,
+            text="Abbrechen",
+            command=self.cancel_active_request,
+            state="disabled",
+        )
+        self.cancel_button.grid(row=0, column=2, sticky="ns", padx=(8, 0))
 
         self.settings = ttk.Frame(self.paned, padding=14, width=320)
         self.settings.rowconfigure(7, weight=1)
@@ -508,10 +518,11 @@ class TkTelachatApp:
         max_tokens = self.selected_max_tokens()
         self.input_text.delete("1.0", tk.END)
         self.hide_command_suggestions()
-        self.set_busy(True, "Denke...")
+        operation_id = self.begin_operation("Denke...")
         threading.Thread(
             target=self._send_worker,
             args=(
+                operation_id,
                 prompt,
                 profile_name,
                 model,
@@ -526,6 +537,7 @@ class TkTelachatApp:
 
     def _send_worker(
         self,
+        operation_id: int,
         prompt: str,
         profile_name: str,
         model: str,
@@ -546,17 +558,18 @@ class TkTelachatApp:
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-            self.events.put(("sent", payload))
+            self.events.put(("sent", (operation_id, payload)))
         except Exception as exc:
-            self.events.put(("error", exc))
+            self.events.put(("error", (operation_id, exc)))
 
     def regenerate_active_session(self) -> None:
         if not self.active_session:
             return
-        self.set_busy(True, "Generiere neu...")
+        operation_id = self.begin_operation("Generiere neu...")
         threading.Thread(
             target=self._regenerate_worker,
             args=(
+                operation_id,
                 self.active_session.id,
                 self.selected_profile(),
                 self.model_var.get(),
@@ -569,6 +582,7 @@ class TkTelachatApp:
 
     def _regenerate_worker(
         self,
+        operation_id: int,
         session_id: str,
         profile_name: str,
         model: str,
@@ -585,9 +599,9 @@ class TkTelachatApp:
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-            self.events.put(("sent", payload))
+            self.events.put(("sent", (operation_id, payload)))
         except Exception as exc:
-            self.events.put(("error", exc))
+            self.events.put(("error", (operation_id, exc)))
 
     def _send_from_shortcut(self, _event: object) -> str:
         self.send_message()
@@ -637,18 +651,20 @@ class TkTelachatApp:
         self.complete_slash_command(_event)
 
     def doctor(self) -> None:
-        self.set_busy(True, "Pruefe...")
+        operation_id = self.begin_operation("Pruefe...")
         threading.Thread(
             target=self._doctor_worker,
-            args=(self.selected_profile(), self.model_var.get()),
+            args=(operation_id, self.selected_profile(), self.model_var.get()),
             daemon=True,
         ).start()
 
-    def _doctor_worker(self, profile_name: str, model: str) -> None:
+    def _doctor_worker(self, operation_id: int, profile_name: str, model: str) -> None:
         try:
-            self.events.put(("doctor", self.controller.doctor(profile_name, model)))
+            self.events.put(
+                ("doctor", (operation_id, self.controller.doctor(profile_name, model)))
+            )
         except Exception as exc:
-            self.events.put(("error", exc))
+            self.events.put(("error", (operation_id, exc)))
 
     def export_session(self) -> None:
         if not self.active_session:
@@ -1195,24 +1211,64 @@ class TkTelachatApp:
             while True:
                 kind, payload = self.events.get_nowait()
                 if kind == "sent":
-                    self.active_session = payload.session
-                    self.messages = payload.messages
+                    operation_id, result = payload
+                    if not self.operation_result_current(operation_id):
+                        continue
+                    self.active_session = result.session
+                    self.messages = result.messages
                     self.update_active_title()
                     self.refresh_sessions()
                     self.render_messages()
-                    self.set_busy(False, self.response_status(payload))
+                    self.finish_operation(operation_id, self.response_status(result))
                 elif kind == "doctor":
-                    self.update_model_choices_from_live(payload)
-                    self.set_busy(False, "OK: " + (", ".join(payload) or "Modelle erreichbar"))
+                    operation_id, models = payload
+                    if not self.operation_result_current(operation_id):
+                        continue
+                    self.update_model_choices_from_live(models)
+                    self.finish_operation(
+                        operation_id,
+                        "OK: " + (", ".join(models) or "Modelle erreichbar"),
+                    )
                 elif kind == "error":
-                    self.set_busy(False, "Fehler")
-                    messagebox.showerror("Telachat", str(payload))
+                    operation_id, exc = payload
+                    if not self.operation_result_current(operation_id):
+                        continue
+                    self.finish_operation(operation_id, "Fehler")
+                    messagebox.showerror("Telachat", str(exc))
         except queue.Empty:
             pass
         self.root.after(100, self._poll_events)
 
     def set_status(self, text: str) -> None:
         self.status.configure(text=text)
+
+    def begin_operation(self, text: str) -> int:
+        self.operation_counter += 1
+        operation_id = self.operation_counter
+        self.active_operation_id = operation_id
+        self.cancelled_operation_ids.discard(operation_id)
+        self.set_busy(True, text)
+        return operation_id
+
+    def cancel_active_request(self) -> None:
+        operation_id = self.active_operation_id
+        if operation_id is None:
+            return
+        self.cancelled_operation_ids.add(operation_id)
+        self.active_operation_id = None
+        self.set_busy(False, "Abgebrochen; Ergebnis wird ignoriert")
+
+    def operation_result_current(self, operation_id: int) -> bool:
+        if operation_id in self.cancelled_operation_ids:
+            self.cancelled_operation_ids.discard(operation_id)
+            return False
+        return operation_id == self.active_operation_id
+
+    def finish_operation(self, operation_id: int, text: str) -> None:
+        self.cancelled_operation_ids.discard(operation_id)
+        if operation_id == self.active_operation_id:
+            self.active_operation_id = None
+        self.set_busy(False, text)
 
     def response_status(self, payload: object) -> str:
         elapsed = getattr(payload, "elapsed_seconds", None)
@@ -1224,6 +1280,8 @@ class TkTelachatApp:
         self.set_status(text)
         state = "disabled" if busy else "normal"
         self.send_button.configure(state=state)
+        if hasattr(self, "cancel_button"):
+            self.cancel_button.configure(state="normal" if busy else "disabled")
 
     def close(self) -> None:
         self.controller.close()

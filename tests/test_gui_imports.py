@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import queue
 import unittest
 import warnings
 from types import SimpleNamespace
@@ -47,6 +48,10 @@ class _FakeText:
     def set_text(self, value: str) -> None:
         self.value = value
 
+    def configure(self, **kwargs: object) -> None:
+        if "text" in kwargs:
+            self.value = str(kwargs["text"])
+
 
 class _FakeCombo:
     def __init__(self) -> None:
@@ -92,9 +97,26 @@ class _FakeWindow:
 class _FakeRoot:
     def __init__(self) -> None:
         self.destroyed = False
+        self.after_calls: list[tuple[int, object]] = []
 
     def destroy(self) -> None:
         self.destroyed = True
+
+    def after(self, delay_ms: int, callback: object) -> None:
+        self.after_calls.append((delay_ms, callback))
+
+
+class _FakeButton:
+    def __init__(self) -> None:
+        self.state = ""
+        self.sensitive = True
+
+    def configure(self, **kwargs: object) -> None:
+        if "state" in kwargs:
+            self.state = str(kwargs["state"])
+
+    def set_sensitive(self, value: bool) -> None:
+        self.sensitive = value
 
 
 class GuiImportTests(unittest.TestCase):
@@ -219,6 +241,49 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(status, "Antwort in 1.2s")
 
+    def test_tk_cancelled_request_ignores_late_result(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        app = object.__new__(module.TkTelachatApp)
+        app.active_operation_id = 4
+        app.cancelled_operation_ids = set()
+        app.operation_counter = 4
+        app.active_session = SimpleNamespace(id="old")
+        app.messages = []
+        app.events = queue.Queue()
+        app.root = _FakeRoot()
+        app.status = _FakeText("")
+        app.send_button = _FakeButton()
+        app.cancel_button = _FakeButton()
+        app.update_active_title = mock.Mock()
+        app.refresh_sessions = mock.Mock()
+        app.render_messages = mock.Mock()
+
+        module.TkTelachatApp.cancel_active_request(app)
+        app.events.put(
+            (
+                "sent",
+                (
+                    4,
+                    SimpleNamespace(
+                        session=SimpleNamespace(id="new"),
+                        messages=[SimpleNamespace(content="late")],
+                    ),
+                ),
+            )
+        )
+        module.TkTelachatApp._poll_events(app)
+
+        self.assertIsNone(app.active_operation_id)
+        self.assertEqual(app.active_session.id, "old")
+        self.assertEqual(app.messages, [])
+        self.assertEqual(app.status.get_text(), "Abgebrochen; Ergebnis wird ignoriert")
+        self.assertEqual(app.send_button.state, "normal")
+        self.assertEqual(app.cancel_button.state, "disabled")
+        app.update_active_title.assert_not_called()
+        app.refresh_sessions.assert_not_called()
+        app.render_messages.assert_not_called()
+        self.assertEqual(app.root.after_calls[0][0], 100)
+
     def test_tk_stats_command_shows_summary_without_database_path(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         app = SimpleNamespace(controller=_FakeController(), statuses=[])
@@ -298,6 +363,57 @@ class GuiImportTests(unittest.TestCase):
         )
 
         self.assertEqual(status, "Antwort in 2.0s")
+
+    def test_gtk_cancelled_request_ignores_late_result(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        app = SimpleNamespace(
+            active_operation_id=2,
+            cancelled_operation_ids=set(),
+            operation_counter=2,
+            active_session=SimpleNamespace(id="old"),
+            messages=[],
+            status=_FakeText(""),
+            send_button=_FakeButton(),
+            cancel_button=_FakeButton(),
+            update_active_title=mock.Mock(),
+            refresh_sessions=mock.Mock(),
+            render_messages=mock.Mock(),
+        )
+        app.set_busy = lambda busy, text: module.GtkTelachatApp.set_busy(app, busy, text)
+        app.operation_result_current = lambda operation_id: module.GtkTelachatApp.operation_result_current(
+            app, operation_id
+        )
+        app.finish_operation = lambda operation_id, text: module.GtkTelachatApp.finish_operation(
+            app, operation_id, text
+        )
+        app.response_status = lambda payload: module.GtkTelachatApp.response_status(app, payload)
+
+        module.GtkTelachatApp.cancel_active_request(app, None)
+        module.GtkTelachatApp._send_done(
+            app,
+            2,
+            SimpleNamespace(
+                session=SimpleNamespace(id="new"),
+                messages=[SimpleNamespace(content="late")],
+            ),
+        )
+
+        self.assertIsNone(app.active_operation_id)
+        self.assertEqual(app.active_session.id, "old")
+        self.assertEqual(app.messages, [])
+        self.assertEqual(app.status.get_text(), "Abgebrochen; Ergebnis wird ignoriert")
+        self.assertTrue(app.send_button.sensitive)
+        self.assertFalse(app.cancel_button.sensitive)
+        app.update_active_title.assert_not_called()
+        app.refresh_sessions.assert_not_called()
+        app.render_messages.assert_not_called()
 
     def test_gtk_stats_command_shows_summary_without_database_path(self) -> None:
         with warnings.catch_warnings():

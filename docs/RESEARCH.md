@@ -105,7 +105,6 @@ and local state under `$XDG_STATE_HOME`.
 
 ## Feature ideas kept for later
 
-- Stop/cancel in-flight request.
 - Config editor with validation and secret redaction.
 - Markdown rendering with copy buttons.
 - Token/usage counters when backends provide usage data.

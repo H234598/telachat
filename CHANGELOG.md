@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.42.0 - 2026-05-25
+
+- Add an `Abbrechen` button to GTK and Tk while send, regenerate, or Check is running.
+- Ignore late GUI worker results from cancelled operations so stale answers or errors do not overwrite the current UI.
+- Cover cancelled GTK and Tk request results in regression tests.
+
 ## 0.41.0 - 2026-05-25
 
 - Add `telachat templates --json` for structured prompt-template inventory.

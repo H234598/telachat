@@ -1,5 +1,14 @@
 # Releases
 
+## 0.42.0 - 2026-05-25
+
+- GTK und Tk zeigen waehrend Senden, Regenerieren oder Check einen
+  `Abbrechen`-Knopf.
+- Abgebrochene GUI-Operationen geben die Oberflaeche sofort frei; spaete
+  Worker-Ergebnisse werden ignoriert, damit keine alte Antwort oder kein alter
+  Fehlerdialog den aktuellen Chat ueberschreibt.
+- Tests decken die Cancel-Guards fuer beide GUI-Frontends ab.
+
 ## 0.41.0 - 2026-05-25
 
 - `telachat templates --json` liefert eine strukturierte Prompt-Template-
