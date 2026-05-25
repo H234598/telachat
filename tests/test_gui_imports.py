@@ -251,6 +251,15 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertTrue(root.destroyed)
 
+    def test_tk_regenerate_alias_uses_shared_command_catalog(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        calls: list[str] = []
+        app = SimpleNamespace(regenerate_active_session=lambda: calls.append("regen"))
+
+        module.TkTelachatApp.handle_command(app, "/regenerate")
+
+        self.assertEqual(calls, ["regen"])
+
     def test_gtk_response_status_reports_elapsed_time(self) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -334,6 +343,26 @@ class GuiImportTests(unittest.TestCase):
         module.GtkTelachatApp.handle_command(app, "/quit")
 
         self.assertTrue(window.closed)
+
+    def test_gtk_regenerate_alias_uses_shared_command_catalog(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        calls: list[object] = []
+        button = object()
+        app = SimpleNamespace(
+            send_button=button,
+            on_regenerate_active_session=lambda clicked: calls.append(clicked),
+        )
+
+        module.GtkTelachatApp.handle_command(app, "/regenerate")
+
+        self.assertEqual(calls, [button])
 
 
 def _fake_stats() -> object:
