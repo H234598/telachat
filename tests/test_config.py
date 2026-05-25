@@ -136,6 +136,47 @@ api_mode = "unknown_mode"
             with self.assertRaisesRegex(ConfigError, "api_mode"):
                 load_config(path)
 
+    def test_numeric_config_values_are_validated(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            profile_base = """
+default_profile = "local"
+[profiles.local]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "test"
+model = "demo"
+"""
+            cases = [
+                ("temperature = true", "temperature"),
+                ('top_p = "nope"', "top_p"),
+                ("max_tokens = 0", "max_tokens"),
+                ('timeout_seconds = "slow"', "timeout_seconds"),
+            ]
+            for line, pattern in cases:
+                with self.subTest(line=line):
+                    path.write_text(profile_base + line + "\n", encoding="utf-8")
+                    with self.assertRaisesRegex(ConfigError, pattern):
+                        load_config(path)
+
+            path.write_text(
+                """
+default_profile = "local"
+max_history_messages = 0
+[profiles.local]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "test"
+model = "demo"
+""".strip(),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ConfigError, "max_history_messages"):
+                load_config(path)
+
+            path.write_text(profile_base, encoding="utf-8")
+            cfg = load_config(path)
+            with self.assertRaisesRegex(ConfigError, "max_tokens"):
+                cfg.profile().with_overrides(max_tokens=0)
+
     def test_env_api_key_resolution(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "config.toml"

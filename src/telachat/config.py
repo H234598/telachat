@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 import re
 import stat
@@ -72,9 +73,9 @@ class Profile:
         if model is not None:
             updates["model"] = model
         if temperature is not None:
-            updates["temperature"] = temperature
+            updates["temperature"] = _number(temperature, "temperature", self.name)
         if max_tokens is not None:
-            updates["max_tokens"] = max_tokens
+            updates["max_tokens"] = _positive_int(max_tokens, "max_tokens", self.name)
         if reasoning_effort is not None:
             updates["reasoning_effort"] = reasoning_effort
         if stream is not None:
@@ -155,11 +156,13 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
             api_key=api_key,
             model=model,
             models=_models(values, model, name),
-            temperature=float(values.get("temperature", 0.2)),
-            top_p=float(values.get("top_p", 0.9)),
-            max_tokens=int(values.get("max_tokens", 512)),
+            temperature=_number(values.get("temperature", 0.2), "temperature", name),
+            top_p=_number(values.get("top_p", 0.9), "top_p", name),
+            max_tokens=_positive_int(values.get("max_tokens", 512), "max_tokens", name),
             reasoning_effort=_optional_reasoning_effort(values.get("reasoning_effort"), name),
-            timeout_seconds=int(values.get("timeout_seconds", 300)),
+            timeout_seconds=_positive_int(
+                values.get("timeout_seconds", 300), "timeout_seconds", name
+            ),
             stream=_bool(values, "stream", True, name),
             api_mode=_api_mode(values.get("api_mode", "chat_completions"), name),
             extra_headers=extra_headers,
@@ -174,7 +177,9 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
         default_profile=default_profile,
         theme=theme,
         default_system_prompt=str(raw.get("default_system_prompt", DEFAULT_SYSTEM_PROMPT)),
-        max_history_messages=int(raw.get("max_history_messages", 24)),
+        max_history_messages=_positive_int(
+            raw.get("max_history_messages", 24), "max_history_messages", None
+        ),
         profiles=profiles,
         prompt_templates=_prompt_templates(raw.get("prompt_templates", DEFAULT_PROMPT_TEMPLATES)),
     )
@@ -256,6 +261,45 @@ def _optional_reasoning_effort(value: object, profile_name: str) -> str | None:
             f"Profil '{profile_name}' hat ungueltiges reasoning_effort: {value}"
         )
     return clean
+
+
+def _number(value: object, key: str, profile_name: str | None) -> float:
+    if isinstance(value, bool):
+        raise ConfigError(_invalid_config_value(key, profile_name))
+    try:
+        result = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ConfigError(_invalid_config_value(key, profile_name)) from exc
+    if not math.isfinite(result):
+        raise ConfigError(_invalid_config_value(key, profile_name))
+    return result
+
+
+def _positive_int(value: object, key: str, profile_name: str | None) -> int:
+    if isinstance(value, bool):
+        raise ConfigError(_invalid_config_value(key, profile_name))
+    if isinstance(value, int):
+        result = value
+    elif isinstance(value, str):
+        try:
+            result = int(value.strip())
+        except ValueError as exc:
+            raise ConfigError(_invalid_config_value(key, profile_name)) from exc
+    else:
+        raise ConfigError(_invalid_config_value(key, profile_name))
+    if result <= 0:
+        raise ConfigError(f"{_field_label(key, profile_name)} muss groesser als 0 sein.")
+    return result
+
+
+def _invalid_config_value(key: str, profile_name: str | None) -> str:
+    return f"{_field_label(key, profile_name)} ist ungueltig."
+
+
+def _field_label(key: str, profile_name: str | None) -> str:
+    if profile_name is None:
+        return f"Konfiguration {key}"
+    return f"Profil '{profile_name}' {key}"
 
 
 def _bool(values: dict[str, Any], key: str, default: bool, profile_name: str) -> bool:
