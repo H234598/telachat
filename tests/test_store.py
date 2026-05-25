@@ -32,7 +32,9 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual([m.role for m in store.messages(session.id)], ["user"])
                 self.assertIsNone(store.delete_last_assistant_message(session.id))
                 store.add_message(session.id, "assistant", "Hi")
+                store.add_message(session.id, "system", "Systemnotiz")
                 messages = store.messages(session.id)
+                self.assertEqual([m.role for m in messages], ["user", "assistant", "system"])
                 api_messages = messages_for_api("System", messages)
                 self.assertEqual(api_messages[0]["role"], "system")
                 self.assertEqual(api_messages[-1]["content"], "Hi")
@@ -40,6 +42,8 @@ class StoreTests(unittest.TestCase):
                 self.assertIn("# Telachat Session", exported)
                 self.assertIn("- Model: Qwen/Qwen2.5-1.5B-Instruct", exported)
                 self.assertIn("Hallo", exported)
+                self.assertIn("## System", exported)
+                self.assertIn("Systemnotiz", exported)
             finally:
                 store.close()
 

@@ -1006,7 +1006,11 @@ class ChatStore:
                 "",
             ]
             for message in self.messages(session.id):
-                heading = "User" if message.role == "user" else "Assistant"
+                heading = {
+                    "assistant": "Assistant",
+                    "system": "System",
+                    "user": "User",
+                }.get(message.role, message.role.title())
                 lines.extend([f"## {heading}", "", message.content.strip(), ""])
             return "\n".join(lines).rstrip() + "\n"
 
