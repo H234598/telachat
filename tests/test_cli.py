@@ -356,6 +356,24 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(summarize["variables"], ["input"])
                 self.assertGreater(summarize["characters"], 0)
 
+                config_path = Path(os.environ["XDG_CONFIG_HOME"]) / "telachat" / "config.toml"
+                config_text = config_path.read_text(encoding="utf-8")
+                config_path.write_text(
+                    config_text.replace(
+                        "\n[profiles.",
+                        '\ndaily = "Heute {date} um {time}: {input}"\n\n[profiles.',
+                        1,
+                    ),
+                    encoding="utf-8",
+                )
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["templates", "--json"]), 0)
+                payload = json.loads(out.getvalue())
+                daily = next(item for item in payload["templates"] if item["name"] == "daily")
+                self.assertTrue(daily["has_input_placeholder"])
+                self.assertEqual(daily["variables"], ["input", "date", "time"])
+
                 out = io.StringIO()
                 with redirect_stdout(out), mock.patch(
                     "telachat.cli._run_chat",
