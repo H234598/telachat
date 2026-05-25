@@ -61,6 +61,8 @@ jobs:
           name: telachat-windows
           path: |
             dist/TelachatTk/**
+            dist/TelachatTk-*-windows-x64.zip
+            dist/TelachatTk-*-windows-x64.zip.sha256
             dist/TelachatTk-Setup-*.exe
             dist/TelachatTk-Setup-*.exe.sha256
           if-no-files-found: error
@@ -75,4 +77,4 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             gh release create $Tag --title $Tag --notes "Automated Windows build for $Tag."
           }
-          gh release upload $Tag dist\TelachatTk-Setup-*.exe dist\TelachatTk-Setup-*.exe.sha256 --clobber
+          gh release upload $Tag dist\TelachatTk-*-windows-x64.zip dist\TelachatTk-*-windows-x64.zip.sha256 dist\TelachatTk-Setup-*.exe dist\TelachatTk-Setup-*.exe.sha256 --clobber
