@@ -1,5 +1,10 @@
 # Releases
 
+## 0.39.2 - 2026-05-25
+
+- Tests pruefen jetzt fuer jeden deklarierten Slash-Alias die Aufloesung auf
+  das kanonische Kommando.
+
 ## 0.39.1 - 2026-05-25
 
 - Tests decken jetzt auch die Tk- und GTK-Normalisierung fuer
