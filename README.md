@@ -306,7 +306,7 @@ api_mode = "chat_completions"
 ```
 
 Das Modell wird mit seinem echten Qwen-Namen angesprochen. Der Space erwartet
-inzwischen einen Bearer-Key; auf diesem Host liegt `Telachat_API_Teladi` in
+inzwischen einen Bearer-Key; auf diesem Host liegt der lokale Wert in
 `~/.config/telachat/qwen.env` und wird per
 `envfile:~/.config/telachat/qwen.env#TELACHAT_QWEN_API_KEY` referenziert.
 

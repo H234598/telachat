@@ -146,5 +146,6 @@ Model: Qwen/Qwen2.5-1.5B-Instruct
 Key: local envfile `/home/teladi/.config/telachat/qwen.env`
 ```
 
-The HF Space rejects the old placeholder key. The active Space secret is
-`TELACHAT_API_KEYS`; the local client key is `Telachat_API_Teladi`.
+The HF Space rejects the old placeholder key. The active Space secret list is
+`TELACHAT_API_KEYS`; the local client key is loaded from the envfile above and
+must not be committed.
