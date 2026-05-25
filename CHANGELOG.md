@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.43.11 - 2026-05-25
+
+- Add GUI regression coverage for refreshing live model choices after Check.
+
 ## 0.43.10 - 2026-05-25
 
 - Add focused regression coverage for Windows-style secret paths containing escape-like backslashes.

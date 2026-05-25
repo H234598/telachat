@@ -1,5 +1,10 @@
 # Releases
 
+## 0.43.11 - 2026-05-25
+
+- Ergaenzt GTK/Tk-Regressionstests, die sicherstellen, dass die Modellliste
+  nach einem erfolgreichen GUI-Check aus Live-`/models`-Daten aktualisiert wird.
+
 ## 0.43.10 - 2026-05-25
 
 - Ergaenzt gezielte Regressionstests fuer Windows-artige Secret-Pfade mit

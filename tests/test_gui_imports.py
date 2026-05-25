@@ -447,6 +447,27 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(calls, ["doctor"])
 
+    def test_tk_doctor_result_refreshes_model_choices(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        events: queue.Queue[object] = queue.Queue()
+        events.put(("doctor", (7, ["live-a", "live-b"])))
+        refreshed: list[list[str]] = []
+        finished: list[tuple[int, str]] = []
+        app = SimpleNamespace(
+            events=events,
+            root=_FakeRoot(),
+            _poll_events=lambda: None,
+            operation_result_current=lambda operation_id: operation_id == 7,
+            update_model_choices_from_live=lambda models: refreshed.append(list(models)),
+            finish_operation=lambda operation_id, status: finished.append((operation_id, status)),
+        )
+
+        module.TkTelachatApp._poll_events(app)
+
+        self.assertEqual(refreshed, [["live-a", "live-b"]])
+        self.assertEqual(finished, [(7, "OK: live-a, live-b")])
+        self.assertEqual(app.root.after_calls[0][0], 100)
+
     def test_tk_exit_alias_closes_window(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         root = _FakeRoot()
@@ -632,6 +653,29 @@ class GuiImportTests(unittest.TestCase):
         module.GtkTelachatApp.handle_command(app, "/doctor")
 
         self.assertEqual(calls, ["doctor"])
+
+    def test_gtk_doctor_done_refreshes_model_choices(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        refreshed: list[list[str]] = []
+        finished: list[tuple[int, str]] = []
+        app = SimpleNamespace(
+            operation_result_current=lambda operation_id: operation_id == 11,
+            update_model_choices_from_live=lambda models: refreshed.append(list(models)),
+            finish_operation=lambda operation_id, status: finished.append((operation_id, status)),
+        )
+
+        result = module.GtkTelachatApp._doctor_done(app, 11, ["live-a", "live-b"])
+
+        self.assertEqual(result, module.GLib.SOURCE_REMOVE)
+        self.assertEqual(refreshed, [["live-a", "live-b"]])
+        self.assertEqual(finished, [(11, "OK: live-a, live-b")])
 
     def test_gtk_exit_alias_closes_window(self) -> None:
         with warnings.catch_warnings():
