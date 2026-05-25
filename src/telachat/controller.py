@@ -100,11 +100,15 @@ class TelachatController:
         default_profile: str = "",
         default_model: str = "",
     ) -> Folder:
+        clean_profile, clean_model = self._validated_folder_backend(
+            default_profile,
+            default_model,
+        )
         return self.store.create_folder(
             name,
             system_prompt=system_prompt,
-            default_profile=default_profile,
-            default_model=default_model,
+            default_profile=clean_profile,
+            default_model=clean_model,
         )
 
     def folder_system_prompt(self, folder_id: str | None) -> str:
@@ -157,11 +161,24 @@ class TelachatController:
         default_profile: str,
         default_model: str,
     ) -> Folder:
+        clean_profile, clean_model = self._validated_folder_backend(
+            default_profile,
+            default_model,
+        )
+        return self.store.update_folder_backend(folder_id, clean_profile, clean_model)
+
+    def _validated_folder_backend(
+        self,
+        default_profile: str,
+        default_model: str,
+    ) -> tuple[str, str]:
         clean_profile = default_profile.strip()
         clean_model = default_model.strip()
         if clean_profile:
             self.config.profile(clean_profile).with_overrides(model=clean_model or None)
-        return self.store.update_folder_backend(folder_id, clean_profile, clean_model)
+        elif clean_model:
+            self.config.profile(None).with_overrides(model=clean_model)
+        return clean_profile, clean_model
 
     def move_session(self, session_id: str, folder_id: str | None) -> Session:
         return self.store.move_session(session_id, folder_id)

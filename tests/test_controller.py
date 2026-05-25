@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest import mock
 
 from telachat.client import ChatResult
+from telachat.config import ConfigError
 from telachat.controller import TelachatController
 
 
@@ -261,6 +262,12 @@ class ControllerTests(unittest.TestCase):
                     )
                     self.assertEqual(explicit_other.profile, "other")
                     self.assertEqual(explicit_other.model, "other-default")
+                    with self.assertRaises(ConfigError):
+                        controller.create_folder(
+                            "Kaputt",
+                            default_profile="missing",
+                            default_model="demo",
+                        )
                     fallback, _messages = controller.new_session(
                         profile_name="test",
                         system_prompt=None,
