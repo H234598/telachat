@@ -82,6 +82,8 @@ telachat tags --json
 telachat fork SESSION_ID --title "Variante A"
 telachat folders --create Projekt --system "Projektkontext"
 telachat folders --set-system Projekt "Neuer Projektkontext"
+telachat folders --set-backend Projekt tki Qwen/Qwen2.5-1.5B-Instruct
+telachat folders --clear-backend Projekt
 telachat folders --show-system
 telachat folders --json --show-system
 telachat export SESSION_ID

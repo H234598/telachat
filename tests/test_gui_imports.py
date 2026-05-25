@@ -66,6 +66,19 @@ class _FakeCombo:
     def configure(self, **kwargs: object) -> None:
         self.values = list(kwargs.get("values", ()))
 
+    def cget(self, key: str) -> object:
+        if key == "values":
+            return tuple(self.values)
+        raise KeyError(key)
+
+
+class _FakeDropdown:
+    def __init__(self) -> None:
+        self.selected = -1
+
+    def set_selected(self, value: int) -> None:
+        self.selected = value
+
 
 class _FakeSpin:
     def __init__(self, value: float) -> None:
@@ -189,6 +202,29 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(controller.calls[0]["sort"], "title_asc")
         self.assertEqual(controller.calls[0]["tag"], "review")
 
+    def test_gtk_applies_folder_backend_defaults(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        app = SimpleNamespace(
+            controller=SimpleNamespace(folder_backend=lambda _folder_id: ("work", "folder-model")),
+            profile_names=["work"],
+            profile_dropdown=_FakeDropdown(),
+            model_names=["folder-model"],
+            model_dropdown=_FakeDropdown(),
+            refresh_models=lambda: None,
+        )
+
+        module.GtkTelachatApp.apply_selected_folder_backend(app, "folder1")
+
+        self.assertEqual(app.profile_dropdown.selected, 0)
+        self.assertEqual(app.model_dropdown.selected, 0)
+
     def test_tk_refresh_tag_filter_preserves_selected_tag_value(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         controller = _FakeController(tags=[("projekt", 2), ("review", 1)])
@@ -204,6 +240,36 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(app.tag_filter_var.get(), "#projekt (2)")
         self.assertEqual(app.tag_filter_combo.values, ["Alle Tags", "#projekt (2)", "#review (1)"])
+
+    def test_tk_applies_folder_backend_defaults(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        profile = SimpleNamespace(
+            model="base-model",
+            models=["base-model"],
+            temperature=0.7,
+            max_tokens=2048,
+        )
+        app = SimpleNamespace(
+            controller=SimpleNamespace(
+                folder_backend=lambda _folder_id: ("work", "folder-model"),
+                profiles=lambda: {"work": profile},
+            ),
+            profile_display_to_name={"Work": "work"},
+            profile_var=_FakeText(""),
+            model_combo=_FakeCombo(),
+            model_var=_FakeText(""),
+            temperature_var=_FakeText(""),
+            max_tokens_var=_FakeText(""),
+        )
+        app.refresh_models = lambda: module.TkTelachatApp.refresh_models(app)
+        app.selected_profile = lambda: module.TkTelachatApp.selected_profile(app)
+        app.refresh_generation_defaults = lambda: module.TkTelachatApp.refresh_generation_defaults(app)
+
+        module.TkTelachatApp.apply_selected_folder_backend(app, "folder1")
+
+        self.assertEqual(app.profile_var.get(), "Work")
+        self.assertEqual(app.model_var.get(), "folder-model")
+        self.assertEqual(app.model_combo.values, ["folder-model", "base-model"])
 
     def test_tk_generation_inputs_normalize_to_supported_ranges(self) -> None:
         module = importlib.import_module("telachat.tkgui")

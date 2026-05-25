@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.43.0 - 2026-05-25
+
+- Add optional folder default backends: provider/profile plus model.
+- Add `telachat folders --set-backend FOLDER PROFILE [MODEL]`, `--clear-backend FOLDER`, and create-time `--profile/--model`.
+- Apply folder backend defaults in controller-created sessions and GTK/Tk folder selection.
+- Preserve folder backend defaults in folder JSON exports/imports and backup-history restores.
+
 ## 0.42.1 - 2026-05-25
 
 - Restore the just-sent prompt after cancelling a running GUI send operation when the composer is still empty.

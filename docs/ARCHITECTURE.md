@@ -52,7 +52,7 @@ SQLite tables:
 - `sessions`
   - `id`, `title`, `profile`, `model`, `system_prompt`, `created_at`, `updated_at`, `folder_id`, `pinned`, `archived`
 - `folders`
-  - `id`, `name`, `created_at`, `updated_at`, `system_prompt`
+  - `id`, `name`, `created_at`, `updated_at`, `system_prompt`, `default_profile`, `default_model`
 - `messages`
   - `id`, `session_id`, `role`, `content`, `created_at`, `metadata`
 
@@ -119,9 +119,11 @@ branch while preserving provider, model, folder, system prompt, and messages.
 Saved sessions store both provider and model. Loading a session restores those
 selectors in GTK/Tk and `telachat chat --session` uses the saved model unless a
 CLI override is given.
-Folders can store a default system prompt. New chats created inside such a
-folder inherit that prompt unless the user explicitly overrides the system
-prompt.
+Folders can store a default system prompt and an optional default backend
+(`default_profile`, `default_model`). New chats created inside such a folder
+inherit that prompt/backend unless the caller explicitly overrides the prompt,
+profile, or model. GTK and Tk also apply folder backend defaults when selecting
+a folder for a new chat.
 
 For real credentials, prefer:
 
@@ -149,6 +151,8 @@ telachat chat
 telachat templates
 telachat templates --json
 telachat folders
+telachat folders --set-backend FOLDER PROFILE [MODEL]
+telachat folders --clear-backend FOLDER
 telachat doctor
 telachat doctor --chat
 telachat doctor --json --chat
@@ -208,7 +212,8 @@ configured.
 contains provider configuration;
 folder system prompts are
 included only when `folders --show-system --json` is requested or when exporting
-that folder as a portable data bundle.
+that folder as a portable data bundle. Folder backend defaults are not secrets
+and are included in folder JSON whenever they are configured.
 
 `stats` is read-only and does not include message content. It counts sessions,
 messages by role, folders, tag assignments, profile usage, and model usage so a
@@ -308,7 +313,7 @@ GUI request cancellation:
 - API client against a local fake OpenAI-compatible HTTP server.
 - Non-streaming and streaming SSE responses.
 - SQLite session/message roundtrip, Markdown export, and selective folder export.
-- SQLite folder prompts, sorting and history-search behavior.
+- SQLite folder prompts, folder backend defaults, sorting and history-search behavior.
 - SQLite session tags, tag filtering/search, tag import/export, and tag counts.
 - SQLite session archive filtering, archive import/export, and legacy migration.
 - SQLite local statistics for content-free history inventory.

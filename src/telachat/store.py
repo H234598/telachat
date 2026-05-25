@@ -34,6 +34,8 @@ class Folder:
     created_at: int
     updated_at: int
     system_prompt: str = ""
+    default_profile: str = ""
+    default_model: str = ""
 
 
 @dataclass(frozen=True)
@@ -119,7 +121,9 @@ class ChatStore:
                     name TEXT NOT NULL UNIQUE,
                     created_at INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL,
-                    system_prompt TEXT NOT NULL DEFAULT ''
+                    system_prompt TEXT NOT NULL DEFAULT '',
+                    default_profile TEXT NOT NULL DEFAULT '',
+                    default_model TEXT NOT NULL DEFAULT ''
                 );
 
                 CREATE TABLE IF NOT EXISTS messages (
@@ -168,6 +172,14 @@ class ChatStore:
             if "system_prompt" not in folder_columns:
                 self.db.execute(
                     "ALTER TABLE folders ADD COLUMN system_prompt TEXT NOT NULL DEFAULT ''"
+                )
+            if "default_profile" not in folder_columns:
+                self.db.execute(
+                    "ALTER TABLE folders ADD COLUMN default_profile TEXT NOT NULL DEFAULT ''"
+                )
+            if "default_model" not in folder_columns:
+                self.db.execute(
+                    "ALTER TABLE folders ADD COLUMN default_model TEXT NOT NULL DEFAULT ''"
                 )
 
     def create_session(
@@ -462,7 +474,14 @@ class ChatStore:
                 return None
             return _folder_from_row(rows[0])
 
-    def create_folder(self, name: str, *, system_prompt: str = "") -> Folder:
+    def create_folder(
+        self,
+        name: str,
+        *,
+        system_prompt: str = "",
+        default_profile: str = "",
+        default_model: str = "",
+    ) -> Folder:
         with self._lock:
             clean = " ".join(name.strip().split())
             if not clean:
@@ -477,13 +496,32 @@ class ChatStore:
             folder_id = uuid.uuid4().hex[:12]
             self.db.execute(
                 """
-                INSERT INTO folders(id, name, created_at, updated_at, system_prompt)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO folders(
+                    id, name, created_at, updated_at,
+                    system_prompt, default_profile, default_model
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (folder_id, clean, now, now, system_prompt.strip()),
+                (
+                    folder_id,
+                    clean,
+                    now,
+                    now,
+                    system_prompt.strip(),
+                    default_profile.strip(),
+                    default_model.strip(),
+                ),
             )
             self.db.commit()
-            return Folder(folder_id, clean, now, now, system_prompt.strip())
+            return Folder(
+                folder_id,
+                clean,
+                now,
+                now,
+                system_prompt.strip(),
+                default_profile.strip(),
+                default_model.strip(),
+            )
 
     def move_session(self, session_id: str, folder_id: str | None) -> Session:
         with self._lock:
@@ -530,6 +568,28 @@ class ChatStore:
             self.db.execute(
                 "UPDATE folders SET system_prompt = ?, updated_at = ? WHERE id = ?",
                 (system_prompt.strip(), now, folder_id),
+            )
+            self.db.commit()
+            folder = self.get_folder(folder_id)
+            if folder is None:
+                raise KeyError(folder_id)
+            return folder
+
+    def update_folder_backend(
+        self,
+        folder_id: str,
+        default_profile: str,
+        default_model: str,
+    ) -> Folder:
+        with self._lock:
+            now = int(time.time())
+            self.db.execute(
+                """
+                UPDATE folders
+                SET default_profile = ?, default_model = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (default_profile.strip(), default_model.strip(), now, folder_id),
             )
             self.db.commit()
             folder = self.get_folder(folder_id)
@@ -844,8 +904,11 @@ class ChatStore:
                 folder_map[row["id"]] = folder_id
                 self.db.execute(
                     """
-                    INSERT INTO folders(id, name, created_at, updated_at, system_prompt)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO folders(
+                        id, name, created_at, updated_at,
+                        system_prompt, default_profile, default_model
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         folder_id,
@@ -853,6 +916,8 @@ class ChatStore:
                         int(_row_value(row, "created_at", now)),
                         int(_row_value(row, "updated_at", now)),
                         _row_value(row, "system_prompt", ""),
+                        _row_value(row, "default_profile", ""),
+                        _row_value(row, "default_model", ""),
                     ),
                 )
                 folders_added += 1
@@ -1059,6 +1124,8 @@ def _folder_from_row(row: sqlite3.Row) -> Folder:
         created_at=row["created_at"],
         updated_at=row["updated_at"],
         system_prompt=row["system_prompt"] if "system_prompt" in row.keys() else "",
+        default_profile=row["default_profile"] if "default_profile" in row.keys() else "",
+        default_model=row["default_model"] if "default_model" in row.keys() else "",
     )
 
 

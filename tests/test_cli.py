@@ -681,10 +681,30 @@ model = "other-model"
                 out = io.StringIO()
                 with redirect_stdout(out):
                     self.assertEqual(
-                        main(["folders", "--create", "Projekt", "--system", "Projektkontext"]),
+                        main(
+                            [
+                                "folders",
+                                "--create",
+                                "Projekt",
+                                "--system",
+                                "Projektkontext",
+                                "--profile",
+                                "tki",
+                                "--model",
+                                "qwen-folder",
+                            ]
+                        ),
                         0,
                     )
                 self.assertIn("Projekt", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["folders", "--set-backend", "Projekt", "tki", "qwen-alt"]),
+                        0,
+                    )
+                self.assertIn("Default-Backend gesetzt", out.getvalue())
 
                 out = io.StringIO()
                 with redirect_stdout(out):
@@ -702,6 +722,9 @@ model = "other-model"
                 payload = json.loads(out.getvalue())
                 self.assertEqual(payload["folders"][0]["name"], "Projekt")
                 self.assertTrue(payload["folders"][0]["has_system_prompt"])
+                self.assertTrue(payload["folders"][0]["has_default_backend"])
+                self.assertEqual(payload["folders"][0]["default_profile"], "tki")
+                self.assertEqual(payload["folders"][0]["default_model"], "qwen-alt")
                 self.assertNotIn("system_prompt", payload["folders"][0])
 
                 out = io.StringIO()
@@ -710,6 +733,17 @@ model = "other-model"
                 payload = json.loads(out.getvalue())
                 self.assertEqual(payload["folders"][0]["name"], "Projekt")
                 self.assertEqual(payload["folders"][0]["system_prompt"], "Nur kurz.")
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["folders", "--clear-backend", "Projekt"]), 0)
+                self.assertIn("Default-Backend geloescht", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["folders", "--json"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertFalse(payload["folders"][0]["has_default_backend"])
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
@@ -729,7 +763,12 @@ model = "other-model"
                 folder_json = Path(tmp) / "folder.json"
                 store = ChatStore()
                 try:
-                    work = store.create_folder("Arbeit", system_prompt="Projektprompt")
+                    work = store.create_folder(
+                        "Arbeit",
+                        system_prompt="Projektprompt",
+                        default_profile="tki",
+                        default_model="qwen-folder",
+                    )
                     store.create_folder("Leer")
                     alpha = store.create_session(
                         title="Alpha Plan",
@@ -795,6 +834,8 @@ model = "other-model"
                 self.assertEqual(payload["folder"]["kind"], "folder")
                 self.assertEqual(payload["folder"]["name"], "Arbeit")
                 self.assertEqual(payload["folder"]["system_prompt"], "Projektprompt")
+                self.assertEqual(payload["folder"]["default_profile"], "tki")
+                self.assertEqual(payload["folder"]["default_model"], "qwen-folder")
                 self.assertEqual(payload["sessions"][0]["session"]["title"], "Alpha Plan")
                 self.assertEqual(payload["sessions"][0]["session"]["model"], "gpt-5.5")
                 self.assertEqual(payload["sessions"][0]["session"]["system_prompt"], "System")

@@ -572,6 +572,23 @@ class GtkTelachatApp(Adw.Application):
         folder_id = self.selected_folder_id(for_new=True)
         if folder_id:
             self.set_system_prompt(self.controller.folder_system_prompt(folder_id))
+            self.apply_selected_folder_backend(folder_id)
+
+    def apply_selected_folder_backend(self, folder_id: str) -> None:
+        profile_name, model = self.controller.folder_backend(folder_id)
+        if profile_name:
+            try:
+                selected_profile = self.profile_names.index(profile_name)
+            except ValueError:
+                selected_profile = -1
+            if selected_profile >= 0:
+                self.profile_dropdown.set_selected(selected_profile)
+                self.refresh_models()
+        if model:
+            if model not in self.model_names:
+                self.model_names = [model, *self.model_names]
+                self.model_dropdown.set_model(Gtk.StringList.new(self.model_names))
+            self.model_dropdown.set_selected(self.model_names.index(model))
 
     def on_save_selected_folder_prompt(self, _button: Gtk.Button) -> None:
         folder_id = self.selected_real_folder_id()

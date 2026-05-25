@@ -48,6 +48,8 @@ python3 dist/telachat.pyz config-check --profile jan --json --strict
 telachat templates
 telachat folders --show-system
 telachat folders --json --show-system
+telachat folders --set-backend Arbeit tki Qwen/Qwen2.5-1.5B-Instruct
+telachat folders --clear-backend Arbeit
 telachat export SESSION_ID --json
 telachat import-session session.json --json
 telachat export-folder Arbeit --json
@@ -85,7 +87,7 @@ On this host they can also use
 from `~/.config/telachat/config.toml`.
 
 The deterministic suite also covers folder creation, duplicate folder handling,
-folder-level system prompts, session moves, folder filters, pinned-chat
+folder-level system prompts, folder-level backend defaults, session moves, folder filters, pinned-chat
 ordering, answer regeneration, prompt templates, title sorting, content search
 across saved messages, CLI session filtering/sorting, and selective folder
 exports. It also covers per-session tags, tag filtering/search, tag import/export,

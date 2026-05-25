@@ -1,5 +1,15 @@
 # Releases
 
+## 0.43.0 - 2026-05-25
+
+- Ordner koennen jetzt optional Default-Provider und Default-Modell speichern.
+- `telachat folders --set-backend FOLDER PROFILE [MODEL]`,
+  `--clear-backend FOLDER` sowie `--profile/--model` bei `--create` verwalten
+  diese Defaults.
+- Controller, GTK und Tk wenden Ordner-Backends fuer neue Chats an.
+- Folder-JSON-Export/-Import und Backup-History-Restore erhalten die
+  Backend-Defaults.
+
 ## 0.42.1 - 2026-05-25
 
 - Wenn eine laufende Send-Anfrage abgebrochen wird, setzen GTK und Tk den

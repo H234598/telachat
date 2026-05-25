@@ -810,6 +810,22 @@ class TkTelachatApp:
         folder_id = self.selected_folder_id(for_new=True)
         if folder_id:
             self.set_system_prompt_text(self.controller.folder_system_prompt(folder_id))
+            self.apply_selected_folder_backend(folder_id)
+
+    def apply_selected_folder_backend(self, folder_id: str) -> None:
+        profile_name, model = self.controller.folder_backend(folder_id)
+        if profile_name:
+            for label, name in self.profile_display_to_name.items():
+                if name == profile_name:
+                    self.profile_var.set(label)
+                    self.refresh_models()
+                    break
+        if model:
+            models = list(self.model_combo.cget("values"))
+            if model not in models:
+                models.insert(0, model)
+                self.model_combo.configure(values=models)
+            self.model_var.set(model)
 
     def save_selected_folder_prompt(self) -> None:
         folder_id = self.selected_real_folder_id()

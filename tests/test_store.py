@@ -349,6 +349,14 @@ class StoreTests(unittest.TestCase):
                 self.assertIsNotNone(loaded_folder)
                 assert loaded_folder is not None
                 self.assertEqual(loaded_folder.system_prompt, "Antworte projektbezogen.")
+                backend_folder = store.update_folder_backend(work.id, "openai", "gpt-test")
+                self.assertEqual(backend_folder.default_profile, "openai")
+                self.assertEqual(backend_folder.default_model, "gpt-test")
+                loaded_folder = store.get_folder(work.id)
+                self.assertIsNotNone(loaded_folder)
+                assert loaded_folder is not None
+                self.assertEqual(loaded_folder.default_profile, "openai")
+                self.assertEqual(loaded_folder.default_model, "gpt-test")
                 store.delete_folder(work.id)
                 self.assertEqual(store.list_folders(), [])
                 self.assertEqual(len(store.list_sessions(folder_id="__none__")), 2)
@@ -635,8 +643,13 @@ class StoreTests(unittest.TestCase):
                 self.assertIsNotNone(folder)
                 assert folder is not None
                 self.assertEqual(folder.system_prompt, "")
+                self.assertEqual(folder.default_profile, "")
+                self.assertEqual(folder.default_model, "")
                 updated = store.update_folder_system_prompt(folder.id, "Nur Fakten.")
                 self.assertEqual(updated.system_prompt, "Nur Fakten.")
+                backend = store.update_folder_backend(folder.id, "tki", "qwen")
+                self.assertEqual(backend.default_profile, "tki")
+                self.assertEqual(backend.default_model, "qwen")
             finally:
                 store.close()
 

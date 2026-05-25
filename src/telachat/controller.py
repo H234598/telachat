@@ -92,8 +92,20 @@ class TelachatController:
     def list_folders(self) -> list[Folder]:
         return self.store.list_folders()
 
-    def create_folder(self, name: str, *, system_prompt: str = "") -> Folder:
-        return self.store.create_folder(name, system_prompt=system_prompt)
+    def create_folder(
+        self,
+        name: str,
+        *,
+        system_prompt: str = "",
+        default_profile: str = "",
+        default_model: str = "",
+    ) -> Folder:
+        return self.store.create_folder(
+            name,
+            system_prompt=system_prompt,
+            default_profile=default_profile,
+            default_model=default_model,
+        )
 
     def folder_system_prompt(self, folder_id: str | None) -> str:
         if not folder_id:
@@ -113,6 +125,43 @@ class TelachatController:
 
     def set_folder_system_prompt(self, folder_id: str, system_prompt: str) -> Folder:
         return self.store.update_folder_system_prompt(folder_id, system_prompt)
+
+    def folder_backend(self, folder_id: str | None) -> tuple[str, str]:
+        if not folder_id:
+            return "", ""
+        folder = self.store.get_folder(folder_id)
+        if folder is None:
+            return "", ""
+        return folder.default_profile, folder.default_model
+
+    def resolve_profile(
+        self,
+        profile_name: str | None,
+        model: str | None,
+        folder_id: str | None = None,
+    ) -> Profile:
+        folder_profile, folder_model = self.folder_backend(folder_id)
+        clean_profile = profile_name.strip() if profile_name else ""
+        clean_model = model.strip() if model else ""
+        resolved_profile = clean_profile or folder_profile or None
+        resolved_model = clean_model or None
+        if resolved_model is None and (
+            not clean_profile or (folder_profile and folder_profile == clean_profile)
+        ):
+            resolved_model = folder_model or None
+        return self.config.profile(resolved_profile).with_overrides(model=resolved_model)
+
+    def set_folder_backend(
+        self,
+        folder_id: str,
+        default_profile: str,
+        default_model: str,
+    ) -> Folder:
+        clean_profile = default_profile.strip()
+        clean_model = default_model.strip()
+        if clean_profile:
+            self.config.profile(clean_profile).with_overrides(model=clean_model or None)
+        return self.store.update_folder_backend(folder_id, clean_profile, clean_model)
 
     def move_session(self, session_id: str, folder_id: str | None) -> Session:
         return self.store.move_session(session_id, folder_id)
@@ -170,7 +219,7 @@ class TelachatController:
         title: str = "Neue Unterhaltung",
         folder_id: str | None = None,
     ) -> tuple[Session, list[Message]]:
-        profile = self.config.profile(profile_name).with_overrides(model=model)
+        profile = self.resolve_profile(profile_name, model, folder_id)
         resolved_system_prompt = self.resolve_system_prompt(system_prompt, folder_id)
         session = self.store.create_session(
             title=title,
@@ -196,12 +245,16 @@ class TelachatController:
         clean = prompt.strip()
         if not clean:
             raise ValueError("Nachricht fehlt.")
-        profile = self.config.profile(profile_name).with_overrides(
-            model=model,
+        session = self.store.get_session(session_id or "") if session_id else None
+        profile = self.resolve_profile(
+            profile_name,
+            model,
+            folder_id if session is None else None,
+        )
+        profile = profile.with_overrides(
             temperature=temperature,
             max_tokens=max_tokens,
         )
-        session = self.store.get_session(session_id or "") if session_id else None
         effective_system_prompt = system_prompt
         if session is None:
             effective_system_prompt = self.resolve_system_prompt(system_prompt, folder_id)

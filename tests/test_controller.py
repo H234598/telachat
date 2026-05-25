@@ -222,6 +222,13 @@ class ControllerTests(unittest.TestCase):
                     api_key = "test"
                     model = "demo"
                     models = ["demo", "demo-large"]
+
+                    [profiles.other]
+                    label = "Other"
+                    base_url = "http://127.0.0.1:9/v1"
+                    api_key = "other"
+                    model = "other-default"
+                    models = ["other-default"]
                     """,
                     encoding="utf-8",
                 )
@@ -230,15 +237,30 @@ class ControllerTests(unittest.TestCase):
                     folder = controller.create_folder(
                         "Projekt",
                         system_prompt="Projektkontext",
+                        default_profile="test",
+                        default_model="demo-large",
                     )
                     session, _messages = controller.new_session(
-                        profile_name="test",
-                        model="demo-large",
                         system_prompt=None,
                         folder_id=folder.id,
                     )
                     self.assertEqual(session.system_prompt, "Projektkontext")
+                    self.assertEqual(session.profile, "test")
                     self.assertEqual(session.model, "demo-large")
+                    explicit_same, _messages = controller.new_session(
+                        profile_name="test",
+                        system_prompt=None,
+                        folder_id=folder.id,
+                    )
+                    self.assertEqual(explicit_same.profile, "test")
+                    self.assertEqual(explicit_same.model, "demo-large")
+                    explicit_other, _messages = controller.new_session(
+                        profile_name="other",
+                        system_prompt=None,
+                        folder_id=folder.id,
+                    )
+                    self.assertEqual(explicit_other.profile, "other")
+                    self.assertEqual(explicit_other.model, "other-default")
                     fallback, _messages = controller.new_session(
                         profile_name="test",
                         system_prompt=None,

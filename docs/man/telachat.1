@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.42.1" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.43.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -48,9 +48,10 @@ List configured prompt templates. Use \fB--json\fR for a structured template
 inventory with preview and size metadata.
 .TP
 .B folders
-List or manage chat folders and folder-level system prompts. Use \fB--json\fR
-for structured output; system prompts are included only with
-\fB--show-system\fR.
+List or manage chat folders, folder-level system prompts, and optional
+folder-level backend defaults. Use \fB--set-backend FOLDER PROFILE [MODEL]\fR
+or \fB--clear-backend FOLDER\fR for provider/model defaults. Use \fB--json\fR
+for structured output; system prompts are included only with \fB--show-system\fR.
 .TP
 .B ask
 Send a single prompt.
@@ -146,6 +147,7 @@ telachat templates
 telachat templates --json
 telachat ask --template summarize "Langer Text"
 telachat folders --create Arbeit --system "Antworte projektbezogen."
+telachat folders --set-backend Arbeit tki Qwen/Qwen2.5-1.5B-Instruct
 telachat sessions --json
 telachat stats --json
 telachat context SESSION_ID --json

@@ -27,6 +27,7 @@ from .commands import (
     slash_command_name_suggestions,
 )
 from .config import (
+    AppConfig,
     ConfigError,
     Profile,
     ensure_default_config,
@@ -139,11 +140,24 @@ def build_parser() -> argparse.ArgumentParser:
     p_folders = sub.add_parser("folders", help="Ordner anzeigen/verwalten")
     p_folders.add_argument("--create", metavar="NAME", help="Ordner anlegen")
     p_folders.add_argument("--system", help="System-Prompt fuer --create")
+    p_folders.add_argument("--profile", help="Default-Provider fuer --create")
+    p_folders.add_argument("--model", help="Default-Modell fuer --create")
     p_folders.add_argument(
         "--set-system",
         nargs=2,
         metavar=("FOLDER", "PROMPT"),
         help="Default-Systemprompt fuer Ordner setzen",
+    )
+    p_folders.add_argument(
+        "--set-backend",
+        nargs="+",
+        metavar="VALUE",
+        help="Default-Backend setzen: FOLDER PROFILE [MODEL]",
+    )
+    p_folders.add_argument(
+        "--clear-backend",
+        metavar="FOLDER",
+        help="Default-Backend eines Ordners loeschen",
     )
     p_folders.add_argument(
         "--show-system",
@@ -544,10 +558,17 @@ def cmd_templates(args: argparse.Namespace) -> int:
 
 
 def cmd_folders(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
     store = ChatStore()
     try:
         if args.create:
-            folder = store.create_folder(args.create, system_prompt=args.system or "")
+            _validate_folder_backend(cfg, args.profile or "", args.model or "")
+            folder = store.create_folder(
+                args.create,
+                system_prompt=args.system or "",
+                default_profile=args.profile or "",
+                default_model=args.model or "",
+            )
             if not args.json:
                 print(f"Ordner bereit: {folder.id} {folder.name}")
         if args.set_system:
@@ -556,6 +577,22 @@ def cmd_folders(args: argparse.Namespace) -> int:
             folder = store.update_folder_system_prompt(folder_id, prompt)
             if not args.json:
                 print(f"System-Prompt gesetzt: {folder.name}")
+        if args.set_backend:
+            if len(args.set_backend) not in {2, 3}:
+                raise ConfigError("--set-backend braucht: FOLDER PROFILE [MODEL]")
+            folder_ref = args.set_backend[0]
+            profile_name = args.set_backend[1]
+            model = args.set_backend[2] if len(args.set_backend) == 3 else ""
+            _validate_folder_backend(cfg, profile_name, model)
+            folder_id = _resolve_real_folder(store, folder_ref)
+            folder = store.update_folder_backend(folder_id, profile_name, model)
+            if not args.json:
+                print(f"Default-Backend gesetzt: {folder.name}")
+        if args.clear_backend:
+            folder_id = _resolve_real_folder(store, args.clear_backend)
+            folder = store.update_folder_backend(folder_id, "", "")
+            if not args.json:
+                print(f"Default-Backend geloescht: {folder.name}")
         folders = store.list_folders()
         if args.json:
             print(
@@ -575,8 +612,16 @@ def cmd_folders(args: argparse.Namespace) -> int:
             print("Keine Ordner vorhanden.")
             return 0
         for folder in folders:
-            marker = "system" if folder.system_prompt else "-"
-            print(f"{folder.id}  {marker:6}  {folder.name}")
+            markers = []
+            if folder.system_prompt:
+                markers.append("system")
+            if folder.default_profile or folder.default_model:
+                markers.append("backend")
+            marker = ",".join(markers) if markers else "-"
+            print(f"{folder.id}  {marker:14}  {folder.name}")
+            if folder.default_profile or folder.default_model:
+                backend = f"{folder.default_profile or '-'} / {folder.default_model or '-'}"
+                print(f"    Backend: {backend}")
             if args.show_system and folder.system_prompt:
                 print(textwrap.indent(folder.system_prompt, "    "))
         return 0
@@ -1004,6 +1049,15 @@ def _cli_tag(tag: object) -> str:
         raise ConfigError(str(exc)) from exc
 
 
+def _validate_folder_backend(cfg: AppConfig, profile_name: str, model: str) -> None:
+    clean_profile = profile_name.strip()
+    clean_model = model.strip()
+    if clean_profile:
+        cfg.profile(clean_profile).with_overrides(model=clean_model or None)
+    elif clean_model:
+        cfg.profile(None).with_overrides(model=clean_model)
+
+
 def _message_record(message: object) -> dict[str, object]:
     return {
         "id": getattr(message, "id"),
@@ -1021,7 +1075,12 @@ def _folder_record(folder: Folder, *, include_system_prompt: bool) -> dict[str, 
         "created_at": folder.created_at,
         "updated_at": folder.updated_at,
         "has_system_prompt": bool(folder.system_prompt),
+        "has_default_backend": bool(folder.default_profile or folder.default_model),
     }
+    if folder.default_profile:
+        record["default_profile"] = folder.default_profile
+    if folder.default_model:
+        record["default_model"] = folder.default_model
     if include_system_prompt:
         record["system_prompt"] = folder.system_prompt
     return record
@@ -1125,7 +1184,12 @@ def _folder_import_target(store: ChatStore, payload: dict[str, object], override
     name = str(folder.get("name") or "").strip()
     if not name:
         return None
-    return store.create_folder(name, system_prompt=str(folder.get("system_prompt") or ""))
+    return store.create_folder(
+        name,
+        system_prompt=str(folder.get("system_prompt") or ""),
+        default_profile=str(folder.get("default_profile") or ""),
+        default_model=str(folder.get("default_model") or ""),
+    )
 
 
 def _folder_import_preview(payload: dict[str, object], override: str | None) -> dict[str, object] | None:
@@ -1144,6 +1208,7 @@ def _folder_import_preview(payload: dict[str, object], override: str | None) -> 
         "name": name,
         "source": "bundle",
         "has_system_prompt": bool(folder.get("system_prompt")),
+        "has_default_backend": bool(folder.get("default_profile") or folder.get("default_model")),
     }
 
 
