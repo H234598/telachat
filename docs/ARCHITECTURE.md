@@ -32,6 +32,10 @@
   - Shared slash-command catalog for CLI help and GUI autocomplete.
   - Theme names are completed from the central theme catalog for `/theme`.
   - Current-chat match formatting is shared by CLI and GUI `/find`.
+- `telachat.templates`
+  - Shared prompt-template renderer for CLI and GUI/controller paths.
+  - Expands built-in variables such as `{input}`, `{date}`, `{time}`, and
+    `{datetime}`.
 - `telachat.controller`
   - Shared application service for GUI frontends.
   - Applies transient GUI generation overrides without rewriting config or
@@ -226,7 +230,8 @@ request size from the system prompt, the configured history-message window, and
 message lengths, reporting character counts and a coarse token estimate.
 
 `templates --json` returns a compact inventory of configured prompt templates:
-name, first-line preview, size metadata, and whether `{input}` is used.
+name, first-line preview, size metadata, whether `{input}` is used, and the
+supported variables referenced by the template.
 
 Sessions can also carry normalized tags in the `session_tags` table. Tags are
 many-to-one labels independent of folders; session search can match tags,

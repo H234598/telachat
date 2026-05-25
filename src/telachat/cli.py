@@ -47,6 +47,7 @@ from .store import (
     normalize_tag,
     title_from_prompt,
 )
+from .templates import render_prompt_template, template_variables
 from .themes import theme_labels
 
 
@@ -1061,7 +1062,8 @@ def _template_record(name: str, template: str) -> dict[str, object]:
         "preview": preview,
         "lines": len(lines),
         "characters": len(template),
-        "has_input_placeholder": "{input}" in template,
+        "has_input_placeholder": "input" in template_variables(template),
+        "variables": list(template_variables(template)),
     }
 
 
@@ -2200,10 +2202,7 @@ def _apply_prompt_template(cfg: object, name: str, text: str = "") -> str:
         raise ConfigError(
             f"Prompt-Template '{name}' existiert nicht. Verfuegbar: {available}"
         ) from exc
-    clean = text.strip()
-    if "{input}" in template:
-        return template.replace("{input}", clean)
-    return f"{template}\n\n{clean}".strip() if clean else template
+    return render_prompt_template(template, text)
 
 
 def _folder_export_title(store: ChatStore, folder: str, folder_id: str | None) -> str:

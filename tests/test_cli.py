@@ -353,6 +353,7 @@ class CliTests(unittest.TestCase):
                 )
                 self.assertIn("preview", summarize)
                 self.assertTrue(summarize["has_input_placeholder"])
+                self.assertEqual(summarize["variables"], ["input"])
                 self.assertGreater(summarize["characters"], 0)
 
                 out = io.StringIO()

@@ -58,6 +58,10 @@ telachat templates
 telachat ask --template summarize "Langer Text"
 ```
 
+Templates unterstuetzen die eingebauten Platzhalter `{input}`, `{date}`,
+`{time}` und `{datetime}`. Wenn ein Template kein `{input}` enthaelt, haengt
+Telachat den eingegebenen Text wie bisher darunter an.
+
 ## Ordner-Systemprompts
 
 Ordner-Systemprompts werden in SQLite gespeichert, nicht in `config.toml`.

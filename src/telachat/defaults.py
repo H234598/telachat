@@ -33,6 +33,7 @@ default_system_prompt = "{DEFAULT_SYSTEM_PROMPT}"
 max_history_messages = 24
 
 [prompt_templates]
+# Supported variables: {{input}}, {{date}}, {{time}}, {{datetime}}.
 summarize = "{DEFAULT_PROMPT_TEMPLATES["summarize"].replace(chr(10), "\\n").replace("{", "{{").replace("}", "}}")}"
 explain = "{DEFAULT_PROMPT_TEMPLATES["explain"].replace(chr(10), "\\n").replace("{", "{{").replace("}", "}}")}"
 translate_de = "{DEFAULT_PROMPT_TEMPLATES["translate_de"].replace(chr(10), "\\n").replace("{", "{{").replace("}", "}}")}"

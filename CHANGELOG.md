@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.0 - 2026-05-25
+
+- Add built-in prompt-template variables: `{date}`, `{time}`, and `{datetime}` in addition to `{input}`.
+- Report referenced built-in variables in `telachat templates --json`.
+- Share prompt-template rendering between CLI and GUI/controller paths.
+
 ## 0.45.1 - 2026-05-25
 
 - Add regression coverage for `telachat ask --json --save` session persistence and quiet stderr.

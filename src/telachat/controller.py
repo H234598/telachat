@@ -14,6 +14,7 @@ from .store import (
     messages_for_api,
     title_from_prompt,
 )
+from .templates import render_prompt_template
 from .themes import Theme, normalize_theme_name, theme_by_name, theme_labels
 
 
@@ -66,10 +67,7 @@ class TelachatController:
         except KeyError as exc:
             available = ", ".join(sorted(self.config.prompt_templates)) or "<keine>"
             raise KeyError(f"Prompt-Template '{name}' fehlt. Verfuegbar: {available}") from exc
-        if "{input}" in template:
-            return template.replace("{input}", text.strip())
-        clean = text.strip()
-        return f"{template}\n\n{clean}".strip() if clean else template
+        return render_prompt_template(template, text)
 
     def list_sessions(
         self,

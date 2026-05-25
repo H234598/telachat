@@ -1,5 +1,12 @@
 # Releases
 
+## 0.46.0 - 2026-05-25
+
+- Prompt-Templates unterstuetzen jetzt `{date}`, `{time}` und `{datetime}`
+  zusaetzlich zu `{input}`.
+- `telachat templates --json` meldet die verwendeten eingebauten Variablen pro
+  Template.
+
 ## 0.45.1 - 2026-05-25
 
 - Ergaenzt Regression-Coverage fuer `telachat ask --json --save`: die Session
