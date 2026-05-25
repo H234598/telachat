@@ -97,6 +97,12 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual(renamed.title, "Alpha neu")
                 renamed_folder = store.update_folder_name(work.id, "Projekte")
                 self.assertEqual(renamed_folder.name, "Projekte")
+                folder_prompt = store.update_folder_system_prompt(work.id, "Antworte projektbezogen.")
+                self.assertEqual(folder_prompt.system_prompt, "Antworte projektbezogen.")
+                loaded_folder = store.get_folder(work.id)
+                self.assertIsNotNone(loaded_folder)
+                assert loaded_folder is not None
+                self.assertEqual(loaded_folder.system_prompt, "Antworte projektbezogen.")
                 store.delete_folder(work.id)
                 self.assertEqual(store.list_folders(), [])
                 self.assertEqual(len(store.list_sessions(folder_id="__none__")), 2)
@@ -166,6 +172,42 @@ class StoreTests(unittest.TestCase):
                 self.assertFalse(session.pinned)
                 pinned = store.set_session_pinned(session.id, True)
                 self.assertTrue(pinned.pinned)
+            finally:
+                store.close()
+
+    def test_legacy_database_adds_folder_system_prompt_column(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "history.sqlite3"
+            db = sqlite3.connect(path)
+            try:
+                db.execute(
+                    """
+                    CREATE TABLE folders (
+                        id TEXT PRIMARY KEY,
+                        name TEXT NOT NULL UNIQUE,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL
+                    )
+                    """
+                )
+                db.execute(
+                    """
+                    INSERT INTO folders(id, name, created_at, updated_at)
+                    VALUES ('folder1', 'Projekt', 1, 1)
+                    """
+                )
+                db.commit()
+            finally:
+                db.close()
+
+            store = ChatStore(path)
+            try:
+                folder = store.get_folder("folder1")
+                self.assertIsNotNone(folder)
+                assert folder is not None
+                self.assertEqual(folder.system_prompt, "")
+                updated = store.update_folder_system_prompt(folder.id, "Nur Fakten.")
+                self.assertEqual(updated.system_prompt, "Nur Fakten.")
             finally:
                 store.close()
 

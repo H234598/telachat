@@ -66,9 +66,10 @@ and local state under `$XDG_STATE_HOME`.
   becomes painful as soon as more than a handful of chats exist.
 - For Windows installers, use PyInstaller on Windows plus NSIS. PyInstaller is
   not a cross-compiler, so Linux cannot honestly emit a native Windows `.exe`.
-- OpenAI and ChatGPT are exposed as normal OpenAI-compatible `/v1` profiles with
-  `env:OPENAI_API_KEY`. Codex is exposed through the local `codex exec` CLI
-  because it is an agent CLI, not a normal Chat Completions model endpoint.
+- OpenAI is exposed as a normal OpenAI-compatible `/v1` profile with
+  `env:OPENAI_API_KEY`. The separate ChatGPT alias was removed because it used
+  the same Responses API path. Codex is exposed through the local `codex exec`
+  CLI because it is an agent CLI, not a normal Chat Completions model endpoint.
 
 ## Feature ideas kept for later
 

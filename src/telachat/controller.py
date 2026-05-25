@@ -65,8 +65,27 @@ class TelachatController:
     def list_folders(self) -> list[Folder]:
         return self.store.list_folders()
 
-    def create_folder(self, name: str) -> Folder:
-        return self.store.create_folder(name)
+    def create_folder(self, name: str, *, system_prompt: str = "") -> Folder:
+        return self.store.create_folder(name, system_prompt=system_prompt)
+
+    def folder_system_prompt(self, folder_id: str | None) -> str:
+        if not folder_id:
+            return self.system_prompt()
+        folder = self.store.get_folder(folder_id)
+        if folder and folder.system_prompt:
+            return folder.system_prompt
+        return self.system_prompt()
+
+    def resolve_system_prompt(self, system_prompt: str | None, folder_id: str | None) -> str:
+        if system_prompt is None:
+            return self.folder_system_prompt(folder_id)
+        clean = system_prompt.strip()
+        if clean == self.system_prompt().strip():
+            return self.folder_system_prompt(folder_id)
+        return clean
+
+    def set_folder_system_prompt(self, folder_id: str, system_prompt: str) -> Folder:
+        return self.store.update_folder_system_prompt(folder_id, system_prompt)
 
     def move_session(self, session_id: str, folder_id: str | None) -> Session:
         return self.store.move_session(session_id, folder_id)
@@ -100,10 +119,11 @@ class TelachatController:
         title: str = "Neue Unterhaltung",
         folder_id: str | None = None,
     ) -> tuple[Session, list[Message]]:
+        resolved_system_prompt = self.resolve_system_prompt(system_prompt, folder_id)
         session = self.store.create_session(
             title=title,
             profile=profile_name or self.default_profile_name(),
-            system_prompt=system_prompt or self.system_prompt(),
+            system_prompt=resolved_system_prompt,
             folder_id=folder_id,
         )
         return session, []
@@ -123,11 +143,13 @@ class TelachatController:
             raise ValueError("Nachricht fehlt.")
         profile = self.config.profile(profile_name).with_overrides(model=model)
         session = self.store.get_session(session_id or "") if session_id else None
+        effective_system_prompt = system_prompt
         if session is None:
+            effective_system_prompt = self.resolve_system_prompt(system_prompt, folder_id)
             session = self.store.create_session(
                 title=title_from_prompt(clean),
                 profile=profile.name,
-                system_prompt=system_prompt,
+                system_prompt=effective_system_prompt,
                 folder_id=folder_id,
             )
         elif session.title == "Neue Unterhaltung":
@@ -135,7 +157,7 @@ class TelachatController:
 
         self.store.add_message(session.id, "user", clean)
         history = self.store.messages(session.id, limit=self.config.max_history_messages)
-        api_messages = messages_for_api(system_prompt, history)
+        api_messages = messages_for_api(effective_system_prompt, history)
         result = OpenAICompatClient(profile, retries=1).chat(api_messages, stream=False)
         if isinstance(result, ChatResult):
             answer = result.content

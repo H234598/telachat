@@ -21,7 +21,6 @@ Beispiele fuer Provider:
 
 - `huggingface` / `tki`
 - `openai`
-- `chatgpt`
 - `codex`
 
 ## Secrets
@@ -54,4 +53,16 @@ Verwendung:
 ```sh
 telachat templates
 telachat ask --template summarize "Langer Text"
+```
+
+## Ordner-Systemprompts
+
+Ordner-Systemprompts werden in SQLite gespeichert, nicht in `config.toml`.
+Dadurch bleiben sie Teil der lokalen Chat-Historie und koennen pro Projekt
+angepasst werden.
+
+```sh
+telachat folders --create Projekt --system "Antworte mit Projektkontext."
+telachat folders --set-system Projekt "Neuer Kontext."
+telachat folders --show-system
 ```

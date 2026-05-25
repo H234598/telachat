@@ -61,25 +61,12 @@ timeout_seconds = 300
 stream = true
 api_mode = "chat_completions"
 
-[profiles.chatgpt]
-label = "ChatGPT"
-base_url = "https://api.openai.com/v1"
-api_key = "env:OPENAI_API_KEY"
-model = "gpt-5.5"
-models = ["gpt-5.5", "gpt-5.5-pro", "gpt-5.4", "gpt-5.4-mini", "gpt-5.2", "gpt-5.1-chat-latest", "gpt-5-chat-latest"]
-temperature = 0.2
-top_p = 0.9
-max_tokens = 1024
-timeout_seconds = 300
-stream = false
-api_mode = "responses"
-
 [profiles.openai]
 label = "OpenAI API"
 base_url = "https://api.openai.com/v1"
 api_key = "env:OPENAI_API_KEY"
 model = "gpt-5.4-mini"
-models = ["gpt-5.4-mini", "gpt-5.4", "gpt-5.4-nano", "gpt-5.5", "gpt-5.2", "gpt-5.1", "gpt-4.1-mini", "gpt-4.1"]
+models = ["gpt-5.4-mini", "gpt-5.4", "gpt-5.4-nano", "gpt-5.5", "gpt-5.5-pro", "gpt-5.2", "gpt-5.1", "gpt-5.1-chat-latest", "gpt-5-chat-latest", "gpt-4.1-mini", "gpt-4.1"]
 temperature = 0.2
 top_p = 0.9
 max_tokens = 1024

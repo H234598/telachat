@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0 - 2026-05-25
+
+- Add folder-level default system prompts so folders can behave like lightweight
+  project contexts.
+- Add `telachat folders` with create/list/show-system/set-system operations.
+- Add `/folder-system TEXT` to CLI, GTK, and Tk command paths.
+- Add an `Ordner-Prompt` GUI action that saves the current system prompt to the
+  selected folder.
+- Add SQLite migration coverage for the new folder prompt column.
+- Remove the redundant `chatgpt` provider; use `openai` for OpenAI Responses API
+  models, including GPT-5.x options.
+
 ## 0.3.0 - 2026-05-25
 
 - Add configurable prompt templates through `[prompt_templates]` in

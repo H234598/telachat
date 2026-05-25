@@ -22,6 +22,7 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 
 - Chats koennen in Ordner verschoben werden.
 - Ordner koennen umbenannt und geloescht werden.
+- Ordner koennen einen Default-Systemprompt speichern.
 - Chats koennen gepinnt werden.
 - Suche und Sortierung sind in der Seitenleiste verfuegbar.
 
@@ -35,4 +36,8 @@ Slash-Commands funktionieren ebenfalls:
 ```text
 /templates
 /template summarize Mein Text
+/folder-system Projektkontext
 ```
+
+Der Button `Ordner-Prompt` speichert den aktuell sichtbaren Systemprompt fuer
+den gewaehlten Ordner.

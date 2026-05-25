@@ -114,6 +114,51 @@ class ControllerTests(unittest.TestCase):
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_folder_system_prompt_is_used_for_new_session(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                config_dir = Path(tmp) / "config" / "telachat"
+                config_dir.mkdir(parents=True)
+                (config_dir / "config.toml").write_text(
+                    """
+                    default_profile = "test"
+                    default_system_prompt = "Allgemein"
+
+                    [profiles.test]
+                    label = "Test"
+                    base_url = "http://127.0.0.1:9/v1"
+                    api_key = "test"
+                    model = "demo"
+                    """,
+                    encoding="utf-8",
+                )
+                controller = TelachatController()
+                try:
+                    folder = controller.create_folder(
+                        "Projekt",
+                        system_prompt="Projektkontext",
+                    )
+                    session, _messages = controller.new_session(
+                        profile_name="test",
+                        system_prompt=None,
+                        folder_id=folder.id,
+                    )
+                    self.assertEqual(session.system_prompt, "Projektkontext")
+                    fallback, _messages = controller.new_session(
+                        profile_name="test",
+                        system_prompt=None,
+                    )
+                    self.assertEqual(fallback.system_prompt, "Allgemein")
+                finally:
+                    controller.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
 
 def _restore_env(name: str, value: str | None) -> None:
     if value is None:

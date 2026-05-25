@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.3.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.4.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -61,7 +61,8 @@ linke Provider-/Chatleiste und der rechte System-Prompt-Bereich sind
 einklappbar und per breitem Splitter in der Breite anpassbar. Chats koennen in
 Ordnern abgelegt, nach Datum/Titel/Provider sortiert und ueber Titel, Provider
 oder Nachrichteninhalt gesucht werden. Wichtige Chats koennen angeheftet
-werden; gepinnte Chats stehen in Listen zuerst.
+werden; gepinnte Chats stehen in Listen zuerst. Ordner koennen einen eigenen
+Default-Systemprompt tragen, damit sie als kleine Projektkontexte funktionieren.
 
 Im Texteingabefeld funktioniert auch eine kleine Kommandozeile:
 `Shift+Enter` schickt die Nachricht ab, normales `Enter` bleibt fuer
@@ -78,6 +79,7 @@ Zeilenumbrueche.
 /templates
 /template NAME TEXT
 /folder NAME
+/folder-system TEXT
 /rename-folder NAME
 /delete-folder
 /move NAME
@@ -101,6 +103,7 @@ Nuetzliche Chat-Befehle:
 /regen
 /templates
 /template NAME TEXT
+/folder-system TEXT
 /profile [name]
 /system [prompt]
 /history [n]
@@ -114,6 +117,16 @@ Gespeicherte Sessions koennen auch direkt in der CLI gefiltert werden:
 telachat sessions --query projekt
 telachat sessions --folder Arbeit
 telachat sessions --sort title
+```
+
+Ordner und ihre Projekt-Systemprompts lassen sich ebenfalls in der CLI
+verwalten:
+
+```sh
+telachat folders
+telachat folders --create Arbeit --system "Antworte knapp und projektbezogen."
+telachat folders --set-system Arbeit "Nutze den Projektkontext."
+telachat folders --show-system
 ```
 
 Prompt-Templates kommen aus `[prompt_templates]` in `config.toml` und koennen
@@ -148,22 +161,22 @@ diesem Host liegt `Telachat_API_Teladi` in
 
 Weitere Standardprofile:
 
-- `chatgpt`: OpenAI/ChatGPT-Profil mit `env:OPENAI_API_KEY`, `gpt-5.5`, Responses API.
-- `openai`: allgemeine OpenAI-API-Anbindung mit `env:OPENAI_API_KEY`, `gpt-5.4-mini`, Responses API.
+- `openai`: allgemeine OpenAI-API-Anbindung mit `env:OPENAI_API_KEY`, `gpt-5.4-mini`, Responses API und GPT-5.x-Modelloptionen.
 - `huggingface`: dein Hugging-Face/Qwen-Space mit Qwen-Modellnamen.
 - `codex`: lokaler Codex-CLI-Zugriff ueber `codex exec`, kein `/v1`-HTTP-Modell.
 
-Fuer OpenAI/ChatGPT:
+Fuer OpenAI:
 
 ```sh
 export OPENAI_API_KEY="..."
 telachat ask -p openai "Hallo"
-telachat ask -p chatgpt "Hallo"
 ```
 
 Auf diesem Host liegt eine Telachat-eigene Kopie des Keys in
 `~/.config/telachat/openai.env` und wird per
 `envfile:~/.config/telachat/openai.env#OPENAI_API_KEY` referenziert.
+Der fruehere `chatgpt`-Provider wurde entfernt, weil er dieselbe OpenAI
+Responses API genutzt hat.
 
 Fuer Codex:
 

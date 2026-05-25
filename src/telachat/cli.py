@@ -54,6 +54,22 @@ def build_parser() -> argparse.ArgumentParser:
     p_templates = sub.add_parser("templates", help="Prompt-Templates anzeigen")
     p_templates.set_defaults(func=cmd_templates)
 
+    p_folders = sub.add_parser("folders", help="Ordner anzeigen/verwalten")
+    p_folders.add_argument("--create", metavar="NAME", help="Ordner anlegen")
+    p_folders.add_argument("--system", help="System-Prompt fuer --create")
+    p_folders.add_argument(
+        "--set-system",
+        nargs=2,
+        metavar=("FOLDER", "PROMPT"),
+        help="Default-Systemprompt fuer Ordner setzen",
+    )
+    p_folders.add_argument(
+        "--show-system",
+        action="store_true",
+        help="Ordner-Systemprompts voll anzeigen",
+    )
+    p_folders.set_defaults(func=cmd_folders)
+
     p_ask = sub.add_parser("ask", help="Einzelne Frage stellen")
     add_chat_options(p_ask)
     p_ask.add_argument("prompt", nargs="*", help="Prompt; leer liest interaktiv/stdin")
@@ -140,6 +156,31 @@ def cmd_templates(args: argparse.Namespace) -> int:
         first_line = cfg.prompt_templates[name].splitlines()[0]
         print(f"{name:16} {first_line}")
     return 0
+
+
+def cmd_folders(args: argparse.Namespace) -> int:
+    store = ChatStore()
+    try:
+        if args.create:
+            folder = store.create_folder(args.create, system_prompt=args.system or "")
+            print(f"Ordner bereit: {folder.id} {folder.name}")
+        if args.set_system:
+            folder_ref, prompt = args.set_system
+            folder_id = _resolve_real_folder(store, folder_ref)
+            folder = store.update_folder_system_prompt(folder_id, prompt)
+            print(f"System-Prompt gesetzt: {folder.name}")
+        folders = store.list_folders()
+        if not folders:
+            print("Keine Ordner vorhanden.")
+            return 0
+        for folder in folders:
+            marker = "system" if folder.system_prompt else "-"
+            print(f"{folder.id}  {marker:6}  {folder.name}")
+            if args.show_system and folder.system_prompt:
+                print(textwrap.indent(folder.system_prompt, "    "))
+        return 0
+    finally:
+        store.close()
 
 
 def cmd_ask(args: argparse.Namespace) -> int:
@@ -276,6 +317,20 @@ def _resolve_folder_filter(store: ChatStore, folder: str | None) -> str | None:
     return matches[0].id
 
 
+def _resolve_real_folder(store: ChatStore, folder: str) -> str:
+    clean = folder.strip()
+    matches = [
+        item
+        for item in store.list_folders()
+        if item.id.startswith(clean) or item.name.lower() == clean.lower()
+    ]
+    if not matches:
+        raise ConfigError(f"Ordner nicht gefunden: {folder}")
+    if len(matches) > 1:
+        raise ConfigError(f"Ordner nicht eindeutig gefunden: {folder}")
+    return matches[0].id
+
+
 def cmd_export(args: argparse.Namespace) -> int:
     store = ChatStore()
     try:
@@ -396,6 +451,7 @@ def _handle_command(
                 /regen                Letzte KI-Antwort neu generieren
                 /templates            Prompt-Templates anzeigen
                 /template NAME TEXT   Template anwenden und senden
+                /folder-system TEXT   Default-Systemprompt des Ordners setzen
                 /profile [name]       Profil anzeigen/wechseln
                 /profiles             Profile anzeigen
                 /system [prompt]      System-Prompt anzeigen/setzen
@@ -471,6 +527,19 @@ def _handle_command(
                     print(f"\nFehler: {exc}", file=sys.stderr)
                 else:
                     store.add_message(session.id, "assistant", answer)
+    elif command == "/folder-system":
+        folder_id = getattr(session, "folder_id", None)
+        if not folder_id:
+            print("Aktuelle Session liegt in keinem Ordner.")
+        elif rest:
+            folder = store.update_folder_system_prompt(folder_id, rest)
+            print(f"Ordner-Systemprompt gesetzt: {folder.name}")
+        else:
+            folder = store.get_folder(folder_id)
+            if folder is None:
+                print("Ordner nicht gefunden.")
+            else:
+                print(folder.system_prompt or "<leer>")
     elif command == "/profile":
         if not rest:
             print(f"Aktiv: {profile.name} ({profile.display_name})")

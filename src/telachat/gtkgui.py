@@ -157,6 +157,12 @@ class GtkTelachatApp(Adw.Application):
         delete_folder_button.connect("clicked", self.on_delete_selected_folder)
         folder_manage_row.append(delete_folder_button)
 
+        folder_prompt_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.sidebar.append(folder_prompt_row)
+        folder_prompt_button = Gtk.Button(label="Ordner-Prompt")
+        folder_prompt_button.connect("clicked", self.on_save_selected_folder_prompt)
+        folder_prompt_row.append(folder_prompt_button)
+
         self.session_list = Gtk.ListBox()
         self.session_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
         self.session_list.connect("row-selected", self.on_session_selected)
@@ -299,6 +305,8 @@ class GtkTelachatApp(Adw.Application):
 
     def on_filter_changed(self, *_args: object) -> None:
         self.refresh_sessions()
+        if self.active_session is None:
+            self.apply_selected_folder_prompt()
 
     def selected_sort(self) -> str:
         selected = self.sort_dropdown.get_selected()
@@ -345,10 +353,32 @@ class GtkTelachatApp(Adw.Application):
             selected = 0
         self.folder_dropdown.set_selected(selected)
 
+    def selected_real_folder_id(self) -> str | None:
+        selected = self.selected_folder_id(for_new=True)
+        if selected:
+            return selected
+        return self.active_session.folder_id if self.active_session else None
+
     def system_prompt(self) -> str:
         start = self.system_buffer.get_start_iter()
         end = self.system_buffer.get_end_iter()
         return self.system_buffer.get_text(start, end, True).strip()
+
+    def set_system_prompt(self, text: str) -> None:
+        self.system_buffer.set_text(text)
+
+    def apply_selected_folder_prompt(self) -> None:
+        folder_id = self.selected_folder_id(for_new=True)
+        if folder_id:
+            self.set_system_prompt(self.controller.folder_system_prompt(folder_id))
+
+    def on_save_selected_folder_prompt(self, _button: Gtk.Button) -> None:
+        folder_id = self.selected_real_folder_id()
+        if not folder_id:
+            self.status.set_text("Ordner waehlen.")
+            return
+        folder = self.controller.set_folder_system_prompt(folder_id, self.system_prompt())
+        self.status.set_text(f"Ordner-Prompt gespeichert: {folder.name}")
 
     def input_prompt(self) -> str:
         buffer = self.input_view.get_buffer()
@@ -407,6 +437,7 @@ class GtkTelachatApp(Adw.Application):
 
     def load_session(self, session_id: str) -> None:
         self.active_session, self.messages = self.controller.get_session(session_id)
+        self.set_system_prompt(self.active_session.system_prompt)
         self.update_active_title()
         self.render_messages()
 
@@ -442,6 +473,7 @@ class GtkTelachatApp(Adw.Application):
         )
         self.update_active_title()
         self.refresh_sessions()
+        self.set_system_prompt(self.active_session.system_prompt)
         self.render_messages()
 
     def on_send(self, _button: Gtk.Button) -> None:
@@ -741,7 +773,7 @@ class GtkTelachatApp(Adw.Application):
             dialog = Adw.MessageDialog.new(
                 self.window,
                 "Telachat Kommandos",
-                "/new | /neu\n/rename TITLE\n/delete\n/pin | /unpin\n/regen | /regenerate\n/templates\n/template NAME TEXT\n/folder NAME | /ordner NAME\n/rename-folder NAME\n/delete-folder\n/move NAME | /ablegen NAME\n/unfile\n/sort newest|oldest|title|title-desc|provider\n/search TEXT\n/provider NAME\n/model NAME\n/left | /links\n/system",
+                "/new | /neu\n/rename TITLE\n/delete\n/pin | /unpin\n/regen | /regenerate\n/templates\n/template NAME TEXT\n/folder NAME | /ordner NAME\n/folder-system TEXT\n/rename-folder NAME\n/delete-folder\n/move NAME | /ablegen NAME\n/unfile\n/sort newest|oldest|title|title-desc|provider\n/search TEXT\n/provider NAME\n/model NAME\n/left | /links\n/system",
             )
             dialog.add_response("ok", "OK")
             dialog.present()
@@ -777,6 +809,17 @@ class GtkTelachatApp(Adw.Application):
                 else:
                     self.set_input_prompt(prompt)
                     self.status.set_text(f"Vorlage eingesetzt: {template_name}")
+        elif command == "/folder-system":
+            folder_id = self.selected_real_folder_id()
+            if not folder_id:
+                self.status.set_text("Ordner waehlen.")
+            elif rest:
+                folder = self.controller.set_folder_system_prompt(folder_id, rest)
+                self.set_system_prompt(folder.system_prompt)
+                self.status.set_text(f"Ordner-Prompt gespeichert: {folder.name}")
+            else:
+                self.set_system_prompt(self.controller.folder_system_prompt(folder_id))
+                self.status.set_text("Ordner-Prompt geladen.")
         elif command in {"/folder", "/ordner"}:
             if rest:
                 folder = self.controller.create_folder(rest)

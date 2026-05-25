@@ -8,6 +8,7 @@ Telachat kann komplett aus dem Terminal genutzt werden.
 telachat init
 telachat profiles
 telachat templates
+telachat folders
 telachat doctor
 telachat doctor --chat
 telachat ask "Deine Frage"
@@ -29,6 +30,9 @@ telachat sessions
 telachat sessions --query TEXT
 telachat sessions --folder NAME
 telachat sessions --sort newest
+telachat folders --create Projekt --system "Projektkontext"
+telachat folders --set-system Projekt "Neuer Projektkontext"
+telachat folders --show-system
 telachat export SESSION_ID
 ```
 
@@ -52,4 +56,5 @@ Im interaktiven Chat funktionieren unter anderem:
 /model NAME
 /templates
 /template NAME TEXT
+/folder-system TEXT
 ```

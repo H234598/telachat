@@ -29,6 +29,7 @@ class Folder:
     name: str
     created_at: int
     updated_at: int
+    system_prompt: str = ""
 
 
 @dataclass(frozen=True)
@@ -75,7 +76,8 @@ class ChatStore:
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL UNIQUE,
                     created_at INTEGER NOT NULL,
-                    updated_at INTEGER NOT NULL
+                    updated_at INTEGER NOT NULL,
+                    system_prompt TEXT NOT NULL DEFAULT ''
                 );
 
                 CREATE TABLE IF NOT EXISTS messages (
@@ -104,6 +106,14 @@ class ChatStore:
                 self.db.execute("ALTER TABLE sessions ADD COLUMN folder_id TEXT")
             if "pinned" not in columns:
                 self.db.execute("ALTER TABLE sessions ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
+            folder_columns = {
+                row["name"]
+                for row in self.db.execute("PRAGMA table_info(folders)").fetchall()
+            }
+            if "system_prompt" not in folder_columns:
+                self.db.execute(
+                    "ALTER TABLE folders ADD COLUMN system_prompt TEXT NOT NULL DEFAULT ''"
+                )
 
     def create_session(
         self,
@@ -201,7 +211,22 @@ class ChatStore:
             ).fetchall()
             return [_folder_from_row(row) for row in rows]
 
-    def create_folder(self, name: str) -> Folder:
+    def get_folder(self, folder_id_or_prefix: str) -> Folder | None:
+        with self._lock:
+            rows = self.db.execute(
+                """
+                SELECT * FROM folders
+                WHERE id = ? OR id LIKE ?
+                ORDER BY updated_at DESC
+                LIMIT 2
+                """,
+                (folder_id_or_prefix, f"{folder_id_or_prefix}%"),
+            ).fetchall()
+            if len(rows) != 1:
+                return None
+            return _folder_from_row(rows[0])
+
+    def create_folder(self, name: str, *, system_prompt: str = "") -> Folder:
         with self._lock:
             clean = " ".join(name.strip().split())
             if not clean:
@@ -215,11 +240,14 @@ class ChatStore:
             now = int(time.time())
             folder_id = uuid.uuid4().hex[:12]
             self.db.execute(
-                "INSERT INTO folders(id, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
-                (folder_id, clean, now, now),
+                """
+                INSERT INTO folders(id, name, created_at, updated_at, system_prompt)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (folder_id, clean, now, now, system_prompt.strip()),
             )
             self.db.commit()
-            return Folder(folder_id, clean, now, now)
+            return Folder(folder_id, clean, now, now, system_prompt.strip())
 
     def move_session(self, session_id: str, folder_id: str | None) -> Session:
         with self._lock:
@@ -259,6 +287,19 @@ class ChatStore:
             if folder is None:
                 raise KeyError(folder_id)
             return _folder_from_row(folder)
+
+    def update_folder_system_prompt(self, folder_id: str, system_prompt: str) -> Folder:
+        with self._lock:
+            now = int(time.time())
+            self.db.execute(
+                "UPDATE folders SET system_prompt = ?, updated_at = ? WHERE id = ?",
+                (system_prompt.strip(), now, folder_id),
+            )
+            self.db.commit()
+            folder = self.get_folder(folder_id)
+            if folder is None:
+                raise KeyError(folder_id)
+            return folder
 
     def delete_folder(self, folder_id: str) -> None:
         with self._lock:
@@ -425,6 +466,7 @@ def _folder_from_row(row: sqlite3.Row) -> Folder:
         name=row["name"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
+        system_prompt=row["system_prompt"] if "system_prompt" in row.keys() else "",
     )
 
 

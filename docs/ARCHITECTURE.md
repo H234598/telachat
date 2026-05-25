@@ -30,7 +30,7 @@ SQLite tables:
 - `sessions`
   - `id`, `title`, `profile`, `system_prompt`, `created_at`, `updated_at`, `folder_id`, `pinned`
 - `folders`
-  - `id`, `name`, `created_at`, `updated_at`
+  - `id`, `name`, `created_at`, `updated_at`, `system_prompt`
 - `messages`
   - `id`, `session_id`, `role`, `content`, `created_at`, `metadata`
 
@@ -59,8 +59,7 @@ model = "gpt-4"
 
 Additional built-in profiles:
 
-- `chatgpt`: OpenAI `/v1` Responses API using an env/envfile key, default model `gpt-5.5`.
-- `openai`: OpenAI `/v1` Responses API using an env/envfile key, default model `gpt-5.4-mini`.
+- `openai`: OpenAI `/v1` Responses API using an env/envfile key, default model `gpt-5.4-mini`, with GPT-5.x model options.
 - `huggingface`: Hugging Face Space `/v1`, model list centered on Qwen.
 - `codex`: local `codex exec` bridge. This is not OpenAI-compatible HTTP.
 
@@ -69,6 +68,9 @@ model-selection step. They also expose folder filtering, sorting, text search,
 chat pinning, and a slash-command path through the same composer used for
 prompts. The left chat/provider pane and the right system pane are real
 resizable split panes rather than fixed sidebars.
+Folders can store a default system prompt. New chats created inside such a
+folder inherit that prompt unless the user explicitly overrides the system
+prompt.
 
 For real credentials, prefer:
 
@@ -82,6 +84,7 @@ api_key = "env:PROVIDER_API_KEY"
 telachat init
 telachat profiles
 telachat templates
+telachat folders
 telachat doctor
 telachat doctor --chat
 telachat ask "Hallo"
@@ -106,6 +109,7 @@ GUI slash commands:
 /templates
 /template NAME TEXT
 /folder NAME | /ordner NAME
+/folder-system TEXT
 /rename-folder NAME
 /delete-folder
 /move NAME | /ablegen NAME
@@ -124,7 +128,7 @@ GUI slash commands:
 - API client against a local fake OpenAI-compatible HTTP server.
 - Non-streaming and streaming SSE responses.
 - SQLite session/message roundtrip and Markdown export.
-- SQLite folder, sorting and history-search behavior.
+- SQLite folder prompts, sorting and history-search behavior.
 - CLI init/profile behavior with temporary XDG directories.
 - Bytecode compilation and zipapp packaging.
 - Optional live `doctor --chat` against the configured HF Space.

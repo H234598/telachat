@@ -78,7 +78,7 @@ class TkTelachatApp:
         self.paned.grid(row=0, column=0, sticky="nsew")
 
         self.sidebar = ttk.Frame(self.paned, style="Sidebar.TFrame", padding=14, width=300)
-        self.sidebar.rowconfigure(17, weight=1)
+        self.sidebar.rowconfigure(18, weight=1)
 
         title = ttk.Label(self.sidebar, text="Telachat", font=("Sans", 22, "bold"))
         title.grid(row=0, column=0, columnspan=2, sticky="w")
@@ -106,7 +106,7 @@ class TkTelachatApp:
             self.sidebar, textvariable=self.folder_var, state="readonly", width=24
         )
         self.folder_combo.grid(row=7, column=0, columnspan=2, sticky="ew", pady=(4, 10))
-        self.folder_combo.bind("<<ComboboxSelected>>", lambda _event: self.refresh_sessions())
+        self.folder_combo.bind("<<ComboboxSelected>>", self.on_folder_filter_changed)
 
         ttk.Label(self.sidebar, text="Sortierung").grid(row=8, column=0, sticky="w")
         self.sort_var = tk.StringVar(value="Neueste zuerst")
@@ -160,6 +160,9 @@ class TkTelachatApp:
         ttk.Button(self.sidebar, text="Ordner -", command=self.delete_selected_folder).grid(
             row=16, column=1, sticky="ew", pady=(8, 0)
         )
+        ttk.Button(self.sidebar, text="Ordner-Prompt", command=self.save_selected_folder_prompt).grid(
+            row=17, column=0, columnspan=2, sticky="ew", pady=(8, 0)
+        )
 
         self.session_list = tk.Listbox(
             self.sidebar,
@@ -171,7 +174,7 @@ class TkTelachatApp:
             selectbackground="#0d6b6f",
             selectforeground="#ffffff",
         )
-        self.session_list.grid(row=17, column=0, columnspan=2, sticky="nsew", pady=(14, 0))
+        self.session_list.grid(row=18, column=0, columnspan=2, sticky="nsew", pady=(14, 0))
         self.session_list.bind("<<ListboxSelect>>", self._on_session_select)
 
         self.main = ttk.Frame(self.paned, padding=16)
@@ -268,6 +271,7 @@ class TkTelachatApp:
 
     def load_session(self, session_id: str) -> None:
         self.active_session, self.messages = self.controller.get_session(session_id)
+        self.set_system_prompt_text(self.active_session.system_prompt)
         self.update_active_title()
         self.render_messages()
 
@@ -279,6 +283,7 @@ class TkTelachatApp:
         )
         self.update_active_title()
         self.refresh_sessions()
+        self.set_system_prompt_text(self.active_session.system_prompt)
         self.render_messages()
 
     def send_message(self) -> None:
@@ -445,11 +450,40 @@ class TkTelachatApp:
         if not self.folder_var.get():
             self.folder_var.set("Alle")
 
+    def on_folder_filter_changed(self, _event: object) -> None:
+        self.refresh_sessions()
+        if self.active_session is None:
+            self.apply_selected_folder_prompt()
+
     def selected_folder_id(self, *, for_new: bool = False) -> str | None:
         value = self.folder_display_to_id.get(self.folder_var.get(), "__all__")
         if value in {"__all__", "__none__"}:
             return None if for_new else value
         return value
+
+    def selected_real_folder_id(self) -> str | None:
+        selected = self.selected_folder_id(for_new=True)
+        if selected:
+            return selected
+        return self.active_session.folder_id if self.active_session else None
+
+    def set_system_prompt_text(self, text: str) -> None:
+        self.system_text.delete("1.0", tk.END)
+        self.system_text.insert("1.0", text)
+
+    def apply_selected_folder_prompt(self) -> None:
+        folder_id = self.selected_folder_id(for_new=True)
+        if folder_id:
+            self.set_system_prompt_text(self.controller.folder_system_prompt(folder_id))
+
+    def save_selected_folder_prompt(self) -> None:
+        folder_id = self.selected_real_folder_id()
+        if not folder_id:
+            self.set_status("Ordner waehlen.")
+            return
+        prompt = self.system_text.get("1.0", tk.END).strip()
+        folder = self.controller.set_folder_system_prompt(folder_id, prompt)
+        self.set_status(f"Ordner-Prompt gespeichert: {folder.name}")
 
     def create_folder_dialog(self) -> None:
         name = simpledialog.askstring("Telachat", "Ordnername:")
@@ -574,7 +608,7 @@ class TkTelachatApp:
         if command in {"/help", "/hilfe"}:
             messagebox.showinfo(
                 "Telachat Kommandos",
-                "/new | /neu\n/rename TITLE\n/delete\n/pin | /unpin\n/regen | /regenerate\n/templates\n/template NAME TEXT\n/folder NAME | /ordner NAME\n/rename-folder NAME\n/delete-folder\n/move NAME | /ablegen NAME\n/unfile\n/sort newest|oldest|title|title-desc|provider\n/search TEXT\n/provider NAME\n/model NAME\n/left | /links\n/system",
+                "/new | /neu\n/rename TITLE\n/delete\n/pin | /unpin\n/regen | /regenerate\n/templates\n/template NAME TEXT\n/folder NAME | /ordner NAME\n/folder-system TEXT\n/rename-folder NAME\n/delete-folder\n/move NAME | /ablegen NAME\n/unfile\n/sort newest|oldest|title|title-desc|provider\n/search TEXT\n/provider NAME\n/model NAME\n/left | /links\n/system",
             )
         elif command in {"/new", "/neu"}:
             self.new_session()
@@ -609,6 +643,17 @@ class TkTelachatApp:
                     self.input_text.delete("1.0", tk.END)
                     self.input_text.insert("1.0", prompt)
                     self.set_status(f"Vorlage eingesetzt: {template_name}")
+        elif command == "/folder-system":
+            folder_id = self.selected_real_folder_id()
+            if not folder_id:
+                self.set_status("Ordner waehlen.")
+            elif rest:
+                folder = self.controller.set_folder_system_prompt(folder_id, rest)
+                self.set_system_prompt_text(folder.system_prompt)
+                self.set_status(f"Ordner-Prompt gespeichert: {folder.name}")
+            else:
+                self.set_system_prompt_text(self.controller.folder_system_prompt(folder_id))
+                self.set_status("Ordner-Prompt geladen.")
         elif command in {"/folder", "/ordner"}:
             if rest:
                 folder = self.controller.create_folder(rest)
