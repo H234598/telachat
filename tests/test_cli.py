@@ -434,6 +434,55 @@ model = "demo"
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_export_session_json_writes_structured_messages(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(main(["init"]), 0)
+                store = ChatStore()
+                try:
+                    session = store.create_session(
+                        title="JSON Export",
+                        profile="openai",
+                        model="gpt-5.5",
+                        system_prompt="System JSON",
+                    )
+                    store.add_message(session.id, "user", "Hallo JSON")
+                    store.add_message(session.id, "assistant", "Antwort JSON")
+                finally:
+                    store.close()
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["export", session.id, "--json"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["format"], "telachat.session.v1")
+                self.assertEqual(payload["session"]["title"], "JSON Export")
+                self.assertEqual(payload["session"]["model"], "gpt-5.5")
+                self.assertEqual(payload["session"]["system_prompt"], "System JSON")
+                self.assertEqual(
+                    [(item["role"], item["content"]) for item in payload["messages"]],
+                    [("user", "Hallo JSON"), ("assistant", "Antwort JSON")],
+                )
+                self.assertNotIn("secret-value", out.getvalue())
+
+                target = Path(tmp) / "session.json"
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["export", session.id, "--json", "-o", str(target)]), 0)
+                self.assertEqual(out.getvalue().strip(), str(target))
+                self.assertEqual(
+                    json.loads(target.read_text(encoding="utf-8"))["messages"][0]["content"],
+                    "Hallo JSON",
+                )
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_backup_writes_redacted_config_manifest_and_database(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

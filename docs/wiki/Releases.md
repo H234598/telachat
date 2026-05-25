@@ -1,5 +1,12 @@
 # Releases
 
+## 0.20.0 - 2026-05-25
+
+- `telachat export SESSION --json` exportiert eine einzelne Session
+  maschinenlesbar.
+- JSON enthaelt Session-Metadaten, Systemprompt und sortierte Nachrichten.
+- `-o/--output` funktioniert fuer JSON- und Markdown-Export.
+
 ## 0.19.0 - 2026-05-25
 
 - Neuer Slash-Befehl `/find TEXT` durchsucht die aktuell geladene Unterhaltung.

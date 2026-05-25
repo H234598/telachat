@@ -153,6 +153,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_export = sub.add_parser("export", help="Session als Markdown exportieren")
     p_export.add_argument("session", help="Session-ID oder Prefix")
     p_export.add_argument("-o", "--output", type=Path, help="Ausgabedatei")
+    p_export.add_argument("--json", action="store_true", help="Session als JSON exportieren")
     p_export.set_defaults(func=cmd_export)
 
     p_export_folder = sub.add_parser("export-folder", help="Ordner als Markdown exportieren")
@@ -539,6 +540,16 @@ def _session_record(session: Session) -> dict[str, object]:
     }
 
 
+def _message_record(message: object) -> dict[str, object]:
+    return {
+        "id": getattr(message, "id"),
+        "session_id": getattr(message, "session_id"),
+        "role": getattr(message, "role"),
+        "content": getattr(message, "content"),
+        "created_at": getattr(message, "created_at"),
+    }
+
+
 def _folder_record(folder: Folder, *, include_system_prompt: bool) -> dict[str, object]:
     record: dict[str, object] = {
         "id": folder.id,
@@ -605,6 +616,22 @@ def cmd_export(args: argparse.Namespace) -> int:
         session = store.get_session(args.session)
         if session is None:
             raise ConfigError(f"Session nicht eindeutig gefunden: {args.session}")
+        if args.json:
+            payload = {
+                "format": "telachat.session.v1",
+                "session": {
+                    **_session_record(session),
+                    "system_prompt": session.system_prompt,
+                },
+                "messages": [_message_record(message) for message in store.messages(session.id)],
+            }
+            text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+            if args.output:
+                args.output.write_text(text, encoding="utf-8")
+                print(args.output)
+            else:
+                print(text, end="")
+            return 0
         markdown = store.export_markdown(session.id)
         if args.output:
             args.output.write_text(markdown, encoding="utf-8")

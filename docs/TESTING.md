@@ -36,6 +36,7 @@ telachat doctor --json --chat
 telachat templates
 telachat folders --show-system
 telachat folders --json --show-system
+telachat export SESSION_ID --json
 telachat export-folder Arbeit -o /tmp/telachat-export
 telachat sessions --json
 telachat chat

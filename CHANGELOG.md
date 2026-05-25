@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.20.0 - 2026-05-25
+
+- Add `telachat export SESSION --json` for machine-readable single-session
+  exports.
+- Include session metadata, system prompt, and ordered messages in JSON export.
+- Support `-o/--output` for JSON exports as well as Markdown.
+
 ## 0.19.0 - 2026-05-25
 
 - Add `/find TEXT` to search within the currently loaded conversation in

@@ -41,9 +41,9 @@ derselbe Wechsel mit `/theme NAME`.
 Manifest; rohe Secrets und Envfiles bleiben draussen.
 `telachat restore` importiert die Backup-Historie additiv in die bestehende
 SQLite-Datenbank. Mit `--dry-run` wird nur gezaehlt.
-`profiles --json`, `config-check --json`, `sessions --json`, `folders --json`
-und `doctor --json` liefern strukturierte, redaktierte Daten fuer Skripte und
-Agenten.
+`profiles --json`, `config-check --json`, `sessions --json`, `folders --json`,
+`export --json` und `doctor --json` liefern strukturierte Daten fuer Skripte
+und Agenten; Provider-/Secret-Konfiguration bleibt redaktiert.
 
 ## Sessions
 
@@ -60,6 +60,7 @@ telachat folders --set-system Projekt "Neuer Projektkontext"
 telachat folders --show-system
 telachat folders --json --show-system
 telachat export SESSION_ID
+telachat export SESSION_ID --json
 telachat export-folder Projekt -o ./projekt-export
 telachat export-folder Projekt --single-file -o projekt.md
 ```
