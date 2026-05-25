@@ -74,6 +74,9 @@ class ClientTests(unittest.TestCase):
         cls.thread.join(timeout=5)
         cls.server.server_close()
 
+    def setUp(self) -> None:
+        FakeOpenAIHandler.requests.clear()
+
     def profile(self, *, stream: bool = False) -> Profile:
         return Profile(
             name="test",
@@ -95,6 +98,25 @@ class ClientTests(unittest.TestCase):
         self.assertIsInstance(result, ChatResult)
         assert isinstance(result, ChatResult)
         self.assertEqual(result.content, "Hello")
+
+    def test_chat_completions_request_uses_profile_generation_parameters(self) -> None:
+        profile = Profile(
+            **{
+                **self.profile(stream=False).__dict__,
+                "temperature": 0.42,
+                "top_p": 0.66,
+                "max_tokens": 123,
+                "reasoning_effort": "low",
+            }
+        )
+        result = OpenAICompatClient(profile).chat([{"role": "user", "content": "Hi"}])
+
+        self.assertIsInstance(result, ChatResult)
+        self.assertEqual(FakeOpenAIHandler.requests[-1]["temperature"], 0.42)
+        self.assertEqual(FakeOpenAIHandler.requests[-1]["top_p"], 0.66)
+        self.assertEqual(FakeOpenAIHandler.requests[-1]["max_tokens"], 123)
+        self.assertEqual(FakeOpenAIHandler.requests[-1]["reasoning_effort"], "low")
+        self.assertEqual(FakeOpenAIHandler.requests[-1]["stream"], False)
 
     def test_stream_chat(self) -> None:
         client = OpenAICompatClient(self.profile(stream=True))
