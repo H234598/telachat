@@ -101,7 +101,8 @@ suggestions while typing and Tab completes the current command. The left
 chat/provider pane and the right system pane are real resizable split panes
 rather than fixed sidebars. Session archive state is a soft-hide flag: normal
 lists show active chats, while explicit archive filters and direct session
-loads can still reach archived chats.
+loads can still reach archived chats. GTK and Tk expose that archive filter in
+the sidebar as active, archived, or all chats.
 The shared command path includes `/edit-last TEXT`, which updates the latest
 user message and removes later messages before `/regen` creates a replacement
 answer.
@@ -269,6 +270,7 @@ GUI slash commands:
 - SQLite folder prompts, sorting and history-search behavior.
 - SQLite session tags, tag filtering/search, tag import/export, and tag counts.
 - SQLite session archive filtering, archive import/export, and legacy migration.
+- GUI archive filter wiring in Tk and GTK.
 - SQLite session model metadata, legacy migration, exports, and backend restore.
 - Latest user-message editing and post-edit answer removal.
 - Session forking with independent copied history.

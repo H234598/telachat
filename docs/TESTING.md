@@ -92,8 +92,8 @@ cover config persistence, env overrides, system-palette detection, CLI setting,
 and controller persistence.
 Backup tests inspect the ZIP bundle and verify that envfile secret values and
 secret-like header values are not included. GUI smoke tests also cover
-construction of the slash-command autocomplete widgets and model-choice merge
-behavior after live model discovery.
+construction of the slash-command autocomplete widgets, the visible archive
+filter, and model-choice merge behavior after live model discovery.
 CLI JSON tests cover profiles, models, config-check, sessions, folders, and doctor
 while checking that secret values remain redacted.
 Restore tests verify dry-run counts, duplicate-safe imports, session ID

@@ -132,5 +132,7 @@ direkt, damit du Varianten ausprobieren kannst.
 Ordnerstruktur zu veraendern.
 `/archive` blendet den aktuellen Chat aus den normalen Listen aus,
 `/unarchive` holt ihn zurueck, und `/archives` zeigt archivierte Chats.
+GTK und Tk bieten denselben Archivwechsel sichtbar als `Aktiv / Archiv / Alle`
+in der Seitenleiste an.
 Gespeicherte Chats merken sich Provider und Modell; `telachat chat --session`
 nutzt diese Werte, solange du sie nicht per CLI-Option ueberschreibst.

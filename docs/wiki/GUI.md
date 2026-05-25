@@ -15,6 +15,7 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - Rechts: Systemprompt.
 - Linke Seite und Systemprompt sind einklappbar.
 - Die Seitenbreiten sind per Splitter anpassbar.
+- Der Archivfilter `Aktiv / Archiv / Alle` sitzt in der linken Seitenleiste.
 - `Check` fragt `/models` live fuer den gewaehlten Provider ab und ergaenzt die
   Modellauswahl mit den gemeldeten IDs.
 - `Shift+Enter` sendet eine Nachricht.
@@ -33,7 +34,8 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 
 - Chats koennen in Ordner verschoben werden.
 - Chats koennen Tags tragen; die Tags erscheinen in der Chatliste.
-- Chats koennen archiviert werden; normale Listen zeigen aktive Chats.
+- Chats koennen archiviert werden; der sichtbare Archivfilter wechselt
+  zwischen aktiven, archivierten und allen Chats.
 - Ordner koennen umbenannt und geloescht werden.
 - Ordner koennen einen Default-Systemprompt speichern.
 - Chats koennen gepinnt werden.

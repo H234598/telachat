@@ -1,5 +1,11 @@
 # Releases
 
+## 0.32.0 - 2026-05-25
+
+- GTK und Tk haben jetzt einen sichtbaren Archivfilter in der Seitenleiste.
+- Die Chatliste kann direkt zwischen `Aktiv`, `Archiv` und `Alle` wechseln.
+- `/archives` schaltet die GUI-Liste automatisch in die Archivansicht.
+
 ## 0.31.0 - 2026-05-25
 
 - Sessions koennen weich archiviert werden, ohne sie zu loeschen.

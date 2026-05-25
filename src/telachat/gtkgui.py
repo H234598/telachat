@@ -37,6 +37,11 @@ class GtkTelachatApp(Adw.Application):
             "Titel Z-A": "title_desc",
             "Provider": "profile_asc",
         }
+        self.archive_filter_keys = {
+            "Aktiv": "active",
+            "Archiv": "archived",
+            "Alle": "all",
+        }
         self.connect("activate", self.on_activate)
 
     def on_activate(self, _app: Adw.Application) -> None:
@@ -116,6 +121,15 @@ class GtkTelachatApp(Adw.Application):
         self.folder_dropdown = Gtk.DropDown()
         self.folder_dropdown.connect("notify::selected", self.on_filter_changed)
         self.sidebar.append(self.folder_dropdown)
+
+        self.sidebar.append(Gtk.Label(label="Ansicht", xalign=0))
+        self.archive_filter_dropdown = Gtk.DropDown.new(
+            Gtk.StringList.new(list(self.archive_filter_keys)),
+            None,
+        )
+        self.archive_filter_dropdown.set_selected(0)
+        self.archive_filter_dropdown.connect("notify::selected", self.on_filter_changed)
+        self.sidebar.append(self.archive_filter_dropdown)
 
         self.sidebar.append(Gtk.Label(label="Sortierung", xalign=0))
         self.sort_dropdown = Gtk.DropDown.new(Gtk.StringList.new(list(self.sort_keys)), None)
@@ -430,6 +444,13 @@ class GtkTelachatApp(Adw.Application):
             return None if for_new else value
         return value
 
+    def selected_archive_filter(self) -> str:
+        selected = self.archive_filter_dropdown.get_selected()
+        labels = list(self.archive_filter_keys)
+        if selected < len(labels):
+            return self.archive_filter_keys[labels[selected]]
+        return "active"
+
     def selected_folder_value(self) -> str | None:
         selected = self.folder_dropdown.get_selected()
         labels = list(self.folder_display_to_id)
@@ -526,6 +547,7 @@ class GtkTelachatApp(Adw.Application):
             folder_id=self.selected_folder_id(),
             sort=self.selected_sort(),
             query=self.search_entry.get_text() if hasattr(self, "search_entry") else "",
+            archive=self.selected_archive_filter(),
         )
         while row := self.session_list.get_row_at_index(0):
             self.session_list.remove(row)
@@ -969,6 +991,9 @@ class GtkTelachatApp(Adw.Application):
             if self.active_session and self.active_session.archived:
                 self.on_toggle_archive_active_session(self.send_button)
         elif command == "/archives":
+            labels = list(self.archive_filter_keys)
+            self.archive_filter_dropdown.set_selected(labels.index("Archiv"))
+            self.refresh_sessions()
             sessions = self.controller.list_sessions(20, archive="archived")
             self.status.set_text(
                 " | ".join(f"{session.id} {session.title}" for session in sessions)

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.32.0 - 2026-05-25
+
+- Add visible GUI archive filters in both Tk and GTK sidebars.
+- Let the session list switch between active, archived, and all chats without
+  using slash commands.
+- Make `/archives` switch the GUI list into the archive view before showing
+  archive status.
+
 ## 0.31.0 - 2026-05-25
 
 - Add soft archiving for sessions with SQLite migration and active/archived/all
