@@ -83,6 +83,13 @@ class CliTests(unittest.TestCase):
                     store.add_message(beta.id, "user", "Notiz")
                     store.set_session_pinned(beta.id, True)
                     store.set_session_tags(alpha.id, ["Projekt", "Review"])
+                    archived = store.create_session(
+                        title="Archiv Alpha",
+                        profile="tki",
+                        system_prompt="System",
+                    )
+                    store.add_message(archived.id, "user", "Archivnotiz")
+                    store.set_session_archived(archived.id, True)
                 finally:
                     store.close()
 
@@ -91,6 +98,19 @@ class CliTests(unittest.TestCase):
                     self.assertEqual(main(["sessions", "--query", "projekt"]), 0)
                 self.assertIn("Alpha", out.getvalue())
                 self.assertNotIn("Beta", out.getvalue())
+                self.assertNotIn("Archiv Alpha", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["sessions", "--query", "archivnotiz", "--all"]), 0)
+                self.assertIn("Archiv Alpha", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["sessions", "--archived"]), 0)
+                self.assertIn("Archiv Alpha", out.getvalue())
+                self.assertIn("A ", out.getvalue())
+                self.assertNotIn("Alpha  ", out.getvalue())
 
                 out = io.StringIO()
                 with redirect_stdout(out):
@@ -121,10 +141,60 @@ class CliTests(unittest.TestCase):
                     ["Beta", "Alpha"],
                 )
                 self.assertTrue(payload["sessions"][0]["pinned"])
+                self.assertFalse(payload["sessions"][0]["archived"])
                 alpha_record = next(
                     session for session in payload["sessions"] if session["title"] == "Alpha"
                 )
                 self.assertEqual(alpha_record["tags"], ["projekt", "review"])
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
+    def test_archive_commands_hide_and_restore_sessions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(main(["init"]), 0)
+                store = ChatStore()
+                try:
+                    session = store.create_session(
+                        title="Weglegen",
+                        profile="tki",
+                        system_prompt="System",
+                    )
+                    store.add_message(session.id, "user", "Archivtest")
+                finally:
+                    store.close()
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["archive", session.id, "--json"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertTrue(payload["session"]["archived"])
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["sessions"]), 0)
+                self.assertNotIn("Weglegen", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["sessions", "--archived"]), 0)
+                self.assertIn("Weglegen", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["unarchive", session.id]), 0)
+                self.assertIn("Wiederhergestellt", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["sessions"]), 0)
+                self.assertIn("Weglegen", out.getvalue())
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
@@ -661,6 +731,7 @@ model = "other-model"
                         system_prompt="System JSON",
                     )
                     store.set_session_tags(session.id, ["json tag"])
+                    store.set_session_archived(session.id, True)
                     store.add_message(session.id, "user", "Hallo JSON")
                     store.add_message(session.id, "assistant", "Antwort JSON")
                 finally:
@@ -674,6 +745,7 @@ model = "other-model"
                 self.assertEqual(payload["session"]["title"], "JSON Export")
                 self.assertEqual(payload["session"]["model"], "gpt-5.5")
                 self.assertEqual(payload["session"]["system_prompt"], "System JSON")
+                self.assertTrue(payload["session"]["archived"])
                 self.assertEqual(payload["session"]["tags"], ["json-tag"])
                 self.assertEqual(
                     [(item["role"], item["content"]) for item in payload["messages"]],
@@ -715,6 +787,7 @@ model = "other-model"
                     imported_session = store.get_session(imported["imported"]["id"])
                     self.assertIsNotNone(imported_session)
                     self.assertEqual(imported_session.model, "gpt-5.5")
+                    self.assertTrue(imported_session.archived)
                     self.assertEqual(imported_session.tags, ("json-tag",))
                     self.assertEqual(
                         [(message.role, message.content) for message in store.messages(imported_session.id)],
@@ -1042,6 +1115,7 @@ X-Test-Header = "yes"
                     store.set_session_tags(session.id, ["Projekt"])
                     cfg = load_config()
                     self.assertIn("/permissions ", cli_completion_candidates("/per", cfg, store))
+                    self.assertIn("/archive ", cli_completion_candidates("/ar", cfg, store))
                     self.assertIn("openai ", cli_completion_candidates("/provider op", cfg, store))
                     self.assertIn("gpt-5.5 ", cli_completion_candidates("/model gpt", cfg, store))
                     self.assertIn("summarize ", cli_completion_candidates("/template su", cfg, store))
@@ -1049,6 +1123,13 @@ X-Test-Header = "yes"
                     self.assertIn("Arbeit ", cli_completion_candidates("/move Ar", cfg, store))
                     self.assertIn("projekt ", cli_completion_candidates("/tag pr", cfg, store))
                     self.assertIn("title ", cli_completion_candidates("/sort ti", cfg, store))
+                    self.assertTrue(
+                        any(
+                            item.startswith("Alpha Plan")
+                            for item in cli_completion_candidates("/load Alpha", cfg, store)
+                        )
+                    )
+                    store.set_session_archived(session.id, True)
                     self.assertTrue(
                         any(
                             item.startswith("Alpha Plan")
@@ -1082,6 +1163,9 @@ X-Test-Header = "yes"
                         "/theme",
                         "/move Arbeit",
                         "/rename Testtitel",
+                        "/archive",
+                        "/archives",
+                        "/unarchive",
                         "/tag Projekt Review",
                         "/tags",
                         "/untag Review",
@@ -1101,6 +1185,8 @@ X-Test-Header = "yes"
                 self.assertIn("Aktives Theme: dracula", text)
                 self.assertIn("Chat abgelegt: Arbeit", text)
                 self.assertIn("Umbenannt: Testtitel", text)
+                self.assertIn("Session archiviert.", text)
+                self.assertIn("Session wiederhergestellt.", text)
                 self.assertIn("Tags: #projekt #review", text)
                 self.assertIn("#projekt  1", text)
                 self.assertIn("Tags: #projekt", text)

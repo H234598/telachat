@@ -68,6 +68,7 @@ class TelachatController:
         sort: str = "updated_desc",
         query: str | None = None,
         tag: str | None = None,
+        archive: str = "active",
     ) -> list[Session]:
         return self.store.list_sessions(
             limit,
@@ -75,6 +76,7 @@ class TelachatController:
             sort=sort,
             query=query,
             tag=tag,
+            archive=archive,
         )
 
     def list_folders(self) -> list[Folder]:
@@ -113,6 +115,9 @@ class TelachatController:
 
     def set_session_pinned(self, session_id: str, pinned: bool) -> Session:
         return self.store.set_session_pinned(session_id, pinned)
+
+    def set_session_archived(self, session_id: str, archived: bool) -> Session:
+        return self.store.set_session_archived(session_id, archived)
 
     def add_session_tags(self, session_id: str, tags: list[str]) -> Session:
         self.store.add_session_tags(session_id, tags)

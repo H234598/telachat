@@ -162,6 +162,7 @@ class StoreTests(unittest.TestCase):
                 store.add_message(session.id, "assistant", "Antwort")
                 store.set_session_pinned(session.id, True)
                 store.set_session_tags(session.id, ["Projekt", "#Review Notes"])
+                store.set_session_archived(session.id, True)
 
                 fork = store.fork_session(session.id, "  Variante A  ")
 
@@ -172,6 +173,7 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual(fork.system_prompt, "System")
                 self.assertEqual(fork.folder_id, folder.id)
                 self.assertFalse(fork.pinned)
+                self.assertFalse(fork.archived)
                 self.assertEqual(fork.tags, ("projekt", "review-notes"))
                 self.assertEqual(
                     [(message.role, message.content) for message in store.messages(fork.id)],
@@ -182,6 +184,53 @@ class StoreTests(unittest.TestCase):
                     [(message.role, message.content) for message in store.messages(session.id)],
                     [("user", "Frage"), ("assistant", "Antwort")],
                 )
+            finally:
+                store.close()
+
+    def test_session_archive_filter_export_and_restore(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                active = store.create_session(
+                    title="Active",
+                    profile="openai",
+                    model="gpt-5.5",
+                    system_prompt="System",
+                )
+                archived = store.create_session(
+                    title="Archived",
+                    profile="tki",
+                    system_prompt="System",
+                )
+                store.add_message(active.id, "user", "Aktivnotiz")
+                store.add_message(archived.id, "user", "Archivnotiz")
+                archived = store.set_session_archived(archived.id, True)
+
+                self.assertTrue(archived.archived)
+                self.assertEqual([session.id for session in store.list_sessions(10)], [active.id])
+                self.assertEqual(
+                    [session.id for session in store.list_sessions(10, archive="archived")],
+                    [archived.id],
+                )
+                self.assertEqual(
+                    [session.title for session in store.list_sessions(10, archive="all", sort="title_asc")],
+                    ["Active", "Archived"],
+                )
+                self.assertEqual(store.list_sessions(10, query="Archivnotiz"), [])
+                self.assertEqual(
+                    [session.id for session in store.list_sessions(10, query="Archivnotiz", archive="all")],
+                    [archived.id],
+                )
+                self.assertIn("- Archived: yes", store.export_markdown(archived.id))
+
+                restored = store.set_session_archived(archived.id, False)
+                self.assertFalse(restored.archived)
+                self.assertEqual(
+                    [session.title for session in store.list_sessions(10, sort="title_asc")],
+                    ["Active", "Archived"],
+                )
+                with self.assertRaisesRegex(ValueError, "Archivfilter"):
+                    store.list_sessions(10, archive="kaputt")
             finally:
                 store.close()
 
@@ -327,6 +376,7 @@ class StoreTests(unittest.TestCase):
                 source.add_message(source_session.id, "user", "Frage")
                 source.add_message(source_session.id, "assistant", "Antwort")
                 source.set_session_tags(source_session.id, ["Import", "Projekt"])
+                source.set_session_archived(source_session.id, True)
                 existing_folder = target.create_folder(
                     "arbeit",
                     system_prompt="Zielprojekt",
@@ -351,12 +401,13 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual(summary.sessions, 1)
                 self.assertEqual(summary.messages, 2)
 
-                sessions = target.list_sessions(limit=10, folder_id="__all__")
+                sessions = target.list_sessions(limit=10, folder_id="__all__", archive="all")
                 self.assertEqual(len(sessions), 2)
                 imported = [session for session in sessions if session.title == "Import"]
                 self.assertEqual(len(imported), 1)
                 self.assertNotEqual(imported[0].id, source_session.id)
                 self.assertEqual(imported[0].folder_id, existing_folder.id)
+                self.assertTrue(imported[0].archived)
                 self.assertEqual(imported[0].tags, ("import", "projekt"))
                 self.assertEqual(
                     [message.content for message in target.messages(imported[0].id)],
@@ -426,9 +477,12 @@ class StoreTests(unittest.TestCase):
                 self.assertIsNotNone(session)
                 assert session is not None
                 self.assertFalse(session.pinned)
+                self.assertFalse(session.archived)
                 self.assertEqual(session.model, "")
                 pinned = store.set_session_pinned(session.id, True)
                 self.assertTrue(pinned.pinned)
+                archived = store.set_session_archived(session.id, True)
+                self.assertTrue(archived.archived)
             finally:
                 store.close()
 

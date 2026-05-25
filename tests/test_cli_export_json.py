@@ -54,6 +54,7 @@ class CliExportJsonTests(unittest.TestCase):
                     set(payload["session"]),
                     {
                         "created_at",
+                        "archived",
                         "folder_id",
                         "id",
                         "model",
@@ -65,6 +66,7 @@ class CliExportJsonTests(unittest.TestCase):
                         "updated_at",
                     },
                 )
+                self.assertFalse(payload["session"]["archived"])
                 self.assertEqual(payload["session"]["tags"], [])
                 self.assertEqual(
                     set(payload["messages"][0]),

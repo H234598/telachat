@@ -60,8 +60,12 @@ telachat sessions --query TEXT
 telachat sessions --query gpt-5.5
 telachat sessions --folder NAME
 telachat sessions --tag TAG
+telachat sessions --archived
+telachat sessions --all
 telachat sessions --sort newest
 telachat sessions --json
+telachat archive SESSION_ID
+telachat unarchive SESSION_ID
 telachat tags
 telachat tags SESSION_ID --add projekt --add review
 telachat tags SESSION_ID --remove review
@@ -79,6 +83,7 @@ telachat import-session session.json --folder Importe
 telachat export-folder Projekt -o ./projekt-export
 telachat export-folder Projekt --single-file -o projekt.md
 telachat export-folder Projekt --json -o projekt.json
+telachat export-folder Projekt --all --json -o projekt-alle.json
 telachat import-folder projekt.json --folder Importiert
 telachat import-folder projekt.json --dry-run --json
 ```
@@ -93,6 +98,9 @@ Im interaktiven Chat funktionieren unter anderem:
 /delete
 /pin
 /unpin
+/archive
+/unarchive
+/archives
 /tag TAG [TAG...]
 /untag TAG [TAG...]
 /tags [SESSION]
@@ -122,5 +130,7 @@ Antworten und laesst dich mit `/regen` neu generieren.
 direkt, damit du Varianten ausprobieren kannst.
 `/tag`, `/untag` und `/tags` verwalten flexible Chat-Gruppen ohne die
 Ordnerstruktur zu veraendern.
+`/archive` blendet den aktuellen Chat aus den normalen Listen aus,
+`/unarchive` holt ihn zurueck, und `/archives` zeigt archivierte Chats.
 Gespeicherte Chats merken sich Provider und Modell; `telachat chat --session`
 nutzt diese Werte, solange du sie nicht per CLI-Option ueberschreibst.

@@ -1,5 +1,15 @@
 # Releases
 
+## 0.31.0 - 2026-05-25
+
+- Sessions koennen weich archiviert werden, ohne sie zu loeschen.
+- Normale Listen zeigen aktive Chats; `sessions --archived` und
+  `sessions --all` holen archivierte Chats gezielt zurueck.
+- `telachat archive`, `telachat unarchive`, `/archive`, `/unarchive` und
+  `/archives` funktionieren in CLI, GTK und Tk.
+- JSON/Markdown-Exporte, Imports, Forks und Backup-Restore erhalten den
+  Archivstatus.
+
 ## 0.30.0 - 2026-05-25
 
 - Sessions koennen persistente Tags tragen.

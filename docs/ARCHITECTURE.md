@@ -18,10 +18,12 @@
   - Reduces dependency risk by avoiding external SDKs.
 - `telachat.store`
   - SQLite-backed session and message history.
-  - Enables folders, session listing, search, loading, and Markdown export.
+  - Enables folders, archive filters, session listing, search, loading, and
+    Markdown export.
 - `telachat.cli`
   - `init`, `profiles`, `models`, `config-check`, `theme`, `ask`, `chat`,
-    `sessions`, `export`, `export-folder`, `backup`, `restore`, `doctor`.
+    `sessions`, `archive`, `unarchive`, `tags`, `export`, `export-folder`,
+    `backup`, `restore`, `doctor`.
   - Interactive `chat` installs optional Readline completion for slash commands
     and context values when stdin is a TTY.
 - `telachat.commands`
@@ -40,7 +42,7 @@
 SQLite tables:
 
 - `sessions`
-  - `id`, `title`, `profile`, `model`, `system_prompt`, `created_at`, `updated_at`, `folder_id`, `pinned`
+  - `id`, `title`, `profile`, `model`, `system_prompt`, `created_at`, `updated_at`, `folder_id`, `pinned`, `archived`
 - `folders`
   - `id`, `name`, `created_at`, `updated_at`, `system_prompt`
 - `messages`
@@ -97,7 +99,9 @@ prompts. The live Check action merges `/models` results into the model selector
 while keeping the current selection first. The GUI composers show slash-command
 suggestions while typing and Tab completes the current command. The left
 chat/provider pane and the right system pane are real resizable split panes
-rather than fixed sidebars.
+rather than fixed sidebars. Session archive state is a soft-hide flag: normal
+lists show active chats, while explicit archive filters and direct session
+loads can still reach archived chats.
 The shared command path includes `/edit-last TEXT`, which updates the latest
 user message and removes later messages before `/regen` creates a replacement
 answer.
@@ -146,8 +150,12 @@ telachat sessions
 telachat sessions --query TEXT
 telachat sessions --folder NAME
 telachat sessions --tag TAG
+telachat sessions --archived
+telachat sessions --all
 telachat sessions --sort newest|oldest|title|title-desc|provider
 telachat sessions --json
+telachat archive SESSION
+telachat unarchive SESSION
 telachat tags [SESSION]
 telachat tags SESSION --add TAG --remove TAG
 telachat fork <session-id-or-prefix>
@@ -158,6 +166,7 @@ telachat import-session FILE.json --dry-run
 telachat export-folder <folder-name-or-id>
 telachat export-folder <folder-name-or-id> --single-file
 telachat export-folder <folder-name-or-id> --json
+telachat export-folder <folder-name-or-id> --all --json
 telachat import-folder FILE.json
 telachat import-folder FILE.json --dry-run
 telachat backup
@@ -191,6 +200,12 @@ many-to-one labels independent of folders; session search can match tags,
 `sessions --tag TAG` filters by one tag, and JSON/Markdown exports preserve
 tags for additive imports, forks, and backup restores.
 
+Sessions can be archived with `telachat archive` or `/archive`. Archived
+sessions stay in SQLite and in backups, but `list_sessions()` defaults to
+active sessions only. Callers use `archive="archived"` or `archive="all"` for
+archive views and exports. Forks are created as active chats even when the
+source is archived.
+
 `backup` creates a ZIP bundle with a consistent SQLite copy, a redacted TOML
 config reconstruction, and a JSON manifest. It intentionally does not include
 raw envfiles, raw API keys, or the user's original config file. The redacted
@@ -214,6 +229,7 @@ GUI slash commands:
 /rename TITLE
 /delete
 /pin | /unpin
+/archive | /unarchive | /archives
 /tag TAG [TAG...]
 /untag TAG [TAG...]
 /tags [SESSION]
@@ -252,6 +268,7 @@ GUI slash commands:
 - SQLite session/message roundtrip, Markdown export, and selective folder export.
 - SQLite folder prompts, sorting and history-search behavior.
 - SQLite session tags, tag filtering/search, tag import/export, and tag counts.
+- SQLite session archive filtering, archive import/export, and legacy migration.
 - SQLite session model metadata, legacy migration, exports, and backend restore.
 - Latest user-message editing and post-edit answer removal.
 - Session forking with independent copied history.

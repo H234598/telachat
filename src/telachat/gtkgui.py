@@ -197,6 +197,9 @@ class GtkTelachatApp(Adw.Application):
         self.pin_button = Gtk.Button(label="Pin")
         self.pin_button.connect("clicked", self.on_toggle_pin_active_session)
         top.append(self.pin_button)
+        self.archive_button = Gtk.Button(label="Archiv")
+        self.archive_button.connect("clicked", self.on_toggle_archive_active_session)
+        top.append(self.archive_button)
         regenerate_button = Gtk.Button(label="Regenerieren")
         regenerate_button.connect("clicked", self.on_regenerate_active_session)
         top.append(regenerate_button)
@@ -556,15 +559,18 @@ class GtkTelachatApp(Adw.Application):
     def session_label(self, session: Session) -> str:
         tags = " ".join(f"#{tag}" for tag in session.tags)
         suffix = f"  {tags}" if tags else ""
-        return ("* " if session.pinned else "") + session.title + suffix
+        markers = ("*" if session.pinned else " ") + ("A" if session.archived else " ")
+        return f"{markers} {session.title}{suffix}"
 
     def update_active_title(self) -> None:
         if self.active_session:
             self.title_label.set_text(self.session_label(self.active_session))
             self.pin_button.set_label("Unpin" if self.active_session.pinned else "Pin")
+            self.archive_button.set_label("Zurueck" if self.active_session.archived else "Archiv")
         else:
             self.title_label.set_text("Neue Unterhaltung")
             self.pin_button.set_label("Pin")
+            self.archive_button.set_label("Archiv")
 
     def on_session_selected(self, _listbox: Gtk.ListBox, row: Gtk.ListBoxRow | None) -> None:
         if row is not None and hasattr(row, "session_id"):
@@ -878,6 +884,19 @@ class GtkTelachatApp(Adw.Application):
         self.refresh_sessions()
         self.status.set_text("Chat angeheftet." if self.active_session.pinned else "Chat geloest.")
 
+    def on_toggle_archive_active_session(self, _button: Gtk.Button) -> None:
+        if not self.active_session:
+            return
+        self.active_session = self.controller.set_session_archived(
+            self.active_session.id,
+            not self.active_session.archived,
+        )
+        self.update_active_title()
+        self.refresh_sessions()
+        self.status.set_text(
+            "Chat archiviert." if self.active_session.archived else "Chat wiederhergestellt."
+        )
+
     def on_delete_active_session(self, _button: Gtk.Button) -> None:
         if not self.active_session:
             return
@@ -943,6 +962,18 @@ class GtkTelachatApp(Adw.Application):
         elif command == "/unpin":
             if self.active_session and self.active_session.pinned:
                 self.on_toggle_pin_active_session(self.send_button)
+        elif command == "/archive":
+            if self.active_session and not self.active_session.archived:
+                self.on_toggle_archive_active_session(self.send_button)
+        elif command == "/unarchive":
+            if self.active_session and self.active_session.archived:
+                self.on_toggle_archive_active_session(self.send_button)
+        elif command == "/archives":
+            sessions = self.controller.list_sessions(20, archive="archived")
+            self.status.set_text(
+                " | ".join(f"{session.id} {session.title}" for session in sessions)
+                or "Keine archivierten Sessions."
+            )
         elif command == "/tag":
             if self.active_session:
                 if rest:

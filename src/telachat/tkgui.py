@@ -200,16 +200,18 @@ class TkTelachatApp:
         self.session_title.grid(row=0, column=2, sticky="w")
         self.pin_button = ttk.Button(top, text="Pin", command=self.toggle_pin_active_session)
         self.pin_button.grid(row=0, column=3, padx=(8, 0))
+        self.archive_button = ttk.Button(top, text="Archiv", command=self.toggle_archive_active_session)
+        self.archive_button.grid(row=0, column=4, padx=(8, 0))
         ttk.Button(top, text="Regenerieren", command=self.regenerate_active_session).grid(
-            row=0, column=4, padx=(8, 0)
-        )
-        ttk.Button(top, text="Titel", command=self.rename_active_session).grid(
             row=0, column=5, padx=(8, 0)
         )
-        ttk.Button(top, text="Löschen", command=self.delete_active_session).grid(
+        ttk.Button(top, text="Titel", command=self.rename_active_session).grid(
             row=0, column=6, padx=(8, 0)
         )
-        ttk.Button(top, text="Export", command=self.export_session).grid(row=0, column=7, padx=(8, 0))
+        ttk.Button(top, text="Löschen", command=self.delete_active_session).grid(
+            row=0, column=7, padx=(8, 0)
+        )
+        ttk.Button(top, text="Export", command=self.export_session).grid(row=0, column=8, padx=(8, 0))
 
         self.chat_text = tk.Text(
             self.main,
@@ -600,15 +602,20 @@ class TkTelachatApp:
     def _session_label(self, session: Session) -> str:
         tags = " ".join(f"#{tag}" for tag in session.tags)
         suffix = f"  {tags}" if tags else ""
-        return ("* " if session.pinned else "  ") + session.title + suffix
+        markers = ("*" if session.pinned else " ") + ("A" if session.archived else " ")
+        return f"{markers} {session.title}{suffix}"
 
     def update_active_title(self) -> None:
         if self.active_session:
             self.session_title.configure(text=self._session_label(self.active_session).strip())
             self.pin_button.configure(text="Unpin" if self.active_session.pinned else "Pin")
+            self.archive_button.configure(
+                text="Zurueck" if self.active_session.archived else "Archiv"
+            )
         else:
             self.session_title.configure(text="Neue Unterhaltung")
             self.pin_button.configure(text="Pin")
+            self.archive_button.configure(text="Archiv")
 
     def _on_session_select(self, _event: object) -> None:
         selected = self.session_list.curselection()
@@ -729,6 +736,19 @@ class TkTelachatApp:
         self.refresh_sessions()
         self.set_status("Chat angeheftet." if self.active_session.pinned else "Chat geloest.")
 
+    def toggle_archive_active_session(self) -> None:
+        if not self.active_session:
+            return
+        self.active_session = self.controller.set_session_archived(
+            self.active_session.id,
+            not self.active_session.archived,
+        )
+        self.update_active_title()
+        self.refresh_sessions()
+        self.set_status(
+            "Chat archiviert." if self.active_session.archived else "Chat wiederhergestellt."
+        )
+
     def delete_active_session(self) -> None:
         if not self.active_session:
             return
@@ -801,6 +821,18 @@ class TkTelachatApp:
         elif command == "/unpin":
             if self.active_session and self.active_session.pinned:
                 self.toggle_pin_active_session()
+        elif command == "/archive":
+            if self.active_session and not self.active_session.archived:
+                self.toggle_archive_active_session()
+        elif command == "/unarchive":
+            if self.active_session and self.active_session.archived:
+                self.toggle_archive_active_session()
+        elif command == "/archives":
+            sessions = self.controller.list_sessions(20, archive="archived")
+            self.set_status(
+                " | ".join(f"{session.id} {session.title}" for session in sessions)
+                or "Keine archivierten Sessions."
+            )
         elif command == "/tag":
             if self.active_session:
                 if rest:

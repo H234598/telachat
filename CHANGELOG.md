@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.31.0 - 2026-05-25
+
+- Add soft archiving for sessions with SQLite migration and active/archived/all
+  list filters.
+- Add `telachat archive`, `telachat unarchive`, `sessions --archived`,
+  `sessions --all`, and archive-aware folder exports.
+- Add `/archive`, `/unarchive`, and `/archives` in CLI, GTK, and Tk; GUI
+  session labels and JSON/Markdown exports preserve archive state.
+
 ## 0.30.0 - 2026-05-25
 
 - Add persistent per-session tags in SQLite with tag normalization and counts.

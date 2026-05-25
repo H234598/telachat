@@ -46,11 +46,16 @@ telachat folders --json --show-system
 telachat export SESSION_ID --json
 telachat import-session session.json --json
 telachat export-folder Arbeit --json
+telachat export-folder Arbeit --all --json
 telachat import-folder folder.json --json
 telachat import-folder folder.json --dry-run --json
 telachat export-folder Arbeit -o /tmp/telachat-export
 telachat sessions --json
 telachat sessions --tag projekt
+telachat sessions --archived
+telachat sessions --all
+telachat archive SESSION_ID
+telachat unarchive SESSION_ID
 telachat tags SESSION_ID --add projekt
 telachat tags SESSION_ID --remove projekt
 telachat tags --json
@@ -78,7 +83,8 @@ folder-level system prompts, session moves, folder filters, pinned-chat
 ordering, answer regeneration, prompt templates, title sorting, content search
 across saved messages, CLI session filtering/sorting, and selective folder
 exports. It also covers per-session tags, tag filtering/search, tag import/export,
-tag counts, per-session model persistence, legacy model-column
+tag counts, session archiving, archive filtering/search, archive import/export,
+legacy archive-column migration, per-session model persistence, legacy model-column
 migration, OpenAI Responses `reasoning.effort`, interactive CLI completion
 candidates, offline config checks with secret redaction, and documented
 terminal slash-command actions, including `/theme` and `/find`. Theme tests
@@ -100,6 +106,9 @@ interactive chat.
 Tag tests verify normalized tags, CLI `tags`, `sessions --tag`, JSON/Markdown
 exports, additive imports, backup-history restores, completion, and `/tag`
 slash-command behavior.
+Archive tests verify `archive`/`unarchive`, `sessions --archived`, hidden-by-default
+lists, JSON/Markdown preservation, additive imports, backup-history restore,
+completion, and `/archive` slash-command behavior.
 
 ## Expected default live configuration
 

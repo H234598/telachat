@@ -24,6 +24,7 @@ class Session:
     pinned: bool = False
     model: str = ""
     tags: tuple[str, ...] = ()
+    archived: bool = False
 
 
 @dataclass(frozen=True)
@@ -90,7 +91,8 @@ class ChatStore:
                     created_at INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL,
                     folder_id TEXT REFERENCES folders(id) ON DELETE SET NULL,
-                    pinned INTEGER NOT NULL DEFAULT 0
+                    pinned INTEGER NOT NULL DEFAULT 0,
+                    archived INTEGER NOT NULL DEFAULT 0
                 );
 
                 CREATE TABLE IF NOT EXISTS folders (
@@ -138,6 +140,8 @@ class ChatStore:
                 self.db.execute("ALTER TABLE sessions ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
             if "model" not in columns:
                 self.db.execute("ALTER TABLE sessions ADD COLUMN model TEXT NOT NULL DEFAULT ''")
+            if "archived" not in columns:
+                self.db.execute("ALTER TABLE sessions ADD COLUMN archived INTEGER NOT NULL DEFAULT 0")
             folder_columns = {
                 row["name"]
                 for row in self.db.execute("PRAGMA table_info(folders)").fetchall()
@@ -155,16 +159,30 @@ class ChatStore:
         system_prompt: str,
         model: str | None = None,
         folder_id: str | None = None,
+        archived: bool = False,
     ) -> Session:
         with self._lock:
             now = int(time.time())
             session_id = uuid.uuid4().hex[:12]
             self.db.execute(
                 """
-                INSERT INTO sessions(id, title, profile, model, system_prompt, created_at, updated_at, folder_id, pinned)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+                INSERT INTO sessions(
+                    id, title, profile, model, system_prompt,
+                    created_at, updated_at, folder_id, pinned, archived
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
                 """,
-                (session_id, title, profile, model or "", system_prompt, now, now, folder_id),
+                (
+                    session_id,
+                    title,
+                    profile,
+                    model or "",
+                    system_prompt,
+                    now,
+                    now,
+                    folder_id,
+                    1 if archived else 0,
+                ),
             )
             self.db.commit()
             return self.get_session(session_id) or Session(
@@ -177,6 +195,8 @@ class ChatStore:
                 folder_id,
                 False,
                 model or "",
+                (),
+                archived,
             )
 
     def get_session(self, session_id_or_prefix: str) -> Session | None:
@@ -202,6 +222,7 @@ class ChatStore:
         sort: str = "updated_desc",
         query: str | None = None,
         tag: str | None = None,
+        archive: str = "active",
     ) -> list[Session]:
         with self._lock:
             order = {
@@ -214,6 +235,15 @@ class ChatStore:
 
             clauses: list[str] = []
             params: list[object] = []
+            if archive == "active":
+                clauses.append("archived = 0")
+            elif archive == "archived":
+                clauses.append("archived = 1")
+            elif archive == "all":
+                pass
+            else:
+                raise ValueError(f"Ungueltiger Archivfilter: {archive}")
+
             if folder_id == "__all__":
                 pass
             elif folder_id == "__none__":
@@ -473,9 +503,9 @@ class ChatStore:
                 """
                 INSERT INTO sessions(
                     id, title, profile, model, system_prompt,
-                    created_at, updated_at, folder_id, pinned
+                    created_at, updated_at, folder_id, pinned, archived
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
                 """,
                 (
                     fork_id,
@@ -530,6 +560,18 @@ class ChatStore:
             self.db.execute(
                 "UPDATE sessions SET pinned = ? WHERE id = ?",
                 (1 if pinned else 0, session_id),
+            )
+            self.db.commit()
+            session = self.get_session(session_id)
+            if session is None:
+                raise KeyError(session_id)
+            return session
+
+    def set_session_archived(self, session_id: str, archived: bool) -> Session:
+        with self._lock:
+            self.db.execute(
+                "UPDATE sessions SET archived = ? WHERE id = ?",
+                (1 if archived else 0, session_id),
             )
             self.db.commit()
             session = self.get_session(session_id)
@@ -733,9 +775,9 @@ class ChatStore:
                     """
                     INSERT INTO sessions(
                         id, title, profile, model, system_prompt,
-                        created_at, updated_at, folder_id, pinned
+                        created_at, updated_at, folder_id, pinned, archived
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         session_id,
@@ -747,6 +789,7 @@ class ChatStore:
                         int(_row_value(row, "updated_at", now)),
                         target_folder_id,
                         int(_row_value(row, "pinned", 0) or 0),
+                        int(_row_value(row, "archived", 0) or 0),
                     ),
                 )
                 sessions_added += 1
@@ -801,6 +844,7 @@ class ChatStore:
                 f"- Title: {session.title}",
                 f"- Profile: {session.profile}",
                 f"- Model: {session.model or '-'}",
+                *([f"- Archived: yes"] if session.archived else []),
                 *([f"- Tags: {', '.join('#' + tag for tag in session.tags)}"] if session.tags else []),
                 "",
             ]
@@ -902,6 +946,7 @@ def _session_from_row(row: sqlite3.Row, *, tags: Iterable[str] | None = None) ->
         pinned=bool(row["pinned"]) if "pinned" in row.keys() else False,
         model=row["model"] if "model" in row.keys() else "",
         tags=tuple(tags or ()),
+        archived=bool(row["archived"]) if "archived" in row.keys() else False,
     )
 
 

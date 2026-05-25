@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.30.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.31.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -10,8 +10,9 @@ telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .B Telachat
 is a local chat client with a CLI, GTK frontend, and Tk frontend. It stores chat
 history in SQLite, supports provider/model profiles, per-session model metadata,
-prompt templates, folders, folder system prompts, per-session tags, session
-forking, user-message editing, regeneration, and Markdown exports.
+prompt templates, folders, folder system prompts, per-session tags, soft
+archives, session forking, user-message editing, regeneration, and Markdown
+exports.
 .SH COMMANDS
 .TP
 .B init
@@ -57,9 +58,17 @@ Send a single prompt.
 Start an interactive CLI chat.
 .TP
 .B sessions
-List saved sessions with optional search, folder filtering, tag filtering, and
-sorting. Session search also matches saved provider/model/tag metadata. Use
-\fB--json\fR for structured output.
+List active saved sessions with optional search, folder filtering, tag
+filtering, archive filtering, and sorting. Session search also matches saved
+provider/model/tag metadata. Use \fB--archived\fR for only archived chats,
+\fB--all\fR for active plus archived chats, and \fB--json\fR for structured
+output.
+.TP
+.B archive
+Hide one session from normal session lists without deleting it.
+.TP
+.B unarchive
+Restore one archived session to normal session lists.
 .TP
 .B tags
 List tag counts or manage tags for one session. Use \fB--add TAG\fR,
@@ -79,7 +88,8 @@ structured output. Use \fB--dry-run\fR to validate and count without writing.
 .TP
 .B export-folder
 Export a selected folder as Markdown files, a single bundled Markdown file, or
-machine-readable JSON with \fB--json\fR.
+machine-readable JSON with \fB--json\fR. By default only active sessions are
+exported; use \fB--archived\fR or \fB--all\fR to include archived chats.
 .TP
 .B import-folder
 Import one \fBtelachat.folder.v1\fR JSON export additively. Use
@@ -126,6 +136,10 @@ telachat ask --template summarize "Langer Text"
 telachat folders --create Arbeit --system "Antworte projektbezogen."
 telachat sessions --json
 telachat sessions --tag projekt
+telachat sessions --archived
+telachat sessions --all
+telachat archive SESSION_ID
+telachat unarchive SESSION_ID
 telachat tags SESSION_ID --add projekt --add review
 telachat fork SESSION_ID --title "Variante A"
 telachat export SESSION_ID --json
@@ -153,6 +167,9 @@ completes the current command.
 /delete
 /pin
 /unpin
+/archive
+/unarchive
+/archives
 /tag TAG [TAG...]
 /untag TAG [TAG...]
 /tags [SESSION]

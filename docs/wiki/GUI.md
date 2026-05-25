@@ -24,6 +24,7 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - `/edit-last TEXT` ersetzt die letzte Nutzernachricht und entfernt die danach
   liegende Antwort; `/regen` generiert danach neu.
 - `/fork [TITLE]` kopiert den aktuellen Chat und laedt den neuen Fork.
+- `/archive`, `/unarchive` und `/archives` verwalten erledigte Chats.
 - `/tag`, `/untag` und `/tags` verwalten flexible Chat-Markierungen.
 - `/theme [NAME]` wechselt das GUI-Theme direkt aus dem Prompt.
 - `/find TEXT` zeigt Treffer in der aktuell geladenen Unterhaltung.
@@ -32,6 +33,7 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 
 - Chats koennen in Ordner verschoben werden.
 - Chats koennen Tags tragen; die Tags erscheinen in der Chatliste.
+- Chats koennen archiviert werden; normale Listen zeigen aktive Chats.
 - Ordner koennen umbenannt und geloescht werden.
 - Ordner koennen einen Default-Systemprompt speichern.
 - Chats koennen gepinnt werden.
@@ -60,6 +62,8 @@ Slash-Commands funktionieren ebenfalls:
 /template summarize Mein Text
 /edit-last Besser formulierter Prompt
 /fork Variante A
+/archive
+/archives
 /tag projekt review
 /folder-system Projektkontext
 /permissions

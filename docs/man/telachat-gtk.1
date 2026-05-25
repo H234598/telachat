@@ -1,4 +1,4 @@
-.TH TELACHAT-GTK 1 "2026-05-25" "Telachat 0.30.0" "User Commands"
+.TH TELACHAT-GTK 1 "2026-05-25" "Telachat 0.31.0" "User Commands"
 .SH NAME
 telachat-gtk \- start the GTK desktop frontend for Telachat
 .SH SYNOPSIS
@@ -6,8 +6,8 @@ telachat-gtk \- start the GTK desktop frontend for Telachat
 .SH DESCRIPTION
 .B telachat-gtk
 starts the native GTK4/Libadwaita desktop frontend. It uses the same
-configuration, SQLite history, provider profiles, folders, tags, prompt templates,
-and slash commands as the
+configuration, SQLite history, provider profiles, folders, tags, soft archives,
+prompt templates, and slash commands as the
 .B telachat
 CLI.
 Saved chats restore their provider and model selectors when loaded.
@@ -28,6 +28,8 @@ Use \fB/fork [TITLE]\fR to copy the current conversation into a new independent
 chat variant.
 Use \fB/tag TAG\fR, \fB/untag TAG\fR, and \fB/tags\fR to manage flexible
 chat labels.
+Use \fB/archive\fR, \fB/unarchive\fR, and \fB/archives\fR to hide completed
+chats from normal lists and inspect the archive.
 .SH FILES
 .TP
 .I ~/.config/telachat/config.toml

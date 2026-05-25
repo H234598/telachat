@@ -166,6 +166,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_sessions.add_argument("--query", "-q", help="Titel, Provider oder Nachrichteninhalt suchen")
     p_sessions.add_argument("--folder", help="Ordnername/-ID oder 'none' fuer Ohne Ordner")
     p_sessions.add_argument("--tag", help="Nur Sessions mit diesem Tag anzeigen")
+    p_sessions.add_argument("--archived", action="store_true", help="Nur archivierte Sessions anzeigen")
+    p_sessions.add_argument("--all", action="store_true", help="Aktive und archivierte Sessions anzeigen")
     p_sessions.add_argument(
         "--sort",
         choices=sorted(SESSION_SORTS),
@@ -183,6 +185,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_tags.add_argument("--clear", action="store_true", help="Alle Tags der Session entfernen")
     p_tags.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_tags.set_defaults(func=cmd_tags)
+
+    p_archive = sub.add_parser("archive", help="Session archivieren")
+    p_archive.add_argument("session", help="Session-ID oder Prefix")
+    p_archive.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
+    p_archive.set_defaults(func=cmd_archive)
+
+    p_unarchive = sub.add_parser("unarchive", help="Session aus dem Archiv holen")
+    p_unarchive.add_argument("session", help="Session-ID oder Prefix")
+    p_unarchive.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
+    p_unarchive.set_defaults(func=cmd_unarchive)
 
     p_fork = sub.add_parser("fork", help="Session kopieren/verzweigen")
     p_fork.add_argument("session", help="Session-ID oder Prefix")
@@ -203,6 +215,16 @@ def build_parser() -> argparse.ArgumentParser:
         choices=sorted(SESSION_SORTS),
         default="title",
         help="Sortierung der exportierten Sessions",
+    )
+    p_export_folder.add_argument(
+        "--archived",
+        action="store_true",
+        help="Nur archivierte Sessions exportieren",
+    )
+    p_export_folder.add_argument(
+        "--all",
+        action="store_true",
+        help="Aktive und archivierte Sessions exportieren",
     )
     p_export_folder.add_argument(
         "--single-file",
@@ -646,6 +668,7 @@ def cmd_sessions(args: argparse.Namespace) -> int:
             sort=SESSION_SORTS[args.sort],
             query=args.query,
             tag=_cli_tag(args.tag) if args.tag else None,
+            archive=_archive_filter_from_args(args),
         )
         if args.json:
             print(
@@ -728,6 +751,37 @@ def cmd_tags(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_archive(args: argparse.Namespace) -> int:
+    return _cmd_set_archive(args, archived=True)
+
+
+def cmd_unarchive(args: argparse.Namespace) -> int:
+    return _cmd_set_archive(args, archived=False)
+
+
+def _cmd_set_archive(args: argparse.Namespace, *, archived: bool) -> int:
+    store = ChatStore()
+    try:
+        session = store.get_session(args.session)
+        if session is None:
+            raise ConfigError(f"Session nicht eindeutig gefunden: {args.session}")
+        session = store.set_session_archived(session.id, archived)
+        if args.json:
+            print(
+                json.dumps(
+                    {"session": _session_record(session)},
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+            return 0
+        state = "Archiviert" if archived else "Wiederhergestellt"
+        print(f"{state}: {session.id}  {session.title}")
+    finally:
+        store.close()
+    return 0
+
+
 def _profile_record(name: str, profile: Profile, *, is_default: bool) -> dict[str, object]:
     return {
         "name": name,
@@ -775,6 +829,7 @@ def _session_record(session: Session) -> dict[str, object]:
         "model": session.model,
         "folder_id": session.folder_id,
         "pinned": session.pinned,
+        "archived": session.archived,
         "tags": list(session.tags),
         "created_at": session.created_at,
         "updated_at": session.updated_at,
@@ -783,9 +838,20 @@ def _session_record(session: Session) -> dict[str, object]:
 
 def _format_session_line(session: Session) -> str:
     pin = "*" if session.pinned else " "
+    archive = "A" if session.archived else " "
     tags = " ".join(f"#{tag}" for tag in session.tags)
     suffix = f"  {tags}" if tags else ""
-    return f"{pin} {session.id}  {_backend_label(session):18}  {session.title}{suffix}"
+    return f"{pin}{archive} {session.id}  {_backend_label(session):18}  {session.title}{suffix}"
+
+
+def _archive_filter_from_args(args: argparse.Namespace) -> str:
+    if getattr(args, "archived", False) and getattr(args, "all", False):
+        raise ConfigError("--archived und --all schliessen sich aus.")
+    if getattr(args, "archived", False):
+        return "archived"
+    if getattr(args, "all", False):
+        return "all"
+    return "active"
 
 
 def _cli_tag(tag: object) -> str:
@@ -881,10 +947,19 @@ def _clean_session_import_payload(payload: object) -> tuple[dict[str, object], l
             "profile": str(source_session.get("profile") or "tki"),
             "model": str(source_session.get("model") or ""),
             "system_prompt": str(source_session.get("system_prompt") or ""),
+            "archived": _clean_import_bool(source_session.get("archived", False), "archived"),
             "tags": _clean_import_tags(source_session.get("tags")),
         },
         clean_messages,
     )
+
+
+def _clean_import_bool(value: object, name: str) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int) and value in (0, 1):
+        return bool(value)
+    raise ConfigError(f"Session-{name} muss ein Boolean sein.")
 
 
 def _clean_import_tags(value: object) -> list[str]:
@@ -1013,6 +1088,7 @@ def cmd_export_folder(args: argparse.Namespace) -> int:
             10000,
             folder_id=folder_id,
             sort=SESSION_SORTS[args.sort],
+            archive=_archive_filter_from_args(args),
         )
         title = _folder_export_title(store, args.folder, folder_id)
         if args.json:
@@ -1106,6 +1182,7 @@ def cmd_import_session(args: argparse.Namespace) -> int:
             model=str(session_meta["model"]),
             system_prompt=str(session_meta["system_prompt"]),
             folder_id=folder_id,
+            archived=bool(session_meta["archived"]),
         )
         if session_meta["tags"]:
             store.set_session_tags(imported.id, list(session_meta["tags"]))
@@ -1186,6 +1263,7 @@ def cmd_import_folder(args: argparse.Namespace) -> int:
                 model=str(session_meta["model"]),
                 system_prompt=str(session_meta["system_prompt"]),
                 folder_id=folder.id if folder else None,
+                archived=bool(session_meta["archived"]),
             )
             if session_meta["tags"]:
                 store.set_session_tags(imported.id, list(session_meta["tags"]))
@@ -1461,7 +1539,7 @@ def _configured_models(cfg: object) -> list[str]:
 
 def _session_refs(store: ChatStore) -> list[str]:
     refs: list[str] = []
-    for session in store.list_sessions(100):
+    for session in store.list_sessions(100, archive="all"):
         refs.append(session.id)
         if session.title:
             refs.append(session.title)
@@ -1545,6 +1623,12 @@ def _handle_command(
     elif command == "/sessions":
         for item in store.list_sessions(20):
             print(_format_session_line(item))
+    elif command == "/archives":
+        items = store.list_sessions(20, archive="archived")
+        if not items:
+            print("Keine archivierten Sessions.")
+        for item in items:
+            print(_format_session_line(item))
     elif command == "/load":
         if not rest:
             print("Nutzung: /load <session-id-oder-prefix>")
@@ -1562,6 +1646,12 @@ def _handle_command(
     elif command == "/unpin":
         session = store.set_session_pinned(session.id, False)
         print("Session geloest.")
+    elif command == "/archive":
+        session = store.set_session_archived(session.id, True)
+        print("Session archiviert.")
+    elif command == "/unarchive":
+        session = store.set_session_archived(session.id, False)
+        print("Session wiederhergestellt.")
     elif command == "/tag":
         if not rest:
             print("Tags: " + (" ".join(f"#{tag}" for tag in session.tags) if session.tags else "-"))

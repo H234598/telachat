@@ -72,6 +72,7 @@ class CliImportSessionTests(unittest.TestCase):
                 self.assertEqual(result["messages"], 2)
                 self.assertEqual(result["session"]["title"], "Override Dry")
                 self.assertEqual(result["session"]["model"], "gpt-5.5")
+                self.assertFalse(result["session"]["archived"])
 
                 store = ChatStore()
                 try:
@@ -129,6 +130,41 @@ class CliImportSessionTests(unittest.TestCase):
                             self.assertEqual(store.list_sessions(limit=10), [])
                         finally:
                             store.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
+    def test_import_session_rejects_invalid_archived_flag_before_writing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(main(["init"]), 0)
+                import_path = Path(tmp) / "invalid-archive.json"
+                import_path.write_text(
+                    json.dumps(
+                        {
+                            "format": "telachat.session.v1",
+                            "session": {"title": "Bad Archive", "archived": "yes"},
+                            "messages": [{"role": "user", "content": "Nicht schreiben"}],
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+                err = io.StringIO()
+                with redirect_stderr(err):
+                    self.assertEqual(main(["import-session", str(import_path)]), 1)
+                self.assertIn("Session-archived muss ein Boolean sein", err.getvalue())
+
+                store = ChatStore()
+                try:
+                    self.assertEqual(store.list_sessions(limit=10, archive="all"), [])
+                finally:
+                    store.close()
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
