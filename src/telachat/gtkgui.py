@@ -828,8 +828,14 @@ class GtkTelachatApp(Adw.Application):
         self.update_active_title()
         self.refresh_sessions()
         self.render_messages()
-        self.set_busy(False, "Bereit")
+        self.set_busy(False, self.response_status(payload))
         return GLib.SOURCE_REMOVE
+
+    def response_status(self, payload: object) -> str:
+        elapsed = getattr(payload, "elapsed_seconds", None)
+        if isinstance(elapsed, (float, int)):
+            return f"Antwort in {elapsed:.1f}s"
+        return "Bereit"
 
     def on_doctor(self, _button: Gtk.Button) -> None:
         profile_name = self.selected_profile()

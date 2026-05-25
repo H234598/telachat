@@ -172,6 +172,16 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(module.GtkTelachatApp.selected_temperature(app), 0.85)
         self.assertEqual(module.GtkTelachatApp.selected_max_tokens(app), 2048)
 
+    def test_tk_response_status_reports_elapsed_time(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+
+        status = module.TkTelachatApp.response_status(
+            SimpleNamespace(),
+            SimpleNamespace(elapsed_seconds=1.24),
+        )
+
+        self.assertEqual(status, "Antwort in 1.2s")
+
 
 if __name__ == "__main__":
     unittest.main()

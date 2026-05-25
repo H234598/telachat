@@ -1,5 +1,11 @@
 # Releases
 
+## 0.35.0 - 2026-05-25
+
+- Send und Regenerate messen jetzt die API-Antwortzeit.
+- GTK und Tk zeigen die Antwortzeit nach erfolgreichen Antworten im Status.
+- Neue Controller/GUI-Tests pruefen die Latenzweitergabe.
+
 ## 0.34.1 - 2026-05-25
 
 - Ergaenzt fokussierte Regressionstests fuer Chat-Completions-Parameter wie

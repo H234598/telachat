@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.35.0 - 2026-05-25
+
+- Measure API response latency for send/regenerate operations.
+- Show elapsed response time in both Tk and GTK GUI status areas.
+- Add focused Controller/GUI tests for elapsed-time reporting.
+
 ## 0.34.1 - 2026-05-25
 
 - Add focused Chat Completions regression coverage for generation parameters.

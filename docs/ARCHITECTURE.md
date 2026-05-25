@@ -35,6 +35,7 @@
   - Shared application service for GUI frontends.
   - Applies transient GUI generation overrides without rewriting config or
     session metadata.
+  - Measures request elapsed time for successful send/regenerate payloads.
 - `telachat.gtkgui`
   - Native GTK4/Libadwaita desktop GUI.
 - `telachat.tkgui`

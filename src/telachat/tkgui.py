@@ -1168,7 +1168,7 @@ class TkTelachatApp:
                     self.update_active_title()
                     self.refresh_sessions()
                     self.render_messages()
-                    self.set_busy(False, "Bereit")
+                    self.set_busy(False, self.response_status(payload))
                 elif kind == "doctor":
                     self.update_model_choices_from_live(payload)
                     self.set_busy(False, "OK: " + (", ".join(payload) or "Modelle erreichbar"))
@@ -1181,6 +1181,12 @@ class TkTelachatApp:
 
     def set_status(self, text: str) -> None:
         self.status.configure(text=text)
+
+    def response_status(self, payload: object) -> str:
+        elapsed = getattr(payload, "elapsed_seconds", None)
+        if isinstance(elapsed, (float, int)):
+            return f"Antwort in {elapsed:.1f}s"
+        return "Bereit"
 
     def set_busy(self, busy: bool, text: str) -> None:
         self.set_status(text)

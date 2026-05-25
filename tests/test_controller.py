@@ -273,7 +273,11 @@ class ControllerTests(unittest.TestCase):
                 )
                 controller = TelachatController()
                 try:
-                    with mock.patch("telachat.controller.OpenAICompatClient") as client_cls:
+                    with (
+                        mock.patch("telachat.controller.OpenAICompatClient") as client_cls,
+                        mock.patch("telachat.controller.time.perf_counter") as perf_counter,
+                    ):
+                        perf_counter.side_effect = [10.0, 11.25]
                         client_cls.return_value.chat.return_value = ChatResult(
                             content="Antwort",
                             raw={},
@@ -290,6 +294,7 @@ class ControllerTests(unittest.TestCase):
                     selected_profile = client_cls.call_args.args[0]
                     self.assertEqual(selected_profile.temperature, 0.45)
                     self.assertEqual(selected_profile.max_tokens, 321)
+                    self.assertEqual(payload.elapsed_seconds, 1.25)
                     self.assertEqual(payload.session.profile, "test")
                     self.assertEqual(payload.session.model, "demo-large")
                     stored = controller.store.get_session(payload.session.id)

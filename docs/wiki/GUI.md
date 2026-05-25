@@ -19,6 +19,7 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - Der Tagfilter zeigt vorhandene Tags mit Zaehlern und filtert die Chatliste.
 - Temperatur und maximale Antworttokens koennen pro Anfrage im rechten Bereich
   angepasst werden.
+- Nach erfolgreichen Antworten zeigt der Status die gemessene Antwortzeit.
 - `Check` fragt `/models` live fuer den gewaehlten Provider ab und ergaenzt die
   Modellauswahl mit den gemeldeten IDs.
 - `Shift+Enter` sendet eine Nachricht.

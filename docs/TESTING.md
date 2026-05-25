@@ -100,7 +100,8 @@ cover construction of the slash-command autocomplete widgets, visible
 archive/tag-filter propagation, Tk tag-filter selection preservation, and
 model-choice merge behavior after live model discovery. Controller and client
 tests verify that generation overrides reach the API profile and that Responses
-requests include temperature/top-p/max-output parameters.
+requests include temperature/top-p/max-output parameters. Controller and GUI
+tests also cover elapsed-time propagation for successful responses.
 CLI JSON tests cover profiles, models, config-check, sessions, folders, and doctor
 while checking that secret values remain redacted.
 Restore tests verify dry-run counts, duplicate-safe imports, session ID

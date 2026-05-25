@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, replace
 
 from .client import ChatResult, OpenAICompatClient
@@ -13,6 +14,7 @@ class ChatPayload:
     session: Session
     messages: list[Message]
     answer: str
+    elapsed_seconds: float
 
 
 class TelachatController:
@@ -207,7 +209,9 @@ class TelachatController:
         self.store.add_message(session.id, "user", clean)
         history = self.store.messages(session.id, limit=self.config.max_history_messages)
         api_messages = messages_for_api(effective_system_prompt, history)
+        started = time.perf_counter()
         result = OpenAICompatClient(profile, retries=1).chat(api_messages, stream=False)
+        elapsed = time.perf_counter() - started
         if isinstance(result, ChatResult):
             answer = result.content
         else:
@@ -217,6 +221,7 @@ class TelachatController:
             session=session,
             messages=self.store.messages(session.id),
             answer=answer,
+            elapsed_seconds=elapsed,
         )
 
     def regenerate(
@@ -244,7 +249,9 @@ class TelachatController:
         if not any(message.role == "user" for message in history):
             raise ValueError("Keine Nutzernachricht zum Neu-Generieren vorhanden.")
         api_messages = messages_for_api(system_prompt or session.system_prompt, history)
+        started = time.perf_counter()
         result = OpenAICompatClient(profile, retries=1).chat(api_messages, stream=False)
+        elapsed = time.perf_counter() - started
         if isinstance(result, ChatResult):
             answer = result.content
         else:
@@ -255,6 +262,7 @@ class TelachatController:
             session=updated,
             messages=self.store.messages(session.id),
             answer=answer,
+            elapsed_seconds=elapsed,
         )
 
     def edit_last_user_message(
