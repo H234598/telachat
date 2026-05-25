@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.41.0 - 2026-05-25
+
+- Add `telachat templates --json` for structured prompt-template inventory.
+- Report template name, preview, line/character counts, and `{input}` usage.
+
 ## 0.40.0 - 2026-05-25
 
 - Add content-free chat context estimates via `telachat context` and `/context`.

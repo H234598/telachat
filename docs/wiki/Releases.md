@@ -1,5 +1,10 @@
 # Releases
 
+## 0.41.0 - 2026-05-25
+
+- `telachat templates --json` liefert eine strukturierte Prompt-Template-
+  Inventur mit Name, Preview, Zeilen-/Zeichenzahl und `{input}`-Marker.
+
 ## 0.40.0 - 2026-05-25
 
 - Neuer content-freier Kontextumfang: `telachat context SESSION` und

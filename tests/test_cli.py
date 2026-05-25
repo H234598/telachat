@@ -345,6 +345,17 @@ class CliTests(unittest.TestCase):
                 self.assertIn("summarize", out.getvalue())
 
                 out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["templates", "--json"]), 0)
+                payload = json.loads(out.getvalue())
+                summarize = next(
+                    item for item in payload["templates"] if item["name"] == "summarize"
+                )
+                self.assertIn("preview", summarize)
+                self.assertTrue(summarize["has_input_placeholder"])
+                self.assertGreater(summarize["characters"], 0)
+
+                out = io.StringIO()
                 with redirect_stdout(out), mock.patch(
                     "telachat.cli._run_chat",
                     return_value="OK",

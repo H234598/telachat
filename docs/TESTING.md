@@ -116,7 +116,8 @@ Store and CLI tests cover content-free local statistics for sessions, messages,
 folders, tags, profiles, and models, plus content-free context estimates for
 single sessions.
 CLI JSON tests cover profiles, models, config-check, sessions, stats, context,
-folders, and doctor while checking that secret values remain redacted.
+templates, folders, and doctor while checking that secret values remain
+redacted.
 Restore tests verify dry-run counts, duplicate-safe imports, session ID
 rewrites, and folder-name reuse.
 Edit-last tests verify that the latest user message can be replaced and that

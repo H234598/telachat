@@ -144,6 +144,7 @@ telachat theme dark
 telachat chat
 /theme dracula
 telachat templates
+telachat templates --json
 telachat folders
 telachat doctor
 telachat doctor --chat
@@ -198,9 +199,10 @@ presets for LM Studio, Ollama, and Jan. They are normal profiles and may fail
 `config-check --profile NAME --strict` narrows strict secret validation to one
 profile, which is useful when optional provider presets are intentionally not
 configured.
-`profiles`, `models`, `config-check`, `sessions`, `stats`, `context`, `folders`,
-`export`, `export-folder`, and `doctor` also support `--json` for agent/script
-consumption. JSON output is redacted where it contains provider configuration;
+`profiles`, `models`, `config-check`, `sessions`, `stats`, `context`,
+`templates`, `folders`, `export`, `export-folder`, and `doctor` also support
+`--json` for agent/script consumption. JSON output is redacted where it
+contains provider configuration;
 folder system prompts are
 included only when `folders --show-system --json` is requested or when exporting
 that folder as a portable data bundle.
@@ -212,6 +214,9 @@ local database can be inspected quickly from scripts.
 `context` is also read-only and content-free. It estimates one session's next
 request size from the system prompt, the configured history-message window, and
 message lengths, reporting character counts and a coarse token estimate.
+
+`templates --json` returns a compact inventory of configured prompt templates:
+name, first-line preview, size metadata, and whether `{input}` is used.
 
 Sessions can also carry normalized tags in the `session_tags` table. Tags are
 many-to-one labels independent of folders; session search can match tags,

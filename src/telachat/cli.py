@@ -133,6 +133,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_theme.set_defaults(func=cmd_theme)
 
     p_templates = sub.add_parser("templates", help="Prompt-Templates anzeigen")
+    p_templates.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_templates.set_defaults(func=cmd_templates)
 
     p_folders = sub.add_parser("folders", help="Ordner anzeigen/verwalten")
@@ -519,6 +520,20 @@ def cmd_theme(args: argparse.Namespace) -> int:
 
 def cmd_templates(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "templates": [
+                        _template_record(name, cfg.prompt_templates[name])
+                        for name in sorted(cfg.prompt_templates)
+                    ],
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
     if not cfg.prompt_templates:
         print("Keine Prompt-Templates konfiguriert.")
         return 0
@@ -947,6 +962,20 @@ def _context_record(session: Session, estimate: ContextEstimate) -> dict[str, ob
             "approx_tokens": estimate.approx_tokens,
             "method": "ceil(characters/4)",
         },
+    }
+
+
+def _template_record(name: str, template: str) -> dict[str, object]:
+    lines = template.splitlines() or [""]
+    preview = " ".join(lines[0].split())
+    if len(preview) > 120:
+        preview = preview[:117].rstrip() + "..."
+    return {
+        "name": name,
+        "preview": preview,
+        "lines": len(lines),
+        "characters": len(template),
+        "has_input_placeholder": "{input}" in template,
     }
 
 

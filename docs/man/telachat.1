@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.40.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.41.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -44,7 +44,8 @@ system-palette detection for one process.
 The same setting can be changed inside interactive chat with \fB/theme NAME\fR.
 .TP
 .B templates
-List configured prompt templates.
+List configured prompt templates. Use \fB--json\fR for a structured template
+inventory with preview and size metadata.
 .TP
 .B folders
 List or manage chat folders and folder-level system prompts. Use \fB--json\fR
@@ -142,6 +143,7 @@ telachat chat
 telachat ask -p tki "Hallo"
 telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
 telachat templates
+telachat templates --json
 telachat ask --template summarize "Langer Text"
 telachat folders --create Arbeit --system "Antworte projektbezogen."
 telachat sessions --json
