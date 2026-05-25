@@ -226,8 +226,10 @@ model = "demo"
 
     def test_secret_sources_preserve_windows_backslashes_in_basic_strings(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            env_path = Path(tmp) / r"C:\new\test.env"
-            file_path = Path(tmp) / r"C:\new\file-secret.txt"
+            secret_dir = Path(tmp) / "new"
+            secret_dir.mkdir()
+            env_path = secret_dir / "test.env"
+            file_path = secret_dir / "file-secret.txt"
             env_path.write_text(
                 "OPENAI_API_KEY=windows-envfile-secret\n",
                 encoding="utf-8",
