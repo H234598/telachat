@@ -225,6 +225,30 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(app.profile_dropdown.selected, 0)
         self.assertEqual(app.model_dropdown.selected, 0)
 
+    def test_gtk_ignores_folder_model_when_profile_is_unknown(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        app = SimpleNamespace(
+            controller=SimpleNamespace(folder_backend=lambda _folder_id: ("missing", "folder-model")),
+            profile_names=["work"],
+            profile_dropdown=_FakeDropdown(),
+            model_names=["base-model"],
+            model_dropdown=_FakeDropdown(),
+            refresh_models=lambda: None,
+        )
+
+        module.GtkTelachatApp.apply_selected_folder_backend(app, "folder1")
+
+        self.assertEqual(app.profile_dropdown.selected, -1)
+        self.assertEqual(app.model_dropdown.selected, -1)
+        self.assertEqual(app.model_names, ["base-model"])
+
     def test_tk_refresh_tag_filter_preserves_selected_tag_value(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         controller = _FakeController(tags=[("projekt", 2), ("review", 1)])
@@ -270,6 +294,24 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(app.profile_var.get(), "Work")
         self.assertEqual(app.model_var.get(), "folder-model")
         self.assertEqual(app.model_combo.values, ["folder-model", "base-model"])
+
+    def test_tk_ignores_folder_model_when_profile_is_unknown(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        app = SimpleNamespace(
+            controller=SimpleNamespace(folder_backend=lambda _folder_id: ("missing", "folder-model")),
+            profile_display_to_name={"Work": "work"},
+            profile_var=_FakeText(""),
+            model_combo=_FakeCombo(),
+            model_var=_FakeText(""),
+        )
+        app.model_combo.configure(values=["base-model"])
+        app.refresh_models = lambda: module.TkTelachatApp.refresh_models(app)
+
+        module.TkTelachatApp.apply_selected_folder_backend(app, "folder1")
+
+        self.assertEqual(app.profile_var.get(), "")
+        self.assertEqual(app.model_var.get(), "")
+        self.assertEqual(app.model_combo.values, ["base-model"])
 
     def test_tk_generation_inputs_normalize_to_supported_ranges(self) -> None:
         module = importlib.import_module("telachat.tkgui")

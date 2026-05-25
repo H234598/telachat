@@ -814,13 +814,15 @@ class TkTelachatApp:
 
     def apply_selected_folder_backend(self, folder_id: str) -> None:
         profile_name, model = self.controller.folder_backend(folder_id)
+        profile_applied = False
         if profile_name:
             for label, name in self.profile_display_to_name.items():
                 if name == profile_name:
                     self.profile_var.set(label)
                     self.refresh_models()
+                    profile_applied = True
                     break
-        if model:
+        if model and (not profile_name or profile_applied):
             models = list(self.model_combo.cget("values"))
             if model not in models:
                 models.insert(0, model)

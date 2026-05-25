@@ -576,6 +576,7 @@ class GtkTelachatApp(Adw.Application):
 
     def apply_selected_folder_backend(self, folder_id: str) -> None:
         profile_name, model = self.controller.folder_backend(folder_id)
+        profile_applied = False
         if profile_name:
             try:
                 selected_profile = self.profile_names.index(profile_name)
@@ -584,7 +585,8 @@ class GtkTelachatApp(Adw.Application):
             if selected_profile >= 0:
                 self.profile_dropdown.set_selected(selected_profile)
                 self.refresh_models()
-        if model:
+                profile_applied = True
+        if model and (not profile_name or profile_applied):
             if model not in self.model_names:
                 self.model_names = [model, *self.model_names]
                 self.model_dropdown.set_model(Gtk.StringList.new(self.model_names))
