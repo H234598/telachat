@@ -188,6 +188,14 @@ class ChatStore:
                 self.db.execute(
                     "ALTER TABLE folders ADD COLUMN default_model TEXT NOT NULL DEFAULT ''"
                 )
+            message_columns = {
+                row["name"]
+                for row in self.db.execute("PRAGMA table_info(messages)").fetchall()
+            }
+            if "metadata" not in message_columns:
+                self.db.execute(
+                    "ALTER TABLE messages ADD COLUMN metadata TEXT NOT NULL DEFAULT '{}'"
+                )
 
     def create_session(
         self,

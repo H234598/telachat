@@ -649,6 +649,82 @@ class StoreTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_legacy_database_adds_message_metadata_column(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "history.sqlite3"
+            db = sqlite3.connect(path)
+            try:
+                db.execute(
+                    """
+                    CREATE TABLE sessions (
+                        id TEXT PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        profile TEXT NOT NULL,
+                        model TEXT NOT NULL DEFAULT '',
+                        system_prompt TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        folder_id TEXT,
+                        pinned INTEGER NOT NULL DEFAULT 0,
+                        archived INTEGER NOT NULL DEFAULT 0
+                    )
+                    """
+                )
+                db.execute(
+                    """
+                    CREATE TABLE messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+                        role TEXT NOT NULL CHECK(role IN ('user', 'assistant', 'system')),
+                        content TEXT NOT NULL,
+                        created_at INTEGER NOT NULL
+                    )
+                    """
+                )
+                db.execute(
+                    """
+                    INSERT INTO sessions(
+                        id, title, profile, model, system_prompt,
+                        created_at, updated_at, folder_id, pinned, archived
+                    )
+                    VALUES ('legacy-usage', 'Legacy Usage', 'openai', 'gpt-5.5', 'System', 1, 1, NULL, 0, 0)
+                    """
+                )
+                db.execute(
+                    """
+                    INSERT INTO messages(session_id, role, content, created_at)
+                    VALUES ('legacy-usage', 'assistant', 'Alte Antwort', 1)
+                    """
+                )
+                db.commit()
+            finally:
+                db.close()
+
+            store = ChatStore(path)
+            try:
+                messages = store.messages("legacy-usage")
+                self.assertEqual(len(messages), 1)
+                self.assertEqual(messages[0].metadata, {})
+                store.add_message(
+                    "legacy-usage",
+                    "assistant",
+                    "Neue Antwort",
+                    metadata={
+                        "usage": {
+                            "input_tokens": 3,
+                            "output_tokens": 2,
+                            "total_tokens": 5,
+                        }
+                    },
+                )
+                stats = store.stats()
+                self.assertEqual(stats.usage_records, 1)
+                self.assertEqual(stats.usage_input_tokens, 3)
+                self.assertEqual(stats.usage_output_tokens, 2)
+                self.assertEqual(stats.usage_total_tokens, 5)
+            finally:
+                store.close()
+
     def test_legacy_database_adds_folder_system_prompt_column(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "history.sqlite3"
