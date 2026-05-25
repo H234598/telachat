@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.43.8 - 2026-05-25
+
+- Validate numeric configuration values and per-request generation overrides with clear `ConfigError` messages.
+
 ## 0.43.7 - 2026-05-25
 
 - Preserve raw UNC prefixes in Windows-style `file:` and `envfile:` secret-source paths.

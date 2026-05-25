@@ -1,5 +1,10 @@
 # Releases
 
+## 0.43.8 - 2026-05-25
+
+- Numerische Konfigurationswerte und per Request gesetzte Generierungswerte
+  werden jetzt mit klaren `ConfigError`-Meldungen validiert.
+
 ## 0.43.7 - 2026-05-25
 
 - Windows-artige `file:`- und `envfile:`-Secret-Quellen behalten rohe
