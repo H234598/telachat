@@ -7,8 +7,12 @@ ManifestDPIAware true
 !define PRODUCT_VERSION "dev"
 !endif
 
+!ifndef DIST_DIR
+!define DIST_DIR "dist"
+!endif
+
 Name "Telachat"
-OutFile "dist\TelachatTk-Setup-${PRODUCT_VERSION}.exe"
+OutFile "${DIST_DIR}\TelachatTk-Setup-${PRODUCT_VERSION}.exe"
 InstallDir "$LOCALAPPDATA\Telachat"
 RequestExecutionLevel user
 
@@ -29,7 +33,7 @@ RequestExecutionLevel user
 
 Section "Telachat" SecMain
     SetOutPath "$INSTDIR"
-    File /r "dist\TelachatTk\*.*"
+    File /r "${DIST_DIR}\TelachatTk\*.*"
     CreateDirectory "$SMPROGRAMS\Telachat"
     CreateShortcut "$SMPROGRAMS\Telachat\Telachat.lnk" "$INSTDIR\TelachatTk.exe"
     CreateShortcut "$DESKTOP\Telachat.lnk" "$INSTDIR\TelachatTk.exe"
