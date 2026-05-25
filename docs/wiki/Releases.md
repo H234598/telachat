@@ -1,5 +1,15 @@
 # Releases
 
+## 0.7.0 - 2026-05-25
+
+- Readline-Tab-Completion fuer `telachat chat`.
+- CLI vervollstaendigt Slash-Befehle, Provider, Modelle, Templates, Ordner,
+  Session-Referenzen und Sortiermodi.
+- Terminal-Slash-Commands wurden an den dokumentierten Katalog angeglichen.
+- OpenAI-Profile koennen `reasoning_effort` setzen.
+- Standard-OpenAI-Profil nutzt jetzt `gpt-5.5` mit
+  `reasoning_effort = "high"`.
+
 ## 0.6.0 - 2026-05-25
 
 - Gemeinsamer Slash-Command-Katalog fuer CLI, GTK und Tk.

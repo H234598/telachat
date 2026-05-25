@@ -129,6 +129,7 @@ class ClientTests(unittest.TestCase):
             **{
                 **profile.__dict__,
                 "api_mode": "responses",
+                "reasoning_effort": "high",
             }
         )
         client = OpenAICompatClient(profile)
@@ -142,6 +143,7 @@ class ClientTests(unittest.TestCase):
         assert isinstance(result, ChatResult)
         self.assertEqual(result.content, "Response OK")
         self.assertEqual(request.call_args.args[1], "/responses")
+        self.assertEqual(request.call_args.args[2]["reasoning"], {"effort": "high"})
 
 
 if __name__ == "__main__":

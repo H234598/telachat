@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.6.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.7.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -115,6 +115,10 @@ Nuetzliche Chat-Befehle:
 /exit
 ```
 
+Im interaktiven Terminal-Chat nutzt Telachat Readline-Completion: `Tab`
+vervollstaendigt Slash-Befehle und passende Kontextwerte wie Profile, Modelle,
+Templates, Ordner, Session-IDs, Session-Titel und Sortiermodi.
+
 Gespeicherte Sessions koennen auch direkt in der CLI gefiltert werden:
 
 ```sh
@@ -174,7 +178,7 @@ inzwischen einen Bearer-Key; auf diesem Host liegt `Telachat_API_Teladi` in
 
 Weitere Standardprofile:
 
-- `openai`: allgemeine OpenAI-API-Anbindung mit `env:OPENAI_API_KEY`, `gpt-5.4-mini`, Responses API und GPT-5.x-Modelloptionen.
+- `openai`: allgemeine OpenAI-API-Anbindung mit `env:OPENAI_API_KEY`, `gpt-5.5`, Responses API, `reasoning_effort = "high"` und GPT-5.x-Modelloptionen.
 - `huggingface`: dein Hugging-Face/Qwen-Space mit Qwen-Modellnamen.
 - `codex`: lokaler Codex-CLI-Zugriff ueber `codex exec`, kein `/v1`-HTTP-Modell.
 
@@ -183,6 +187,7 @@ Fuer OpenAI:
 ```sh
 export OPENAI_API_KEY="..."
 telachat ask -p openai "Hallo"
+telachat ask -p openai --reasoning-effort high "Hallo"
 ```
 
 Auf diesem Host liegt eine Telachat-eigene Kopie des Keys in

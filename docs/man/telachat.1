@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.6.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.7.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -52,7 +52,7 @@ Start the Tk desktop frontend.
 .nf
 telachat doctor --chat
 telachat ask -p tki "Hallo"
-telachat ask -p openai -m gpt-5.4-mini "Hallo"
+telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
 telachat templates
 telachat ask --template summarize "Langer Text"
 telachat folders --create Arbeit --system "Antworte projektbezogen."
@@ -63,8 +63,9 @@ telachat-gtk
 .fi
 .SH SLASH COMMANDS
 Interactive CLI chat and both GUIs understand slash commands in the prompt.
-The GUI prompt shows command suggestions while typing and Tab completes the
-current command.
+The CLI uses Readline Tab completion for commands and context values when
+available. The GUI prompt shows command suggestions while typing and Tab
+completes the current command.
 .PP
 .nf
 /help

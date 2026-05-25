@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0 - 2026-05-25
+
+- Add Readline Tab completion for interactive `telachat chat`.
+- Complete slash commands, profiles, models, templates, folders, session refs,
+  sort modes, and common history limits in the CLI prompt.
+- Align interactive CLI slash-command handling with the documented command
+  catalog for rename/delete/folder/move/search/sort/provider/model actions.
+- Add configurable `reasoning_effort` for provider profiles and CLI overrides.
+- Change the default OpenAI profile to `gpt-5.5` with `reasoning_effort = "high"`.
+
 ## 0.6.0 - 2026-05-25
 
 - Add a shared slash-command catalog for CLI, GTK, and Tk.

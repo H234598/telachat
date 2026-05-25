@@ -7,15 +7,19 @@
   - Validates provider profiles.
   - Loads prompt templates from `[prompt_templates]`.
   - Resolves API keys from literal values, `env:NAME`, or `file:/path`.
+  - Carries optional model-specific knobs such as `reasoning_effort`.
 - `telachat.client`
   - Minimal OpenAI-compatible HTTP client.
   - Supports `/models`, non-streaming chat, and SSE streaming chat.
+  - Sends Responses API `reasoning.effort` when configured.
   - Reduces dependency risk by avoiding external SDKs.
 - `telachat.store`
   - SQLite-backed session and message history.
   - Enables folders, session listing, search, loading, and Markdown export.
 - `telachat.cli`
   - `init`, `profiles`, `ask`, `chat`, `sessions`, `export`, `export-folder`, `doctor`.
+  - Interactive `chat` installs optional Readline completion for slash commands
+    and context values when stdin is a TTY.
 - `telachat.commands`
   - Shared slash-command catalog for CLI help and GUI autocomplete.
 - `telachat.controller`
@@ -61,7 +65,7 @@ model = "Qwen/Qwen2.5-1.5B-Instruct"
 
 Additional built-in profiles:
 
-- `openai`: OpenAI `/v1` Responses API using an env/envfile key, default model `gpt-5.4-mini`, with GPT-5.x model options.
+- `openai`: OpenAI `/v1` Responses API using an env/envfile key, default model `gpt-5.5`, `reasoning_effort = "high"`, with GPT-5.x model options.
 - `huggingface`: Hugging Face Space `/v1`, model list centered on Qwen.
 - `codex`: local `codex exec` bridge. This is not OpenAI-compatible HTTP.
 
@@ -103,6 +107,10 @@ telachat export-folder <folder-name-or-id>
 telachat export-folder <folder-name-or-id> --single-file
 ```
 
+Interactive CLI chat supports Tab completion for slash commands, provider names,
+model IDs, prompt templates, folders, session references, sort modes, and common
+history limits.
+
 GUI slash commands:
 
 ```text
@@ -137,5 +145,6 @@ GUI slash commands:
 - SQLite folder prompts, sorting and history-search behavior.
 - CLI init/profile behavior with temporary XDG directories.
 - Shared slash-command catalog behavior.
+- Interactive CLI Readline completion and documented terminal command actions.
 - Bytecode compilation and zipapp packaging.
 - Optional live `doctor --chat` against the configured HF Space.

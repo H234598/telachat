@@ -65,3 +65,27 @@ def slash_command_suggestions(prefix: str, *, limit: int = 8) -> list[SlashComma
         if any(name.startswith(clean) for name in command.names)
     ]
     return matches[:limit]
+
+
+def slash_command_name_suggestions(prefix: str, *, limit: int = 24) -> list[str]:
+    clean = prefix.strip().lower()
+    if not clean.startswith("/"):
+        return []
+    matches: list[str] = []
+    seen: set[str] = set()
+    for command in SLASH_COMMANDS:
+        for name in command.names:
+            if name.startswith(clean) and name not in seen:
+                matches.append(name)
+                seen.add(name)
+                if len(matches) >= limit:
+                    return matches
+    return matches
+
+
+def canonical_slash_command(name: str) -> str:
+    clean = name.strip().lower()
+    for command in SLASH_COMMANDS:
+        if clean in command.names:
+            return command.name
+    return clean

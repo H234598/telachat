@@ -8,7 +8,8 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-from telachat.cli import main
+from telachat.cli import cli_completion_candidates, main
+from telachat.config import load_config
 from telachat.store import ChatStore
 
 
@@ -246,6 +247,82 @@ class CliTests(unittest.TestCase):
                     )
                 finally:
                     store.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
+    def test_chat_command_completion_uses_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["init"]), 0)
+                store = ChatStore()
+                try:
+                    store.create_folder("Arbeit")
+                    store.create_session(
+                        title="Alpha Plan",
+                        profile="tki",
+                        system_prompt="System",
+                    )
+                    cfg = load_config()
+                    self.assertIn("/permissions ", cli_completion_candidates("/per", cfg, store))
+                    self.assertIn("openai ", cli_completion_candidates("/provider op", cfg, store))
+                    self.assertIn("gpt-5.5 ", cli_completion_candidates("/model gpt", cfg, store))
+                    self.assertIn("summarize ", cli_completion_candidates("/template su", cfg, store))
+                    self.assertIn("Arbeit ", cli_completion_candidates("/move Ar", cfg, store))
+                    self.assertIn("title ", cli_completion_candidates("/sort ti", cfg, store))
+                    self.assertTrue(
+                        any(
+                            item.startswith("Alpha Plan")
+                            for item in cli_completion_candidates("/load Alpha", cfg, store)
+                        )
+                    )
+                finally:
+                    store.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
+    def test_chat_commands_cover_documented_terminal_actions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["init"]), 0)
+
+                out = io.StringIO()
+                with redirect_stdout(out), mock.patch(
+                    "builtins.input",
+                    side_effect=[
+                        "/provider openai",
+                        "/model gpt-5.5",
+                        "/move Arbeit",
+                        "/rename Testtitel",
+                        "/folder-system Ordnerkontext",
+                        "/unfile",
+                        "/sort title",
+                        "/search Testtitel",
+                        "/delete",
+                        "/exit",
+                    ],
+                ):
+                    self.assertEqual(main(["chat", "--no-stream"]), 0)
+                text = out.getvalue()
+                self.assertIn("Aktiv: openai", text)
+                self.assertIn("Modell: gpt-5.5", text)
+                self.assertIn("Chat abgelegt: Arbeit", text)
+                self.assertIn("Umbenannt: Testtitel", text)
+                self.assertIn("Ordner-Systemprompt gesetzt: Arbeit", text)
+                self.assertIn("Session geloescht:", text)
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)

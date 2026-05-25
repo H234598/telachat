@@ -25,6 +25,11 @@ common SSE shape: `stream=true` returns data-only server-sent events where chunk
 carry incremental deltas. Telachat implements this directly without depending on
 the fast-moving OpenAI Python SDK.
 
+The OpenAI model and Responses API docs confirm that `gpt-5.5` is a valid model
+ID on the API and that Responses accepts `reasoning.effort` values including
+`high`. Telachat maps profile `reasoning_effort = "high"` to that Responses API
+shape for OpenAI defaults.
+
 The XDG Base Directory Specification is the right storage convention for Linux:
 configuration under `$XDG_CONFIG_HOME`, portable app data under `$XDG_DATA_HOME`,
 and local state under `$XDG_STATE_HOME`.
@@ -98,4 +103,6 @@ and local state under `$XDG_STATE_HOME`.
 - OpenAI Help retry/regenerate note: https://help.openai.com/en/articles/11909943-gpt-53-and-gpt-54-in-chatgpt
 - LLM OpenAI-compatible models: https://llm.datasette.io/en/stable/other-models.html
 - OpenAI streaming responses: https://developers.openai.com/api/docs/guides/streaming-responses
+- OpenAI GPT-5.5 model docs: https://developers.openai.com/api/docs/models/gpt-5.5
+- OpenAI Responses API reasoning docs: https://platform.openai.com/docs/api-reference/responses/compact?lang=curl
 - XDG Base Directory Specification: https://specifications.freedesktop.org/basedir-spec/0.8/

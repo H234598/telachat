@@ -59,6 +59,8 @@ class OpenAICompatClient:
             "max_tokens": self.profile.max_tokens,
             "stream": bool(use_stream),
         }
+        if self.profile.reasoning_effort:
+            body["reasoning_effort"] = self.profile.reasoning_effort
         if use_stream:
             return self._stream_chat(body)
         raw = self._request_json("POST", "/chat/completions", body)
@@ -75,6 +77,8 @@ class OpenAICompatClient:
             ],
             "max_output_tokens": self.profile.max_tokens,
         }
+        if self.profile.reasoning_effort:
+            body["reasoning"] = {"effort": self.profile.reasoning_effort}
         raw = self._request_json("POST", "/responses", body)
         return ChatResult(content=_extract_response_text(raw), raw=raw)
 

@@ -19,7 +19,7 @@ telachat chat
 
 ```sh
 telachat ask -p tki "Hallo"
-telachat ask -p openai -m gpt-5.4-mini "Hallo"
+telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
 telachat ask --template explain "SQLite WAL"
 ```
 
@@ -61,3 +61,7 @@ Im interaktiven Chat funktionieren unter anderem:
 /template NAME TEXT
 /folder-system TEXT
 ```
+
+Wenn `telachat chat` in einem echten Terminal laeuft, vervollstaendigt `Tab`
+Slash-Befehle und Kontextwerte wie Provider, Modelle, Templates, Ordner,
+Session-Referenzen und Sortiermodi.

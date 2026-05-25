@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import unittest
 
-from telachat.commands import slash_command_help, slash_command_suggestions
+from telachat.commands import (
+    canonical_slash_command,
+    slash_command_help,
+    slash_command_name_suggestions,
+    slash_command_suggestions,
+)
 
 
 class CommandCatalogTests(unittest.TestCase):
@@ -25,6 +30,11 @@ class CommandCatalogTests(unittest.TestCase):
         self.assertIn("/folder-system TEXT", help_text)
         self.assertIn("/export [datei.md]", help_text)
         self.assertIn("/provider NAME", help_text)
+
+    def test_command_name_suggestions_include_aliases(self) -> None:
+        self.assertIn("/permissions", slash_command_name_suggestions("/per"))
+        self.assertIn("/quit", slash_command_name_suggestions("/qu"))
+        self.assertEqual(canonical_slash_command("/ablegen"), "/move")
 
 
 if __name__ == "__main__":

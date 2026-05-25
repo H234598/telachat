@@ -31,6 +31,7 @@ class Profile:
     temperature: float = 0.2
     top_p: float = 0.9
     max_tokens: int = 512
+    reasoning_effort: str | None = None
     timeout_seconds: int = 300
     stream: bool = True
     api_mode: str = "chat_completions"
@@ -58,6 +59,7 @@ class Profile:
         model: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        reasoning_effort: str | None = None,
         stream: bool | None = None,
     ) -> "Profile":
         updates: dict[str, Any] = {}
@@ -67,6 +69,8 @@ class Profile:
             updates["temperature"] = temperature
         if max_tokens is not None:
             updates["max_tokens"] = max_tokens
+        if reasoning_effort is not None:
+            updates["reasoning_effort"] = reasoning_effort
         if stream is not None:
             updates["stream"] = stream
         return replace(self, **updates)
@@ -146,6 +150,7 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
             temperature=float(values.get("temperature", 0.2)),
             top_p=float(values.get("top_p", 0.9)),
             max_tokens=int(values.get("max_tokens", 512)),
+            reasoning_effort=_optional_reasoning_effort(values.get("reasoning_effort"), name),
             timeout_seconds=int(values.get("timeout_seconds", 300)),
             stream=bool(values.get("stream", True)),
             api_mode=str(values.get("api_mode", "chat_completions")),
@@ -191,6 +196,22 @@ def _models(values: dict[str, Any], default_model: str, profile_name: str) -> li
     clean = [item.strip() for item in raw if item.strip()]
     if default_model not in clean:
         clean.insert(0, default_model)
+    return clean
+
+
+def _optional_reasoning_effort(value: object, profile_name: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ConfigError(f"Profil '{profile_name}' hat ungueltiges reasoning_effort.")
+    clean = value.strip().lower()
+    if not clean:
+        return None
+    allowed = {"none", "minimal", "low", "medium", "high", "xhigh"}
+    if clean not in allowed:
+        raise ConfigError(
+            f"Profil '{profile_name}' hat ungueltiges reasoning_effort: {value}"
+        )
     return clean
 
 

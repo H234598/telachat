@@ -25,6 +25,7 @@ telachat export-folder Arbeit -o /tmp/telachat-export
 telachat chat
 telachat ask --template summarize "Was hat sich geaendert?"
 telachat ask "Was ist 812 - 512?"
+telachat ask -p openai --reasoning-effort high "Antworte nur mit: OK"
 telachat ask -p codex "Antworte nur mit: CODEX-OK"
 telachat-gtk
 telachat-tk
@@ -42,8 +43,9 @@ The deterministic suite also covers folder creation, duplicate folder handling,
 folder-level system prompts, session moves, folder filters, pinned-chat
 ordering, answer regeneration, prompt templates, title sorting, content search
 across saved messages, CLI session filtering/sorting, and selective folder
-exports. GUI smoke tests also cover construction of the slash-command
-autocomplete widgets.
+exports. It also covers OpenAI Responses `reasoning.effort`, interactive CLI
+completion candidates, and documented terminal slash-command actions. GUI smoke
+tests also cover construction of the slash-command autocomplete widgets.
 
 ## Expected default live configuration
 

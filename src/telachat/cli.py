@@ -9,7 +9,11 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from .client import ApiError, ChatResult, OpenAICompatClient
-from .commands import slash_command_help
+from .commands import (
+    canonical_slash_command,
+    slash_command_help,
+    slash_command_name_suggestions,
+)
 from .config import ConfigError, Profile, ensure_default_config, load_config, redact_secret
 from .defaults import APP_TITLE
 from .paths import config_path, db_path
@@ -23,6 +27,7 @@ SESSION_SORTS = {
     "title-desc": "title_desc",
     "provider": "profile_asc",
 }
+REASONING_EFFORTS = ("none", "minimal", "low", "medium", "high", "xhigh")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -142,6 +147,11 @@ def add_chat_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--system", help="System-Prompt ueberschreiben")
     parser.add_argument("--temperature", type=float, help="Sampling-Temperatur")
     parser.add_argument("--max-tokens", type=int, help="Maximale neue Tokens")
+    parser.add_argument(
+        "--reasoning-effort",
+        choices=REASONING_EFFORTS,
+        help="Reasoning-Aufwand fuer passende OpenAI-Modelle",
+    )
     parser.add_argument("--no-stream", action="store_true", help="Streaming deaktivieren")
 
 
@@ -161,6 +171,8 @@ def cmd_profiles(args: argparse.Namespace) -> int:
         print(f"{marker} {name} ({profile.display_name})")
         print(f"    base_url: {profile.base_url}")
         print(f"    model:    {profile.model}")
+        if profile.reasoning_effort:
+            print(f"    reasoning: {profile.reasoning_effort}")
         print(f"    api_key:  {redact_secret(profile.api_key)}")
     return 0
 
@@ -236,8 +248,11 @@ def cmd_chat(args: argparse.Namespace) -> int:
     profile = _selected_profile(cfg, args)
     system_prompt = args.system or cfg.default_system_prompt
     store = ChatStore()
+    restore_completion = None
     try:
         store.delete_empty_sessions()
+        if sys.stdin.isatty():
+            restore_completion = install_readline_completion(cfg, store)
         session = None
         if args.session and not args.new:
             session = store.get_session(args.session)
@@ -288,6 +303,8 @@ def cmd_chat(args: argparse.Namespace) -> int:
                 continue
             store.add_message(session.id, "assistant", answer)
     finally:
+        if restore_completion:
+            restore_completion()
         store.delete_empty_sessions()
         store.close()
     return 0
@@ -454,8 +471,93 @@ def _selected_profile(cfg: object, args: argparse.Namespace) -> Profile:
         model=args.model,
         temperature=args.temperature,
         max_tokens=args.max_tokens,
+        reasoning_effort=args.reasoning_effort,
         stream=False if args.no_stream else None,
     )
+
+
+def install_readline_completion(cfg: object, store: ChatStore) -> object | None:
+    try:
+        import readline
+    except ImportError:
+        return None
+
+    old_completer = readline.get_completer()
+    old_delims = readline.get_completer_delims()
+    matches: list[str] = []
+
+    def completer(_text: str, state: int) -> str | None:
+        nonlocal matches
+        if state == 0:
+            matches = cli_completion_candidates(readline.get_line_buffer(), cfg, store)
+        if state >= len(matches):
+            return None
+        return matches[state]
+
+    readline.set_completer(completer)
+    readline.set_completer_delims(" \t\n")
+    readline.parse_and_bind("tab: complete")
+
+    def restore() -> None:
+        readline.set_completer(old_completer)
+        readline.set_completer_delims(old_delims)
+
+    return restore
+
+
+def cli_completion_candidates(line: str, cfg: object, store: ChatStore) -> list[str]:
+    if not line.startswith("/"):
+        return []
+    command_token, separator, rest = line.partition(" ")
+    if not separator:
+        return [f"{name} " for name in slash_command_name_suggestions(command_token)]
+
+    command = canonical_slash_command(command_token)
+    prefix = rest.rsplit(maxsplit=1)[-1] if rest and not rest.endswith(" ") else ""
+    if command in {"/profile", "/provider"}:
+        return _completion_matches(sorted(cfg.profiles), prefix)
+    if command == "/model":
+        return _completion_matches(_configured_models(cfg), prefix)
+    if command == "/template":
+        return _completion_matches(sorted(cfg.prompt_templates), prefix)
+    if command in {"/folder", "/move", "/rename-folder"}:
+        return _completion_matches([folder.name for folder in store.list_folders()], prefix)
+    if command == "/load":
+        return _completion_matches(_session_refs(store), prefix)
+    if command == "/sort":
+        return _completion_matches(sorted(SESSION_SORTS), prefix)
+    if command in {"/history"}:
+        return _completion_matches(["6", "12", "24", "48"], prefix)
+    return []
+
+
+def _completion_matches(values: Iterable[str], prefix: str) -> list[str]:
+    clean = prefix.lower()
+    matches = []
+    for value in values:
+        if value.lower().startswith(clean):
+            matches.append(f"{value} ")
+    return matches[:24]
+
+
+def _configured_models(cfg: object) -> list[str]:
+    models: list[str] = []
+    seen: set[str] = set()
+    for profile in cfg.profiles.values():
+        for model in profile.models or [profile.model]:
+            if model not in seen:
+                models.append(model)
+                seen.add(model)
+    return models
+
+
+def _session_refs(store: ChatStore) -> list[str]:
+    refs: list[str] = []
+    for session in store.list_sessions(100):
+        refs.append(session.id)
+        if session.title:
+            refs.append(session.title)
+    return refs
 
 
 def _read_prompt(parts: Iterable[str], read_stdin: bool) -> str:
@@ -494,9 +596,9 @@ def _handle_command(
     stream: bool,
 ) -> tuple[bool, Profile, str, object]:
     command, _, rest = raw.partition(" ")
-    command = command.lower()
+    command = canonical_slash_command(command.lower())
     rest = rest.strip()
-    if command in {"/exit", "/quit", "/q"}:
+    if command == "/exit":
         return False, profile, system_prompt, session
     if command == "/help":
         print(slash_command_help())
@@ -505,6 +607,22 @@ def _handle_command(
         session = store.create_session(
             title=title, profile=profile.name, system_prompt=system_prompt
         )
+        print(f"Neue Session: {session.id}")
+    elif command == "/rename":
+        if not rest:
+            print("Nutzung: /rename TITLE")
+        else:
+            session = store.update_session_title(session.id, rest)
+            print(f"Umbenannt: {session.title}")
+    elif command == "/delete":
+        old_id = session.id
+        store.delete_session(old_id)
+        session = store.create_session(
+            title="Neue Unterhaltung",
+            profile=profile.name,
+            system_prompt=system_prompt,
+        )
+        print(f"Session geloescht: {old_id}")
         print(f"Neue Session: {session.id}")
     elif command == "/sessions":
         for item in store.list_sessions(20):
@@ -580,12 +698,76 @@ def _handle_command(
                 print("Ordner nicht gefunden.")
             else:
                 print(folder.system_prompt or "<leer>")
-    elif command == "/profile":
+    elif command == "/folder":
+        if not rest:
+            folder = store.get_folder(session.folder_id) if session.folder_id else None
+            print(f"Aktuell: {folder.name if folder else 'Ohne Ordner'}")
+        else:
+            folder = store.create_folder(rest)
+            session = store.move_session(session.id, folder.id)
+            if folder.system_prompt:
+                system_prompt = folder.system_prompt
+            print(f"Abgelegt in Ordner: {folder.name}")
+    elif command == "/rename-folder":
+        if not session.folder_id:
+            print("Aktuelle Session liegt in keinem Ordner.")
+        elif not rest:
+            print("Nutzung: /rename-folder NAME")
+        else:
+            folder = store.update_folder_name(session.folder_id, rest)
+            print(f"Ordner umbenannt: {folder.name}")
+    elif command == "/delete-folder":
+        if not session.folder_id:
+            print("Aktuelle Session liegt in keinem Ordner.")
+        else:
+            folder = store.get_folder(session.folder_id)
+            store.delete_folder(session.folder_id)
+            refreshed = store.get_session(session.id)
+            if refreshed is not None:
+                session = refreshed
+            print(f"Ordner geloescht: {folder.name if folder else session.folder_id}")
+    elif command == "/move":
+        if not rest:
+            print("Nutzung: /move NAME")
+        else:
+            folder = store.create_folder(rest)
+            session = store.move_session(session.id, folder.id)
+            if folder.system_prompt:
+                system_prompt = folder.system_prompt
+            print(f"Chat abgelegt: {folder.name}")
+    elif command == "/unfile":
+        session = store.move_session(session.id, None)
+        print("Chat aus Ordner geloest.")
+    elif command == "/sort":
+        sort_name = rest or "newest"
+        sort_key = SESSION_SORTS.get(sort_name)
+        if not sort_key:
+            print("Nutzung: /sort newest|oldest|title|title-desc|provider")
+        else:
+            for item in store.list_sessions(20, sort=sort_key):
+                pin = "*" if item.pinned else " "
+                print(f"{pin} {item.id}  {item.profile:12}  {item.title}")
+    elif command == "/search":
+        if not rest:
+            print("Nutzung: /search TEXT")
+        else:
+            for item in store.list_sessions(20, query=rest):
+                pin = "*" if item.pinned else " "
+                print(f"{pin} {item.id}  {item.profile:12}  {item.title}")
+    elif command in {"/profile", "/provider"}:
         if not rest:
             print(f"Aktiv: {profile.name} ({profile.display_name})")
         else:
             profile = cfg.profile(rest)
             print(f"Aktiv: {profile.name} ({profile.display_name})")
+    elif command == "/model":
+        if not rest:
+            print(f"Aktiv: {profile.model}")
+        else:
+            configured = profile.models or [profile.model]
+            model = next((item for item in configured if item.lower() == rest.lower()), rest)
+            profile = profile.with_overrides(model=model)
+            print(f"Modell: {profile.model}")
     elif command == "/profiles":
         for name, item in sorted(cfg.profiles.items()):
             marker = "*" if name == profile.name else " "
@@ -600,6 +782,8 @@ def _handle_command(
             print("System-Prompt gesetzt.")
         else:
             print(system_prompt)
+    elif command == "/left":
+        print("Die Seitenleiste gibt es nur in der GUI.")
     elif command == "/history":
         limit = int(rest) if rest.isdigit() else 12
         for message in store.messages(session.id, limit=limit):
