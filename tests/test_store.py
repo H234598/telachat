@@ -6,7 +6,7 @@ import threading
 import unittest
 from pathlib import Path
 
-from telachat.store import ChatStore, messages_for_api, title_from_prompt
+from telachat.store import ChatStore, messages_for_api, normalize_tag, title_from_prompt
 
 
 class StoreTests(unittest.TestCase):
@@ -161,6 +161,7 @@ class StoreTests(unittest.TestCase):
                 store.add_message(session.id, "user", "Frage")
                 store.add_message(session.id, "assistant", "Antwort")
                 store.set_session_pinned(session.id, True)
+                store.set_session_tags(session.id, ["Projekt", "#Review Notes"])
 
                 fork = store.fork_session(session.id, "  Variante A  ")
 
@@ -171,6 +172,7 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual(fork.system_prompt, "System")
                 self.assertEqual(fork.folder_id, folder.id)
                 self.assertFalse(fork.pinned)
+                self.assertEqual(fork.tags, ("projekt", "review-notes"))
                 self.assertEqual(
                     [(message.role, message.content) for message in store.messages(fork.id)],
                     [("user", "Frage"), ("assistant", "Antwort")],
@@ -180,6 +182,46 @@ class StoreTests(unittest.TestCase):
                     [(message.role, message.content) for message in store.messages(session.id)],
                     [("user", "Frage"), ("assistant", "Antwort")],
                 )
+            finally:
+                store.close()
+
+    def test_session_tags_filter_search_export_and_delete(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                alpha = store.create_session(
+                    title="Alpha",
+                    profile="openai",
+                    model="gpt-5.5",
+                    system_prompt="System",
+                )
+                beta = store.create_session(
+                    title="Beta",
+                    profile="tki",
+                    system_prompt="System",
+                )
+
+                self.assertEqual(normalize_tag(" #Needs Review "), "needs-review")
+                tags = store.set_session_tags(alpha.id, ["#Needs Review", "Plan", "plan"])
+                self.assertEqual(tags, ["needs-review", "plan"])
+                self.assertEqual(store.get_session(alpha.id).tags, ("needs-review", "plan"))
+                self.assertEqual(store.add_session_tags(beta.id, ["Plan"]), ["plan"])
+                self.assertEqual(store.remove_session_tags(alpha.id, ["needs review"]), ["plan"])
+
+                self.assertEqual(
+                    [session.title for session in store.list_sessions(tag="plan", sort="title_asc")],
+                    ["Alpha", "Beta"],
+                )
+                self.assertEqual(
+                    [session.id for session in store.list_sessions(query="#plan", sort="title_asc")],
+                    [alpha.id, beta.id],
+                )
+                self.assertEqual(store.list_tags(), [("plan", 2)])
+                exported = store.export_markdown(alpha.id)
+                self.assertIn("- Tags: #plan", exported)
+
+                store.delete_session(alpha.id)
+                self.assertEqual(store.list_tags(), [("plan", 1)])
             finally:
                 store.close()
 
@@ -284,6 +326,7 @@ class StoreTests(unittest.TestCase):
                 )
                 source.add_message(source_session.id, "user", "Frage")
                 source.add_message(source_session.id, "assistant", "Antwort")
+                source.set_session_tags(source_session.id, ["Import", "Projekt"])
                 existing_folder = target.create_folder(
                     "arbeit",
                     system_prompt="Zielprojekt",
@@ -314,6 +357,7 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual(len(imported), 1)
                 self.assertNotEqual(imported[0].id, source_session.id)
                 self.assertEqual(imported[0].folder_id, existing_folder.id)
+                self.assertEqual(imported[0].tags, ("import", "projekt"))
                 self.assertEqual(
                     [message.content for message in target.messages(imported[0].id)],
                     ["Frage", "Antwort"],

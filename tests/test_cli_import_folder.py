@@ -39,6 +39,7 @@ class CliImportFolderTests(unittest.TestCase):
                         system_prompt="Source system",
                         folder_id=folder.id,
                     )
+                    store.set_session_tags(source.id, ["Folder Tag"])
                     store.add_message(source.id, "user", "Hallo Folder")
                     store.add_message(source.id, "assistant", "Antwort Folder")
                 finally:
@@ -70,6 +71,7 @@ class CliImportFolderTests(unittest.TestCase):
                     self.assertEqual(imported.profile, "openai")
                     self.assertEqual(imported.model, "gpt-5.5")
                     self.assertEqual(imported.system_prompt, "Source system")
+                    self.assertEqual(imported.tags, ("folder-tag",))
                     self.assertEqual(
                         [(message.role, message.content) for message in store.messages(imported.id)],
                         [("user", "Hallo Folder"), ("assistant", "Antwort Folder")],

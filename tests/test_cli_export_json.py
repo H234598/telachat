@@ -60,10 +60,12 @@ class CliExportJsonTests(unittest.TestCase):
                         "pinned",
                         "profile",
                         "system_prompt",
+                        "tags",
                         "title",
                         "updated_at",
                     },
                 )
+                self.assertEqual(payload["session"]["tags"], [])
                 self.assertEqual(
                     set(payload["messages"][0]),
                     {"content", "created_at", "id", "role", "session_id"},

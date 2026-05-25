@@ -1,4 +1,4 @@
-.TH TELACHAT-TK 1 "2026-05-25" "Telachat 0.29.0" "User Commands"
+.TH TELACHAT-TK 1 "2026-05-25" "Telachat 0.30.0" "User Commands"
 .SH NAME
 telachat-tk \- start the Tk desktop frontend for Telachat
 .SH SYNOPSIS
@@ -6,7 +6,7 @@ telachat-tk \- start the Tk desktop frontend for Telachat
 .SH DESCRIPTION
 .B telachat-tk
 starts the native Tk/ttk desktop frontend. It uses the same configuration,
-SQLite history, provider profiles, folders, prompt templates, and slash
+SQLite history, provider profiles, folders, tags, prompt templates, and slash
 commands as the
 .B telachat
 CLI.
@@ -26,6 +26,8 @@ Use \fB/edit-last TEXT\fR to replace the latest user message and remove the
 following answer before regenerating.
 Use \fB/fork [TITLE]\fR to copy the current conversation into a new independent
 chat variant.
+Use \fB/tag TAG\fR, \fB/untag TAG\fR, and \fB/tags\fR to manage flexible
+chat labels.
 .SH FILES
 .TP
 .I ~/.config/telachat/config.toml

@@ -50,6 +50,10 @@ telachat import-folder folder.json --json
 telachat import-folder folder.json --dry-run --json
 telachat export-folder Arbeit -o /tmp/telachat-export
 telachat sessions --json
+telachat sessions --tag projekt
+telachat tags SESSION_ID --add projekt
+telachat tags SESSION_ID --remove projekt
+telachat tags --json
 telachat chat
 /find TEXT
 /theme dracula
@@ -73,7 +77,8 @@ The deterministic suite also covers folder creation, duplicate folder handling,
 folder-level system prompts, session moves, folder filters, pinned-chat
 ordering, answer regeneration, prompt templates, title sorting, content search
 across saved messages, CLI session filtering/sorting, and selective folder
-exports. It also covers per-session model persistence, legacy model-column
+exports. It also covers per-session tags, tag filtering/search, tag import/export,
+tag counts, per-session model persistence, legacy model-column
 migration, OpenAI Responses `reasoning.effort`, interactive CLI completion
 candidates, offline config checks with secret redaction, and documented
 terminal slash-command actions, including `/theme` and `/find`. Theme tests
@@ -92,6 +97,9 @@ later assistant answers are removed before regeneration.
 Fork tests verify copied provider/model/folder/system metadata, copied message
 history, independent edits after forking, top-level CLI use, and `/fork` in
 interactive chat.
+Tag tests verify normalized tags, CLI `tags`, `sessions --tag`, JSON/Markdown
+exports, additive imports, backup-history restores, completion, and `/tag`
+slash-command behavior.
 
 ## Expected default live configuration
 

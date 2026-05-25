@@ -38,6 +38,7 @@ from .store import (
     HistoryImportSummary,
     Session,
     messages_for_api,
+    normalize_tag,
     title_from_prompt,
 )
 from .themes import theme_labels
@@ -164,6 +165,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_sessions.add_argument("--limit", type=int, default=20)
     p_sessions.add_argument("--query", "-q", help="Titel, Provider oder Nachrichteninhalt suchen")
     p_sessions.add_argument("--folder", help="Ordnername/-ID oder 'none' fuer Ohne Ordner")
+    p_sessions.add_argument("--tag", help="Nur Sessions mit diesem Tag anzeigen")
     p_sessions.add_argument(
         "--sort",
         choices=sorted(SESSION_SORTS),
@@ -172,6 +174,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_sessions.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_sessions.set_defaults(func=cmd_sessions)
+
+    p_tags = sub.add_parser("tags", help="Session-Tags anzeigen/verwalten")
+    p_tags.add_argument("session", nargs="?", help="Session-ID oder Prefix; leer listet alle Tags")
+    p_tags.add_argument("--add", action="append", default=[], metavar="TAG", help="Tag hinzufuegen")
+    p_tags.add_argument("--remove", action="append", default=[], metavar="TAG", help="Tag entfernen")
+    p_tags.add_argument("--set", nargs="+", metavar="TAG", help="Tags ersetzen")
+    p_tags.add_argument("--clear", action="store_true", help="Alle Tags der Session entfernen")
+    p_tags.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
+    p_tags.set_defaults(func=cmd_tags)
 
     p_fork = sub.add_parser("fork", help="Session kopieren/verzweigen")
     p_fork.add_argument("session", help="Session-ID oder Prefix")
@@ -634,6 +645,7 @@ def cmd_sessions(args: argparse.Namespace) -> int:
             folder_id=_resolve_folder_filter(store, args.folder),
             sort=SESSION_SORTS[args.sort],
             query=args.query,
+            tag=_cli_tag(args.tag) if args.tag else None,
         )
         if args.json:
             print(
@@ -648,8 +660,69 @@ def cmd_sessions(args: argparse.Namespace) -> int:
             print("Keine Sessions gespeichert.")
             return 0
         for session in sessions:
-            pin = "*" if session.pinned else " "
-            print(f"{pin} {session.id}  {_backend_label(session):18}  {session.title}")
+            print(_format_session_line(session))
+    finally:
+        store.close()
+    return 0
+
+
+def cmd_tags(args: argparse.Namespace) -> int:
+    store = ChatStore()
+    try:
+        if not args.session:
+            if args.add or args.remove or args.set or args.clear:
+                raise ConfigError("Zum Aendern von Tags ist eine Session erforderlich.")
+            tags = store.list_tags()
+            if args.json:
+                print(
+                    json.dumps(
+                        {"tags": [{"tag": tag, "sessions": count} for tag, count in tags]},
+                        indent=2,
+                        sort_keys=True,
+                    )
+                )
+                return 0
+            if not tags:
+                print("Keine Tags gespeichert.")
+                return 0
+            for tag, count in tags:
+                print(f"#{tag}  {count}")
+            return 0
+
+        session = store.get_session(args.session)
+        if session is None:
+            raise ConfigError(f"Session nicht eindeutig gefunden: {args.session}")
+        if args.clear and (args.add or args.remove):
+            raise ConfigError("--clear kann nicht mit --add/--remove kombiniert werden.")
+        if args.clear and args.set is not None:
+            raise ConfigError("--clear und --set schliessen sich aus.")
+        if args.set is not None and (args.add or args.remove):
+            raise ConfigError("--set kann nicht mit --add/--remove kombiniert werden.")
+
+        tags: list[str]
+        if args.clear:
+            tags = store.set_session_tags(session.id, [])
+        elif args.set is not None:
+            tags = store.set_session_tags(session.id, [_cli_tag(tag) for tag in args.set])
+        else:
+            tags = list(session.tags)
+            if args.add:
+                tags = store.add_session_tags(session.id, [_cli_tag(tag) for tag in args.add])
+            if args.remove:
+                tags = store.remove_session_tags(session.id, [_cli_tag(tag) for tag in args.remove])
+
+        refreshed = store.get_session(session.id) or session
+        if args.json:
+            print(
+                json.dumps(
+                    {"session": _session_record(refreshed), "tags": list(tags)},
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+            return 0
+        print(f"{refreshed.id}  {refreshed.title}")
+        print("Tags: " + (" ".join(f"#{tag}" for tag in tags) if tags else "-"))
     finally:
         store.close()
     return 0
@@ -702,9 +775,24 @@ def _session_record(session: Session) -> dict[str, object]:
         "model": session.model,
         "folder_id": session.folder_id,
         "pinned": session.pinned,
+        "tags": list(session.tags),
         "created_at": session.created_at,
         "updated_at": session.updated_at,
     }
+
+
+def _format_session_line(session: Session) -> str:
+    pin = "*" if session.pinned else " "
+    tags = " ".join(f"#{tag}" for tag in session.tags)
+    suffix = f"  {tags}" if tags else ""
+    return f"{pin} {session.id}  {_backend_label(session):18}  {session.title}{suffix}"
+
+
+def _cli_tag(tag: object) -> str:
+    try:
+        return normalize_tag(tag)
+    except ValueError as exc:
+        raise ConfigError(str(exc)) from exc
 
 
 def _message_record(message: object) -> dict[str, object]:
@@ -769,7 +857,7 @@ def _folder_export_record(
     return record
 
 
-def _clean_session_import_payload(payload: object) -> tuple[dict[str, str], list[tuple[str, str]]]:
+def _clean_session_import_payload(payload: object) -> tuple[dict[str, object], list[tuple[str, str]]]:
     if not isinstance(payload, dict):
         raise ConfigError("Importsession ist kein Objekt.")
     source_session = payload.get("session")
@@ -793,9 +881,21 @@ def _clean_session_import_payload(payload: object) -> tuple[dict[str, str], list
             "profile": str(source_session.get("profile") or "tki"),
             "model": str(source_session.get("model") or ""),
             "system_prompt": str(source_session.get("system_prompt") or ""),
+            "tags": _clean_import_tags(source_session.get("tags")),
         },
         clean_messages,
     )
+
+
+def _clean_import_tags(value: object) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ConfigError("Session-Tags muessen eine Liste sein.")
+    tags: list[str] = []
+    for item in value:
+        tags.append(_cli_tag(item))
+    return tags
 
 
 def _folder_import_target(store: ChatStore, payload: dict[str, object], override: str | None) -> Folder | None:
@@ -974,7 +1074,7 @@ def cmd_import_session(args: argparse.Namespace) -> int:
     if not isinstance(payload, dict) or payload.get("format") != "telachat.session.v1":
         raise ConfigError("Importdatei ist kein telachat.session.v1 Export.")
     session_meta, clean_messages = _clean_session_import_payload(payload)
-    title = args.title or session_meta["title"]
+    title = args.title or str(session_meta["title"])
     if args.dry_run:
         if args.json:
             print(
@@ -1002,11 +1102,13 @@ def cmd_import_session(args: argparse.Namespace) -> int:
         folder_id = store.create_folder(args.folder).id if args.folder else None
         imported = store.create_session(
             title=title,
-            profile=session_meta["profile"],
-            model=session_meta["model"],
-            system_prompt=session_meta["system_prompt"],
+            profile=str(session_meta["profile"]),
+            model=str(session_meta["model"]),
+            system_prompt=str(session_meta["system_prompt"]),
             folder_id=folder_id,
         )
+        if session_meta["tags"]:
+            store.set_session_tags(imported.id, list(session_meta["tags"]))
         count = 0
         for role, content in clean_messages:
             store.add_message(imported.id, role, content)
@@ -1043,7 +1145,7 @@ def cmd_import_folder(args: argparse.Namespace) -> int:
     if not isinstance(source_sessions, list):
         raise ConfigError("Importdatei braucht 'sessions'.")
 
-    clean_sessions: list[tuple[dict[str, str], list[tuple[str, str]]]] = []
+    clean_sessions: list[tuple[dict[str, object], list[tuple[str, str]]]] = []
     for item in source_sessions:
         clean_sessions.append(_clean_session_import_payload(item))
     total_messages = sum(len(messages) for _, messages in clean_sessions)
@@ -1079,12 +1181,14 @@ def cmd_import_folder(args: argparse.Namespace) -> int:
         written_messages = 0
         for session_meta, messages in clean_sessions:
             imported = store.create_session(
-                title=session_meta["title"],
-                profile=session_meta["profile"],
-                model=session_meta["model"],
-                system_prompt=session_meta["system_prompt"],
+                title=str(session_meta["title"]),
+                profile=str(session_meta["profile"]),
+                model=str(session_meta["model"]),
+                system_prompt=str(session_meta["system_prompt"]),
                 folder_id=folder.id if folder else None,
             )
+            if session_meta["tags"]:
+                store.set_session_tags(imported.id, list(session_meta["tags"]))
             for role, content in messages:
                 store.add_message(imported.id, role, content)
                 written_messages += 1
@@ -1324,8 +1428,10 @@ def cli_completion_candidates(line: str, cfg: object, store: ChatStore) -> list[
         return _completion_matches(theme_labels().keys(), prefix)
     if command in {"/folder", "/move", "/rename-folder"}:
         return _completion_matches([folder.name for folder in store.list_folders()], prefix)
-    if command == "/load":
+    if command in {"/load", "/tags"}:
         return _completion_matches(_session_refs(store), prefix)
+    if command == "/tag":
+        return _completion_matches([tag for tag, _count in store.list_tags()], prefix)
     if command == "/sort":
         return _completion_matches(sorted(SESSION_SORTS), prefix)
     if command in {"/history"}:
@@ -1438,8 +1544,7 @@ def _handle_command(
         print(f"Neue Session: {session.id}")
     elif command == "/sessions":
         for item in store.list_sessions(20):
-            pin = "*" if item.pinned else " "
-            print(f"{pin} {item.id}  {_backend_label(item):18}  {item.title}")
+            print(_format_session_line(item))
     elif command == "/load":
         if not rest:
             print("Nutzung: /load <session-id-oder-prefix>")
@@ -1457,6 +1562,41 @@ def _handle_command(
     elif command == "/unpin":
         session = store.set_session_pinned(session.id, False)
         print("Session geloest.")
+    elif command == "/tag":
+        if not rest:
+            print("Tags: " + (" ".join(f"#{tag}" for tag in session.tags) if session.tags else "-"))
+        else:
+            try:
+                tags = store.add_session_tags(session.id, rest.split())
+                session = store.get_session(session.id) or session
+            except (KeyError, ValueError) as exc:
+                print(f"Fehler: {exc}", file=sys.stderr)
+            else:
+                print("Tags: " + (" ".join(f"#{tag}" for tag in tags) if tags else "-"))
+    elif command == "/untag":
+        if not rest:
+            print("Nutzung: /untag TAG [TAG...]")
+        else:
+            try:
+                tags = store.remove_session_tags(session.id, rest.split())
+                session = store.get_session(session.id) or session
+            except (KeyError, ValueError) as exc:
+                print(f"Fehler: {exc}", file=sys.stderr)
+            else:
+                print("Tags: " + (" ".join(f"#{tag}" for tag in tags) if tags else "-"))
+    elif command == "/tags":
+        if rest:
+            loaded = store.get_session(rest)
+            if loaded is None:
+                print("Session nicht eindeutig gefunden.")
+            else:
+                print("Tags: " + (" ".join(f"#{tag}" for tag in loaded.tags) if loaded.tags else "-"))
+        else:
+            tags = store.list_tags()
+            if not tags:
+                print("Keine Tags gespeichert.")
+            for tag, count in tags:
+                print(f"#{tag}  {count}")
     elif command == "/edit-last":
         if not rest:
             print("Nutzung: /edit-last TEXT")
@@ -1580,15 +1720,13 @@ def _handle_command(
             print("Nutzung: /sort newest|oldest|title|title-desc|provider")
         else:
             for item in store.list_sessions(20, sort=sort_key):
-                pin = "*" if item.pinned else " "
-                print(f"{pin} {item.id}  {_backend_label(item):18}  {item.title}")
+                print(_format_session_line(item))
     elif command == "/search":
         if not rest:
             print("Nutzung: /search TEXT")
         else:
             for item in store.list_sessions(20, query=rest):
-                pin = "*" if item.pinned else " "
-                print(f"{pin} {item.id}  {_backend_label(item):18}  {item.title}")
+                print(_format_session_line(item))
     elif command == "/find":
         if not rest:
             print("Nutzung: /find TEXT")

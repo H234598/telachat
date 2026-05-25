@@ -145,8 +145,11 @@ telachat-tk
 telachat sessions
 telachat sessions --query TEXT
 telachat sessions --folder NAME
+telachat sessions --tag TAG
 telachat sessions --sort newest|oldest|title|title-desc|provider
 telachat sessions --json
+telachat tags [SESSION]
+telachat tags SESSION --add TAG --remove TAG
 telachat fork <session-id-or-prefix>
 telachat export <session-id>
 telachat export <session-id> --json
@@ -183,6 +186,11 @@ folder system prompts are
 included only when `folders --show-system --json` is requested or when exporting
 that folder as a portable data bundle.
 
+Sessions can also carry normalized tags in the `session_tags` table. Tags are
+many-to-one labels independent of folders; session search can match tags,
+`sessions --tag TAG` filters by one tag, and JSON/Markdown exports preserve
+tags for additive imports, forks, and backup restores.
+
 `backup` creates a ZIP bundle with a consistent SQLite copy, a redacted TOML
 config reconstruction, and a JSON manifest. It intentionally does not include
 raw envfiles, raw API keys, or the user's original config file. The redacted
@@ -206,6 +214,9 @@ GUI slash commands:
 /rename TITLE
 /delete
 /pin | /unpin
+/tag TAG [TAG...]
+/untag TAG [TAG...]
+/tags [SESSION]
 /regen | /regenerate
 /templates
 /template NAME TEXT
@@ -240,6 +251,7 @@ GUI slash commands:
 - Non-streaming and streaming SSE responses.
 - SQLite session/message roundtrip, Markdown export, and selective folder export.
 - SQLite folder prompts, sorting and history-search behavior.
+- SQLite session tags, tag filtering/search, tag import/export, and tag counts.
 - SQLite session model metadata, legacy migration, exports, and backend restore.
 - Latest user-message editing and post-edit answer removal.
 - Session forking with independent copied history.

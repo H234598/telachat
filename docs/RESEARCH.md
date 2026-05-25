@@ -104,7 +104,6 @@ and local state under `$XDG_STATE_HOME`.
 - Config editor with validation and secret redaction.
 - Markdown rendering with copy buttons.
 - Token/latency counters when backends provide usage data.
-- Tags in addition to folders and pinned chats.
 - Per-folder defaults for system prompt, model and attached knowledge/context.
 - Import bundles for a folder of chats without including API keys.
 - Tool/function-call viewer once a backend returns structured tool calls.
@@ -123,6 +122,7 @@ and local state under `$XDG_STATE_HOME`.
 - LibreChat resumable streams: https://www.librechat.ai/docs/features/resumable_streams
 - Jan model/provider management: https://www.jan.ai/docs/desktop/manage-models
 - Jan local API server: https://www.jan.ai/docs/desktop/api-server
+- Msty Studio organization docs: https://docs.msty.studio/workspaces/organize
 - Jan API reference: https://www.jan.ai/docs/desktop/api-preference
 - Ollama OpenAI compatibility: https://docs.ollama.com/openai
 - LM Studio tool use/server API: https://www.lmstudio.ai/docs/advanced/tool-use

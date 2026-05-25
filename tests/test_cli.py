@@ -82,6 +82,7 @@ class CliTests(unittest.TestCase):
                     store.add_message(alpha.id, "user", "Projektplan")
                     store.add_message(beta.id, "user", "Notiz")
                     store.set_session_pinned(beta.id, True)
+                    store.set_session_tags(alpha.id, ["Projekt", "Review"])
                 finally:
                     store.close()
 
@@ -89,6 +90,13 @@ class CliTests(unittest.TestCase):
                 with redirect_stdout(out):
                     self.assertEqual(main(["sessions", "--query", "projekt"]), 0)
                 self.assertIn("Alpha", out.getvalue())
+                self.assertNotIn("Beta", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["sessions", "--tag", "projekt"]), 0)
+                self.assertIn("Alpha", out.getvalue())
+                self.assertIn("#projekt", out.getvalue())
                 self.assertNotIn("Beta", out.getvalue())
 
                 out = io.StringIO()
@@ -113,6 +121,57 @@ class CliTests(unittest.TestCase):
                     ["Beta", "Alpha"],
                 )
                 self.assertTrue(payload["sessions"][0]["pinned"])
+                alpha_record = next(
+                    session for session in payload["sessions"] if session["title"] == "Alpha"
+                )
+                self.assertEqual(alpha_record["tags"], ["projekt", "review"])
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
+    def test_tags_command_manages_session_tags(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(main(["init"]), 0)
+                store = ChatStore()
+                try:
+                    session = store.create_session(
+                        title="Tagged",
+                        profile="tki",
+                        system_prompt="System",
+                    )
+                finally:
+                    store.close()
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["tags", session.id, "--add", "Needs Review", "--add", "#Projekt"]),
+                        0,
+                    )
+                self.assertIn("#needs-review", out.getvalue())
+                self.assertIn("#projekt", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["tags", "--json"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertEqual(
+                    [(item["tag"], item["sessions"]) for item in payload["tags"]],
+                    [("needs-review", 1), ("projekt", 1)],
+                )
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["tags", session.id, "--remove", "needs review", "--json"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["tags"], ["projekt"])
+                self.assertEqual(payload["session"]["tags"], ["projekt"])
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
@@ -601,6 +660,7 @@ model = "other-model"
                         model="gpt-5.5",
                         system_prompt="System JSON",
                     )
+                    store.set_session_tags(session.id, ["json tag"])
                     store.add_message(session.id, "user", "Hallo JSON")
                     store.add_message(session.id, "assistant", "Antwort JSON")
                 finally:
@@ -614,6 +674,7 @@ model = "other-model"
                 self.assertEqual(payload["session"]["title"], "JSON Export")
                 self.assertEqual(payload["session"]["model"], "gpt-5.5")
                 self.assertEqual(payload["session"]["system_prompt"], "System JSON")
+                self.assertEqual(payload["session"]["tags"], ["json-tag"])
                 self.assertEqual(
                     [(item["role"], item["content"]) for item in payload["messages"]],
                     [("user", "Hallo JSON"), ("assistant", "Antwort JSON")],
@@ -654,6 +715,7 @@ model = "other-model"
                     imported_session = store.get_session(imported["imported"]["id"])
                     self.assertIsNotNone(imported_session)
                     self.assertEqual(imported_session.model, "gpt-5.5")
+                    self.assertEqual(imported_session.tags, ("json-tag",))
                     self.assertEqual(
                         [(message.role, message.content) for message in store.messages(imported_session.id)],
                         [("user", "Hallo JSON"), ("assistant", "Antwort JSON")],
@@ -972,11 +1034,12 @@ X-Test-Header = "yes"
                 store = ChatStore()
                 try:
                     store.create_folder("Arbeit")
-                    store.create_session(
+                    session = store.create_session(
                         title="Alpha Plan",
                         profile="tki",
                         system_prompt="System",
                     )
+                    store.set_session_tags(session.id, ["Projekt"])
                     cfg = load_config()
                     self.assertIn("/permissions ", cli_completion_candidates("/per", cfg, store))
                     self.assertIn("openai ", cli_completion_candidates("/provider op", cfg, store))
@@ -984,6 +1047,7 @@ X-Test-Header = "yes"
                     self.assertIn("summarize ", cli_completion_candidates("/template su", cfg, store))
                     self.assertIn("dracula ", cli_completion_candidates("/theme dr", cfg, store))
                     self.assertIn("Arbeit ", cli_completion_candidates("/move Ar", cfg, store))
+                    self.assertIn("projekt ", cli_completion_candidates("/tag pr", cfg, store))
                     self.assertIn("title ", cli_completion_candidates("/sort ti", cfg, store))
                     self.assertTrue(
                         any(
@@ -1018,6 +1082,9 @@ X-Test-Header = "yes"
                         "/theme",
                         "/move Arbeit",
                         "/rename Testtitel",
+                        "/tag Projekt Review",
+                        "/tags",
+                        "/untag Review",
                         "/folder-system Ordnerkontext",
                         "/unfile",
                         "/sort title",
@@ -1034,6 +1101,9 @@ X-Test-Header = "yes"
                 self.assertIn("Aktives Theme: dracula", text)
                 self.assertIn("Chat abgelegt: Arbeit", text)
                 self.assertIn("Umbenannt: Testtitel", text)
+                self.assertIn("Tags: #projekt #review", text)
+                self.assertIn("#projekt  1", text)
+                self.assertIn("Tags: #projekt", text)
                 self.assertIn("Ordner-Systemprompt gesetzt: Arbeit", text)
                 self.assertIn("Session geloescht:", text)
             finally:

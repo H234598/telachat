@@ -5,6 +5,7 @@ import sqlite3
 import threading
 import time
 import uuid
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,6 +23,7 @@ class Session:
     folder_id: str | None = None
     pinned: bool = False
     model: str = ""
+    tags: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -108,8 +110,17 @@ class ChatStore:
                     metadata TEXT NOT NULL DEFAULT '{}'
                 );
 
+                CREATE TABLE IF NOT EXISTS session_tags (
+                    session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+                    tag TEXT NOT NULL,
+                    created_at INTEGER NOT NULL,
+                    PRIMARY KEY(session_id, tag)
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_messages_session_created
                     ON messages(session_id, created_at, id);
+                CREATE INDEX IF NOT EXISTS idx_session_tags_tag
+                    ON session_tags(tag, session_id);
                 """
             )
             self._migrate_schema()
@@ -156,7 +167,7 @@ class ChatStore:
                 (session_id, title, profile, model or "", system_prompt, now, now, folder_id),
             )
             self.db.commit()
-            return Session(
+            return self.get_session(session_id) or Session(
                 session_id,
                 title,
                 profile,
@@ -181,7 +192,7 @@ class ChatStore:
             ).fetchall()
             if len(rows) != 1:
                 return None
-            return _session_from_row(rows[0])
+            return self._sessions_from_rows(rows)[0]
 
     def list_sessions(
         self,
@@ -190,6 +201,7 @@ class ChatStore:
         folder_id: str | None = None,
         sort: str = "updated_desc",
         query: str | None = None,
+        tag: str | None = None,
     ) -> list[Session]:
         with self._lock:
             order = {
@@ -210,15 +222,37 @@ class ChatStore:
                 clauses.append("folder_id = ?")
                 params.append(folder_id)
 
+            clean_tag = normalize_tag(tag) if tag else ""
+            if clean_tag:
+                clauses.append(
+                    """
+                    EXISTS (
+                        SELECT 1 FROM session_tags
+                        WHERE session_tags.session_id = sessions.id
+                        AND session_tags.tag = ?
+                    )
+                    """
+                )
+                params.append(clean_tag)
+
             clean_query = " ".join((query or "").strip().split())
             if clean_query:
                 like = f"%{clean_query}%"
+                try:
+                    tag_like = f"%{normalize_tag(clean_query)}%"
+                except ValueError:
+                    tag_like = like
                 clauses.append(
                     """
                     (
                         sessions.title LIKE ?
                         OR sessions.profile LIKE ?
                         OR sessions.model LIKE ?
+                        OR EXISTS (
+                            SELECT 1 FROM session_tags
+                            WHERE session_tags.session_id = sessions.id
+                            AND session_tags.tag LIKE ?
+                        )
                         OR EXISTS (
                             SELECT 1 FROM messages
                             WHERE messages.session_id = sessions.id
@@ -227,7 +261,7 @@ class ChatStore:
                     )
                     """
                 )
-                params.extend([like, like, like, like])
+                params.extend([like, like, like, tag_like, like])
 
             where = "WHERE " + " AND ".join(clauses) if clauses else ""
             params.append(limit)
@@ -235,7 +269,54 @@ class ChatStore:
                 f"SELECT * FROM sessions {where} ORDER BY pinned DESC, {order} LIMIT ?",
                 tuple(params),
             ).fetchall()
-            return [_session_from_row(row) for row in rows]
+            return self._sessions_from_rows(rows)
+
+    def tags_for_session(self, session_id: str) -> list[str]:
+        with self._lock:
+            if not self.db.execute("SELECT 1 FROM sessions WHERE id = ?", (session_id,)).fetchone():
+                raise KeyError(session_id)
+            return list(self._tags_for_sessions([session_id]).get(session_id, ()))
+
+    def list_tags(self) -> list[tuple[str, int]]:
+        with self._lock:
+            rows = self.db.execute(
+                """
+                SELECT tag, count(*) AS sessions
+                FROM session_tags
+                GROUP BY tag
+                ORDER BY lower(tag) ASC
+                """
+            ).fetchall()
+            return [(row["tag"], int(row["sessions"])) for row in rows]
+
+    def set_session_tags(self, session_id: str, tags: Iterable[str]) -> list[str]:
+        with self._lock:
+            if not self.db.execute("SELECT 1 FROM sessions WHERE id = ?", (session_id,)).fetchone():
+                raise KeyError(session_id)
+            clean_tags = _normalize_tags(tags)
+            now = int(time.time())
+            self.db.execute("DELETE FROM session_tags WHERE session_id = ?", (session_id,))
+            self.db.executemany(
+                """
+                INSERT INTO session_tags(session_id, tag, created_at)
+                VALUES (?, ?, ?)
+                """,
+                [(session_id, tag, now) for tag in clean_tags],
+            )
+            self.db.execute(
+                "UPDATE sessions SET updated_at = ? WHERE id = ?",
+                (now, session_id),
+            )
+            self.db.commit()
+            return list(clean_tags)
+
+    def add_session_tags(self, session_id: str, tags: Iterable[str]) -> list[str]:
+        current = set(self.tags_for_session(session_id))
+        return self.set_session_tags(session_id, sorted(current | set(_normalize_tags(tags))))
+
+    def remove_session_tags(self, session_id: str, tags: Iterable[str]) -> list[str]:
+        current = set(self.tags_for_session(session_id))
+        return self.set_session_tags(session_id, sorted(current - set(_normalize_tags(tags))))
 
     def list_folders(self) -> list[Folder]:
         with self._lock:
@@ -430,6 +511,14 @@ class ChatStore:
                         row["metadata"],
                     ),
                 )
+            for tag in source.tags:
+                self.db.execute(
+                    """
+                    INSERT INTO session_tags(session_id, tag, created_at)
+                    VALUES (?, ?, ?)
+                    """,
+                    (fork_id, tag, now),
+                )
             self.db.commit()
             fork = self.get_session(fork_id)
             if fork is None:
@@ -579,6 +668,13 @@ class ChatStore:
             source_messages = source.execute(
                 "SELECT * FROM messages ORDER BY created_at ASC, id ASC"
             ).fetchall()
+            source_tags = (
+                source.execute(
+                    "SELECT session_id, tag FROM session_tags ORDER BY session_id ASC, tag ASC"
+                ).fetchall()
+                if _table_exists(source, "session_tags")
+                else []
+            )
         finally:
             source.close()
 
@@ -674,6 +770,23 @@ class ChatStore:
                 )
                 messages_added += 1
 
+            now = int(time.time())
+            for row in source_tags:
+                target_session_id = session_map.get(row["session_id"])
+                if not target_session_id:
+                    continue
+                try:
+                    tag = normalize_tag(_row_value(row, "tag", ""))
+                except ValueError:
+                    continue
+                self.db.execute(
+                    """
+                    INSERT OR IGNORE INTO session_tags(session_id, tag, created_at)
+                    VALUES (?, ?, ?)
+                    """,
+                    (target_session_id, tag, now),
+                )
+
             self.db.commit()
             return HistoryImportSummary(folders_added, sessions_added, messages_added)
 
@@ -688,12 +801,38 @@ class ChatStore:
                 f"- Title: {session.title}",
                 f"- Profile: {session.profile}",
                 f"- Model: {session.model or '-'}",
+                *([f"- Tags: {', '.join('#' + tag for tag in session.tags)}"] if session.tags else []),
                 "",
             ]
             for message in self.messages(session.id):
                 heading = "User" if message.role == "user" else "Assistant"
                 lines.extend([f"## {heading}", "", message.content.strip(), ""])
             return "\n".join(lines).rstrip() + "\n"
+
+    def _sessions_from_rows(self, rows: list[sqlite3.Row]) -> list[Session]:
+        tags_by_session = self._tags_for_sessions([row["id"] for row in rows])
+        return [
+            _session_from_row(row, tags=tags_by_session.get(row["id"], ()))
+            for row in rows
+        ]
+
+    def _tags_for_sessions(self, session_ids: list[str]) -> dict[str, tuple[str, ...]]:
+        if not session_ids:
+            return {}
+        placeholders = ", ".join("?" for _ in session_ids)
+        rows = self.db.execute(
+            f"""
+            SELECT session_id, tag
+            FROM session_tags
+            WHERE session_id IN ({placeholders})
+            ORDER BY session_id ASC, tag ASC
+            """,
+            tuple(session_ids),
+        ).fetchall()
+        tags: dict[str, list[str]] = {session_id: [] for session_id in session_ids}
+        for row in rows:
+            tags.setdefault(row["session_id"], []).append(row["tag"])
+        return {session_id: tuple(values) for session_id, values in tags.items()}
 
 
 def messages_for_api(
@@ -714,6 +853,31 @@ def title_from_prompt(prompt: str) -> str:
     return clean[:64]
 
 
+def normalize_tag(tag: object) -> str:
+    raw = str(tag or "").strip()
+    while raw.startswith("#"):
+        raw = raw[1:].strip()
+    clean = "-".join(raw.split()).replace(",", "-").strip("-").casefold()
+    while "--" in clean:
+        clean = clean.replace("--", "-")
+    if not clean:
+        raise ValueError("Tag fehlt.")
+    if len(clean) > 64:
+        raise ValueError("Tag ist zu lang.")
+    return clean
+
+
+def _normalize_tags(tags: Iterable[str]) -> tuple[str, ...]:
+    clean: list[str] = []
+    seen: set[str] = set()
+    for tag in tags:
+        value = normalize_tag(tag)
+        if value not in seen:
+            clean.append(value)
+            seen.add(value)
+    return tuple(sorted(clean))
+
+
 def _table_exists(db: sqlite3.Connection, table: str) -> bool:
     row = db.execute(
         "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
@@ -726,7 +890,7 @@ def _row_value(row: sqlite3.Row, key: str, default: object) -> object:
     return row[key] if key in row.keys() else default
 
 
-def _session_from_row(row: sqlite3.Row) -> Session:
+def _session_from_row(row: sqlite3.Row, *, tags: Iterable[str] | None = None) -> Session:
     return Session(
         id=row["id"],
         title=row["title"],
@@ -737,6 +901,7 @@ def _session_from_row(row: sqlite3.Row) -> Session:
         folder_id=row["folder_id"] if "folder_id" in row.keys() else None,
         pinned=bool(row["pinned"]) if "pinned" in row.keys() else False,
         model=row["model"] if "model" in row.keys() else "",
+        tags=tuple(tags or ()),
     )
 
 

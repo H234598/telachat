@@ -1,5 +1,13 @@
 # Releases
 
+## 0.30.0 - 2026-05-25
+
+- Sessions koennen persistente Tags tragen.
+- `telachat tags` verwaltet Tags; `telachat sessions --tag TAG` filtert
+  gespeicherte Chats.
+- Tags werden in JSON/Markdown-Exporten, Imports, Forks, Restore-Imports,
+  Suche, Completion und GUI-Listen erhalten.
+
 ## 0.29.0 - 2026-05-25
 
 - `telachat --version` gibt die installierte Version aus.

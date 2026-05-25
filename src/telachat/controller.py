@@ -67,12 +67,14 @@ class TelachatController:
         folder_id: str | None = None,
         sort: str = "updated_desc",
         query: str | None = None,
+        tag: str | None = None,
     ) -> list[Session]:
         return self.store.list_sessions(
             limit,
             folder_id=folder_id,
             sort=sort,
             query=query,
+            tag=tag,
         )
 
     def list_folders(self) -> list[Folder]:
@@ -111,6 +113,23 @@ class TelachatController:
 
     def set_session_pinned(self, session_id: str, pinned: bool) -> Session:
         return self.store.set_session_pinned(session_id, pinned)
+
+    def add_session_tags(self, session_id: str, tags: list[str]) -> Session:
+        self.store.add_session_tags(session_id, tags)
+        session = self.store.get_session(session_id)
+        if session is None:
+            raise KeyError(session_id)
+        return session
+
+    def remove_session_tags(self, session_id: str, tags: list[str]) -> Session:
+        self.store.remove_session_tags(session_id, tags)
+        session = self.store.get_session(session_id)
+        if session is None:
+            raise KeyError(session_id)
+        return session
+
+    def list_tags(self) -> list[tuple[str, int]]:
+        return self.store.list_tags()
 
     def rename_folder(self, folder_id: str, name: str) -> Folder:
         return self.store.update_folder_name(folder_id, name)

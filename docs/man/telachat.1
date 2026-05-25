@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.29.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.30.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -10,9 +10,8 @@ telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .B Telachat
 is a local chat client with a CLI, GTK frontend, and Tk frontend. It stores chat
 history in SQLite, supports provider/model profiles, per-session model metadata,
-prompt templates, folders,
-folder system prompts, session forking, user-message editing, regeneration, and
-Markdown exports.
+prompt templates, folders, folder system prompts, per-session tags, session
+forking, user-message editing, regeneration, and Markdown exports.
 .SH COMMANDS
 .TP
 .B init
@@ -58,9 +57,13 @@ Send a single prompt.
 Start an interactive CLI chat.
 .TP
 .B sessions
-List saved sessions with optional search, folder filtering, and sorting.
-Session search also matches saved provider/model metadata. Use \fB--json\fR for
-structured output.
+List saved sessions with optional search, folder filtering, tag filtering, and
+sorting. Session search also matches saved provider/model/tag metadata. Use
+\fB--json\fR for structured output.
+.TP
+.B tags
+List tag counts or manage tags for one session. Use \fB--add TAG\fR,
+\fB--remove TAG\fR, \fB--set TAG...\fR, \fB--clear\fR, and \fB--json\fR.
 .TP
 .B fork
 Copy a saved session into a new independent chat.
@@ -122,6 +125,8 @@ telachat templates
 telachat ask --template summarize "Langer Text"
 telachat folders --create Arbeit --system "Antworte projektbezogen."
 telachat sessions --json
+telachat sessions --tag projekt
+telachat tags SESSION_ID --add projekt --add review
 telachat fork SESSION_ID --title "Variante A"
 telachat export SESSION_ID --json
 telachat import-session session.json --folder Importe
@@ -148,6 +153,9 @@ completes the current command.
 /delete
 /pin
 /unpin
+/tag TAG [TAG...]
+/untag TAG [TAG...]
+/tags [SESSION]
 /edit-last TEXT
 /fork [TITLE]
 /regen

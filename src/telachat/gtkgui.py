@@ -554,7 +554,9 @@ class GtkTelachatApp(Adw.Application):
         self.chat_buffer.set_text("".join(parts))
 
     def session_label(self, session: Session) -> str:
-        return ("* " if session.pinned else "") + session.title
+        tags = " ".join(f"#{tag}" for tag in session.tags)
+        suffix = f"  {tags}" if tags else ""
+        return ("* " if session.pinned else "") + session.title + suffix
 
     def update_active_title(self) -> None:
         if self.active_session:
@@ -941,6 +943,55 @@ class GtkTelachatApp(Adw.Application):
         elif command == "/unpin":
             if self.active_session and self.active_session.pinned:
                 self.on_toggle_pin_active_session(self.send_button)
+        elif command == "/tag":
+            if self.active_session:
+                if rest:
+                    try:
+                        self.active_session = self.controller.add_session_tags(
+                            self.active_session.id,
+                            rest.split(),
+                        )
+                    except (KeyError, ValueError) as exc:
+                        self.status.set_text(str(exc))
+                        return
+                    else:
+                        self.update_active_title()
+                        self.refresh_sessions()
+                self.status.set_text(
+                    "Tags: "
+                    + (
+                        " ".join(f"#{tag}" for tag in self.active_session.tags)
+                        if self.active_session.tags
+                        else "-"
+                    )
+                )
+        elif command == "/untag":
+            if self.active_session:
+                if rest:
+                    try:
+                        self.active_session = self.controller.remove_session_tags(
+                            self.active_session.id,
+                            rest.split(),
+                        )
+                    except (KeyError, ValueError) as exc:
+                        self.status.set_text(str(exc))
+                        return
+                    else:
+                        self.update_active_title()
+                        self.refresh_sessions()
+                        self.status.set_text(
+                            "Tags: "
+                            + (
+                                " ".join(f"#{tag}" for tag in self.active_session.tags)
+                                if self.active_session.tags
+                                else "-"
+                            )
+                        )
+                else:
+                    self.status.set_text("Nutzung: /untag TAG [TAG...]")
+        elif command == "/tags":
+            tags = self.controller.list_tags()
+            self.status.set_text(", ".join(f"#{tag} ({count})" for tag, count in tags) or "Keine Tags.")
         elif command in {"/edit-last", "/edit"}:
             if not rest:
                 self.status.set_text("Nutzung: /edit-last TEXT")

@@ -23,6 +23,9 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/delete", "/delete", "Aktuellen Chat loeschen"),
     SlashCommand("/pin", "/pin", "Aktuellen Chat anheften"),
     SlashCommand("/unpin", "/unpin", "Aktuellen Chat loesen"),
+    SlashCommand("/tag", "/tag TAG [TAG...]", "Tags zum aktuellen Chat hinzufuegen"),
+    SlashCommand("/untag", "/untag TAG [TAG...]", "Tags vom aktuellen Chat entfernen"),
+    SlashCommand("/tags", "/tags [SESSION]", "Tags anzeigen"),
     SlashCommand(
         "/edit-last",
         "/edit-last TEXT",

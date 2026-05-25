@@ -59,8 +59,15 @@ telachat sessions
 telachat sessions --query TEXT
 telachat sessions --query gpt-5.5
 telachat sessions --folder NAME
+telachat sessions --tag TAG
 telachat sessions --sort newest
 telachat sessions --json
+telachat tags
+telachat tags SESSION_ID --add projekt --add review
+telachat tags SESSION_ID --remove review
+telachat tags SESSION_ID --set projekt inbox
+telachat tags SESSION_ID --clear
+telachat tags --json
 telachat fork SESSION_ID --title "Variante A"
 telachat folders --create Projekt --system "Projektkontext"
 telachat folders --set-system Projekt "Neuer Projektkontext"
@@ -86,6 +93,9 @@ Im interaktiven Chat funktionieren unter anderem:
 /delete
 /pin
 /unpin
+/tag TAG [TAG...]
+/untag TAG [TAG...]
+/tags [SESSION]
 /edit-last TEXT
 /fork [TITLE]
 /regen
@@ -110,5 +120,7 @@ Session-Referenzen und Sortiermodi.
 Antworten und laesst dich mit `/regen` neu generieren.
 `/fork [TITLE]` kopiert den aktuellen Chat in eine neue Session und laedt diese
 direkt, damit du Varianten ausprobieren kannst.
+`/tag`, `/untag` und `/tags` verwalten flexible Chat-Gruppen ohne die
+Ordnerstruktur zu veraendern.
 Gespeicherte Chats merken sich Provider und Modell; `telachat chat --session`
 nutzt diese Werte, solange du sie nicht per CLI-Option ueberschreibst.

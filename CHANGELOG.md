@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.30.0 - 2026-05-25
+
+- Add persistent per-session tags in SQLite with tag normalization and counts.
+- Add `telachat tags` plus `sessions --tag` for CLI tag management/filtering.
+- Include tags in session JSON/Markdown exports, imports, forks, backup
+  history restores, search, completion, and GUI session labels.
+
 ## 0.29.0 - 2026-05-25
 
 - Add the standard `telachat --version` CLI option.
