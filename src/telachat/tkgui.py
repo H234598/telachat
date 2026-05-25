@@ -1192,6 +1192,17 @@ class TkTelachatApp:
                     self.profile_var.set(label)
                     self.refresh_models()
                     break
+        elif command == "/models":
+            if rest.lower() == "live":
+                self.doctor()
+            elif rest:
+                self.set_status("Nutzung: /models [live]")
+            else:
+                models = list(self.model_combo.cget("values"))
+                messagebox.showinfo(
+                    "Telachat Modelle",
+                    "\n".join(str(model) for model in models) if models else "Keine Modelle konfiguriert.",
+                )
         elif command == "/model":
             models = list(self.model_combo.cget("values"))
             for model in models:

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.48.0 - 2026-05-25
+
+- Add `/models [live]` to the shared slash-command catalog, CLI chat, and both desktop frontends.
+- Show configured models for the active provider without a network call, or run the existing live model check with `/models live`.
+- Add completion and regression coverage for the new interactive model command.
+- Include direct correction coverage so the release-upload guard follows PowerShell continuation lines.
+
 ## 0.47.5 - 2026-05-25
 
 - Ignore negative token-usage counts when formatting or persisting provider usage metadata.

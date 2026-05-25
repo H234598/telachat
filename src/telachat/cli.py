@@ -1761,6 +1761,8 @@ def cli_completion_candidates(line: str, cfg: object, store: ChatStore) -> list[
         return _completion_matches(sorted(cfg.profiles), prefix)
     if command == "/model":
         return _completion_matches(_configured_models(cfg), prefix)
+    if command == "/models":
+        return _completion_matches(["live"], prefix)
     if command == "/template":
         return _completion_matches(sorted(cfg.prompt_templates), prefix)
     if command == "/theme":
@@ -1902,6 +1904,19 @@ def _handle_command(
             print(f"/models: Fehler ({exc})", file=sys.stderr)
         else:
             print(f"/models: ok ({', '.join(models) if models else 'keine IDs gemeldet'})")
+    elif command == "/models":
+        if rest and rest.lower() != "live":
+            print("Nutzung: /models [live]")
+        elif rest.lower() == "live":
+            try:
+                models = OpenAICompatClient(profile, retries=1).list_models()
+            except (ApiError, ConfigError, OSError) as exc:
+                print(f"/models: Fehler ({exc})", file=sys.stderr)
+            else:
+                print(f"/models: live ({', '.join(models) if models else 'keine IDs gemeldet'})")
+        else:
+            models = profile.models or [profile.model]
+            print(f"/models: configured ({', '.join(models) if models else 'keine konfiguriert'})")
     elif command == "/archives":
         items = store.list_sessions(20, archive="archived")
         if not items:

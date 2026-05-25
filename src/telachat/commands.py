@@ -63,6 +63,7 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/search", "/search TEXT", "Chatliste durchsuchen"),
     SlashCommand("/find", "/find TEXT", "Aktuelle Unterhaltung durchsuchen"),
     SlashCommand("/provider", "/provider NAME", "Provider wechseln"),
+    SlashCommand("/models", "/models [live]", "Modelle anzeigen oder live abfragen"),
     SlashCommand("/model", "/model NAME", "Modell wechseln"),
     SlashCommand("/theme", "/theme [NAME]", "GUI-Theme anzeigen/wechseln"),
     SlashCommand("/permissions", "/permissions", "Provider und Secret-Quellen anzeigen"),

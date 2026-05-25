@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.47.5`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.48.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -131,6 +131,7 @@ dass Varianten ausprobiert werden koennen, ohne den Originalverlauf zu aendern.
 /find TEXT
 /provider NAME
 /model NAME
+/models [live]
 /permissions
 /left
 /system

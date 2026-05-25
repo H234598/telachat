@@ -1384,6 +1384,19 @@ class GtkTelachatApp(Adw.Application):
                     self.profile_dropdown.set_selected(index)
                     self.refresh_models()
                     break
+        elif command == "/models":
+            if rest.lower() == "live":
+                self.doctor()
+            elif rest:
+                self.status.set_text("Nutzung: /models [live]")
+            else:
+                dialog = Adw.MessageDialog.new(
+                    self.window,
+                    "Telachat Modelle",
+                    "\n".join(self.model_names) if self.model_names else "Keine Modelle konfiguriert.",
+                )
+                dialog.add_response("ok", "OK")
+                dialog.present()
         elif command == "/model":
             for index, model in enumerate(self.model_names):
                 if rest.lower() == model.lower():

@@ -1432,6 +1432,7 @@ X-Test-Header = "yes"
                     self.assertIn("/archive ", cli_completion_candidates("/ar", cfg, store))
                     self.assertIn("openai ", cli_completion_candidates("/provider op", cfg, store))
                     self.assertIn("gpt-5.5 ", cli_completion_candidates("/model gpt", cfg, store))
+                    self.assertIn("live ", cli_completion_candidates("/models li", cfg, store))
                     self.assertIn("summarize ", cli_completion_candidates("/template su", cfg, store))
                     self.assertIn("dracula ", cli_completion_candidates("/theme dr", cfg, store))
                     self.assertIn("Arbeit ", cli_completion_candidates("/move Ar", cfg, store))
@@ -1472,6 +1473,8 @@ X-Test-Header = "yes"
                     "builtins.input",
                     side_effect=[
                         "/provider openai",
+                        "/models",
+                        "/models live",
                         "/model gpt-5.5",
                         "/doctor",
                         "/theme dracula",
@@ -1497,6 +1500,8 @@ X-Test-Header = "yes"
                     self.assertEqual(main(["chat", "--no-stream"]), 0)
                 text = out.getvalue()
                 self.assertIn("Aktiv: openai", text)
+                self.assertIn("/models: configured (gpt-5.5", text)
+                self.assertIn("/models: live (gpt-test)", text)
                 self.assertIn("Modell: gpt-5.5", text)
                 self.assertIn("/models: ok (gpt-test)", text)
                 self.assertIn("Theme gesetzt: dracula", text)

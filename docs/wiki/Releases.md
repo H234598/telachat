@@ -1,5 +1,16 @@
 # Releases
 
+## 0.48.0 - 2026-05-25
+
+- Ergaenzt `/models [live]` im gemeinsamen Slash-Katalog, im CLI-Chat und in
+  beiden Desktop-Frontends.
+- Zeigt ohne Netzaufruf die konfigurierten Modelle des aktiven Providers oder
+  startet mit `/models live` den bestehenden Live-Modellcheck.
+- Ergaenzt Completion- und Regression-Coverage fuer den neuen interaktiven
+  Modellbefehl.
+- Enthaelt direkte Korrektur-Coverage, damit der Release-Upload-Guard auch
+  PowerShell-Fortsetzungszeilen verfolgt.
+
 ## 0.47.5 - 2026-05-25
 
 - Ignoriert negative Token-Usage-Werte beim Formatieren und Persistieren von
