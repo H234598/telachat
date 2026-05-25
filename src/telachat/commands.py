@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 
@@ -40,6 +41,7 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/unfile", "/unfile", "Chat aus Ordner loesen"),
     SlashCommand("/sort", "/sort newest|oldest|title|title-desc|provider", "Chatliste sortieren"),
     SlashCommand("/search", "/search TEXT", "Chatliste durchsuchen"),
+    SlashCommand("/find", "/find TEXT", "Aktuelle Unterhaltung durchsuchen"),
     SlashCommand("/provider", "/provider NAME", "Provider wechseln"),
     SlashCommand("/model", "/model NAME", "Modell wechseln"),
     SlashCommand("/theme", "/theme [NAME]", "GUI-Theme anzeigen/wechseln"),
@@ -97,3 +99,29 @@ def canonical_slash_command(name: str) -> str:
         if clean in command.names:
             return command.name
     return clean
+
+
+def format_message_matches(
+    messages: Iterable[object],
+    query: str,
+    *,
+    limit: int = 10,
+    width: int = 160,
+) -> list[str]:
+    needle = query.strip().lower()
+    if not needle:
+        return []
+    results: list[str] = []
+    for index, message in enumerate(messages, start=1):
+        content = str(getattr(message, "content", ""))
+        if needle not in content.lower():
+            continue
+        role = str(getattr(message, "role", ""))
+        label = {"user": "Du", "assistant": "KI"}.get(role, role or "?")
+        snippet = " ".join(content.split())
+        if len(snippet) > width:
+            snippet = snippet[: max(0, width - 3)].rstrip() + "..."
+        results.append(f"{index}. {label}: {snippet}")
+        if len(results) >= limit:
+            break
+    return results

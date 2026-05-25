@@ -23,6 +23,7 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
   liegende Antwort; `/regen` generiert danach neu.
 - `/fork [TITLE]` kopiert den aktuellen Chat und laedt den neuen Fork.
 - `/theme [NAME]` wechselt das GUI-Theme direkt aus dem Prompt.
+- `/find TEXT` zeigt Treffer in der aktuell geladenen Unterhaltung.
 
 ## Chatverwaltung
 

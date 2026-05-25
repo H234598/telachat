@@ -39,6 +39,7 @@ telachat folders --json --show-system
 telachat export-folder Arbeit -o /tmp/telachat-export
 telachat sessions --json
 telachat chat
+/find TEXT
 /theme dracula
 telachat ask --template summarize "Was hat sich geaendert?"
 telachat ask "Was ist 812 - 512?"
@@ -63,9 +64,9 @@ across saved messages, CLI session filtering/sorting, and selective folder
 exports. It also covers per-session model persistence, legacy model-column
 migration, OpenAI Responses `reasoning.effort`, interactive CLI completion
 candidates, offline config checks with secret redaction, and documented
-terminal slash-command actions, including `/theme`. Theme tests cover config
-persistence, env overrides, system-palette detection, CLI setting, and
-controller persistence.
+terminal slash-command actions, including `/theme` and `/find`. Theme tests
+cover config persistence, env overrides, system-palette detection, CLI setting,
+and controller persistence.
 Backup tests inspect the ZIP bundle and verify that envfile secret values and
 secret-like header values are not included. GUI smoke tests also cover
 construction of the slash-command autocomplete widgets.

@@ -11,7 +11,7 @@ gi.require_version("Adw", "1")
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
-from .commands import slash_command_help, slash_command_suggestions
+from .commands import format_message_matches, slash_command_help, slash_command_suggestions
 from .config import redact_secret
 from .controller import TelachatController
 from .store import Message, Session
@@ -1026,6 +1026,22 @@ class GtkTelachatApp(Adw.Application):
         elif command == "/search":
             self.search_entry.set_text(rest)
             self.refresh_sessions()
+        elif command == "/find":
+            if not rest:
+                self.status.set_text("Nutzung: /find TEXT")
+            else:
+                matches = format_message_matches(self.messages, rest)
+                if matches:
+                    dialog = Adw.MessageDialog.new(
+                        self.window,
+                        "Telachat Suche",
+                        "\n".join(matches),
+                    )
+                    dialog.add_response("ok", "OK")
+                    dialog.present()
+                    self.status.set_text(f"Treffer: {len(matches)}")
+                else:
+                    self.status.set_text("Keine Treffer in der aktuellen Unterhaltung.")
         elif command == "/provider":
             for index, name in enumerate(self.profile_names):
                 label = self.controller.profiles()[name].display_name

@@ -27,6 +27,7 @@
 - `telachat.commands`
   - Shared slash-command catalog for CLI help and GUI autocomplete.
   - Theme names are completed from the central theme catalog for `/theme`.
+  - Current-chat match formatting is shared by CLI and GUI `/find`.
 - `telachat.controller`
   - Shared application service for GUI frontends.
 - `telachat.gtkgui`

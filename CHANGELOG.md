@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.19.0 - 2026-05-25
+
+- Add `/find TEXT` to search within the currently loaded conversation in
+  interactive CLI, GTK, and Tk.
+- Share compact match formatting for CLI and GUI result dialogs.
+- Add regression coverage for current-chat matching and CLI slash-find output.
+
 ## 0.18.0 - 2026-05-25
 
 - Add `/theme [NAME]` to interactive CLI, GTK, and Tk.

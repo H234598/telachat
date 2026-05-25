@@ -17,6 +17,7 @@ from pathlib import Path
 from .client import ApiError, ChatResult, OpenAICompatClient
 from .commands import (
     canonical_slash_command,
+    format_message_matches,
     slash_command_help,
     slash_command_name_suggestions,
 )
@@ -1135,6 +1136,17 @@ def _handle_command(
             for item in store.list_sessions(20, query=rest):
                 pin = "*" if item.pinned else " "
                 print(f"{pin} {item.id}  {_backend_label(item):18}  {item.title}")
+    elif command == "/find":
+        if not rest:
+            print("Nutzung: /find TEXT")
+        else:
+            matches = format_message_matches(store.messages(session.id), rest)
+            if not matches:
+                print("Keine Treffer in der aktuellen Unterhaltung.")
+            else:
+                print("Treffer:")
+                for match in matches:
+                    print(match)
     elif command in {"/profile", "/provider"}:
         if not rest:
             print(f"Aktiv: {profile.name} ({profile.display_name})")

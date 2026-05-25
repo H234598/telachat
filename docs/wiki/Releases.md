@@ -1,5 +1,11 @@
 # Releases
 
+## 0.19.0 - 2026-05-25
+
+- Neuer Slash-Befehl `/find TEXT` durchsucht die aktuell geladene Unterhaltung.
+- CLI gibt kompakte Trefferzeilen aus; GTK und Tk zeigen die Treffer im Dialog.
+- Tests pruefen Trefferformatierung und CLI-Ausgabe nach einem Fork.
+
 ## 0.18.0 - 2026-05-25
 
 - Neuer Slash-Befehl `/theme [NAME]` fuer CLI, GTK und Tk.

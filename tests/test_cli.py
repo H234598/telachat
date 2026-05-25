@@ -699,11 +699,13 @@ X-Test-Header = "yes"
                 out = io.StringIO()
                 with redirect_stdout(out), mock.patch(
                     "builtins.input",
-                    side_effect=["/fork Fork per Slash", "/history 4", "/exit"],
+                    side_effect=["/fork Fork per Slash", "/find hallo", "/history 4", "/exit"],
                 ):
                     self.assertEqual(main(["chat", "--session", session.id, "--no-stream"]), 0)
                 self.assertIn("Fork geladen:", out.getvalue())
                 self.assertIn("Fork per Slash", out.getvalue())
+                self.assertIn("Treffer:", out.getvalue())
+                self.assertIn("1. Du: Hallo", out.getvalue())
                 self.assertIn("Du> Hallo", out.getvalue())
                 store = ChatStore()
                 try:
@@ -803,6 +805,70 @@ X-Test-Header = "yes"
                 self.assertIn("Umbenannt: Testtitel", text)
                 self.assertIn("Ordner-Systemprompt gesetzt: Arbeit", text)
                 self.assertIn("Session geloescht:", text)
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
+    def test_chat_theme_command_rejects_unknown_theme_without_changing_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(main(["init"]), 0)
+                    self.assertEqual(main(["theme", "dark"]), 0)
+
+                out = io.StringIO()
+                err = io.StringIO()
+                with redirect_stdout(out), redirect_stderr(err), mock.patch(
+                    "builtins.input",
+                    side_effect=["/theme neon", "/theme", "/exit"],
+                ):
+                    self.assertEqual(main(["chat", "--no-stream"]), 0)
+
+                self.assertIn("Fehler: Unbekanntes Theme 'neon'", err.getvalue())
+                self.assertIn("Aktives Theme: dark", out.getvalue())
+                self.assertEqual(load_config().theme, "dark")
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
+    def test_chat_find_command_searches_current_session_messages(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(main(["init"]), 0)
+                store = ChatStore()
+                try:
+                    session = store.create_session(
+                        title="Find",
+                        profile="tki",
+                        system_prompt="System",
+                    )
+                    store.add_message(session.id, "user", "Bitte die Alpha-Notiz merken")
+                    store.add_message(session.id, "assistant", "Alpha ist gespeichert")
+                finally:
+                    store.close()
+
+                out = io.StringIO()
+                with redirect_stdout(out), mock.patch(
+                    "builtins.input",
+                    side_effect=["/find alpha", "/find zeta", "/find", "/exit"],
+                ):
+                    self.assertEqual(main(["chat", "--session", session.id, "--no-stream"]), 0)
+
+                text = out.getvalue()
+                self.assertIn("Treffer:", text)
+                self.assertIn("1. Du: Bitte die Alpha-Notiz merken", text)
+                self.assertIn("2. KI: Alpha ist gespeichert", text)
+                self.assertIn("Keine Treffer in der aktuellen Unterhaltung.", text)
+                self.assertIn("Nutzung: /find TEXT", text)
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)

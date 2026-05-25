@@ -6,7 +6,7 @@ import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
-from .commands import slash_command_help, slash_command_suggestions
+from .commands import format_message_matches, slash_command_help, slash_command_suggestions
 from .config import redact_secret
 from .controller import TelachatController
 from .store import Message, Session
@@ -886,6 +886,16 @@ class TkTelachatApp:
         elif command == "/search":
             self.search_var.set(rest)
             self.refresh_sessions()
+        elif command == "/find":
+            if not rest:
+                self.set_status("Nutzung: /find TEXT")
+            else:
+                matches = format_message_matches(self.messages, rest)
+                if matches:
+                    messagebox.showinfo("Telachat Suche", "\n".join(matches))
+                    self.set_status(f"Treffer: {len(matches)}")
+                else:
+                    self.set_status("Keine Treffer in der aktuellen Unterhaltung.")
         elif command == "/provider":
             for label, name in self.profile_display_to_name.items():
                 if rest.lower() in {label.lower(), name.lower()}:

@@ -82,6 +82,7 @@ Im interaktiven Chat funktionieren unter anderem:
 /unfile
 /sort newest
 /search TEXT
+/find TEXT
 /provider NAME
 /model NAME
 /permissions
