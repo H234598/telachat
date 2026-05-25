@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.0 - 2026-05-25
+
+- Add `telachat config-check` with alias `telachat config`.
+- Validate local configuration, profile modes, model lists, and redacted secret
+  source status without sending an API request.
+- Add `--strict` so scripts can fail when a configured non-Codex provider has a
+  missing secret source.
+- Add deterministic coverage that config checks do not leak envfile secret
+  values.
+
 ## 0.8.0 - 2026-05-25
 
 - Persist the selected model on each saved chat session.

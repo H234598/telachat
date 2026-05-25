@@ -17,7 +17,8 @@
   - SQLite-backed session and message history.
   - Enables folders, session listing, search, loading, and Markdown export.
 - `telachat.cli`
-  - `init`, `profiles`, `ask`, `chat`, `sessions`, `export`, `export-folder`, `doctor`.
+  - `init`, `profiles`, `config-check`, `ask`, `chat`, `sessions`,
+    `export`, `export-folder`, `doctor`.
   - Interactive `chat` installs optional Readline completion for slash commands
     and context values when stdin is a TTY.
 - `telachat.commands`
@@ -93,6 +94,8 @@ api_key = "env:PROVIDER_API_KEY"
 ```sh
 telachat init
 telachat profiles
+telachat config-check
+telachat config-check --strict
 telachat templates
 telachat folders
 telachat doctor
@@ -109,6 +112,11 @@ telachat export <session-id>
 telachat export-folder <folder-name-or-id>
 telachat export-folder <folder-name-or-id> --single-file
 ```
+
+`config-check` is intentionally offline: it validates the loaded TOML shape,
+profile modes, model metadata, and whether configured secret sources resolve to
+a value. It prints only redacted secret references. `doctor` remains the live
+network/API check.
 
 Interactive CLI chat supports Tab completion for slash commands, provider names,
 model IDs, prompt templates, folders, session references, sort modes, and common
@@ -142,6 +150,7 @@ GUI slash commands:
 ## Test strategy
 
 - Config parsing and secret redaction.
+- Offline config-check behavior and strict missing-secret handling.
 - API client against a local fake OpenAI-compatible HTTP server.
 - Non-streaming and streaming SSE responses.
 - SQLite session/message roundtrip, Markdown export, and selective folder export.

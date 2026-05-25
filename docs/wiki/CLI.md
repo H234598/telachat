@@ -7,6 +7,7 @@ Telachat kann komplett aus dem Terminal genutzt werden.
 ```sh
 telachat init
 telachat profiles
+telachat config-check
 telachat templates
 telachat folders
 telachat doctor
@@ -22,6 +23,10 @@ telachat ask -p tki "Hallo"
 telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
 telachat ask --template explain "SQLite WAL"
 ```
+
+`telachat config-check` prueft lokale Profile, Modelle und Secret-Quellen ohne
+API-Anfrage. `telachat config-check --strict` liefert einen Fehlercode, wenn
+eine nicht-lokale Secret-Quelle fehlt.
 
 ## Sessions
 

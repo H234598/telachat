@@ -1,5 +1,14 @@
 # Releases
 
+## 0.9.0 - 2026-05-25
+
+- Neuer Offline-Befehl `telachat config-check` mit Alias `telachat config`.
+- Prueft lokale Konfiguration, Profile, Modelle und Secret-Quellen ohne
+  API-Anfrage.
+- `--strict` liefert einen Fehlercode, wenn eine nicht-lokale Secret-Quelle
+  fehlt.
+- Tests stellen sicher, dass Envfile-Secret-Werte nicht ausgegeben werden.
+
 ## 0.8.0 - 2026-05-25
 
 - Gespeicherte Chats merken sich jetzt das konkret verwendete Modell.

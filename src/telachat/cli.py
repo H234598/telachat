@@ -58,6 +58,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_profiles = sub.add_parser("profiles", help="Profile anzeigen")
     p_profiles.set_defaults(func=cmd_profiles)
 
+    p_config = sub.add_parser(
+        "config-check",
+        aliases=["config"],
+        help="Konfiguration ohne API-Anfrage pruefen",
+    )
+    p_config.add_argument(
+        "--strict",
+        action="store_true",
+        help="Mit Fehlercode beenden, wenn Secret-Quellen fehlen",
+    )
+    p_config.set_defaults(func=cmd_config_check)
+
     p_templates = sub.add_parser("templates", help="Prompt-Templates anzeigen")
     p_templates.set_defaults(func=cmd_templates)
 
@@ -175,6 +187,30 @@ def cmd_profiles(args: argparse.Namespace) -> int:
             print(f"    reasoning: {profile.reasoning_effort}")
         print(f"    api_key:  {redact_secret(profile.api_key)}")
     return 0
+
+
+def cmd_config_check(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    print(f"{APP_TITLE} config")
+    print(f"Config: {cfg.path}")
+    print(f"SQLite: {db_path()}")
+    print(f"Default profile: {cfg.default_profile}")
+    missing = 0
+    for name in sorted(cfg.profiles):
+        profile = cfg.profiles[name]
+        ok, detail = _secret_status(profile)
+        if not ok:
+            missing += 1
+        marker = "*" if name == cfg.default_profile else " "
+        model_count = len(profile.models or [profile.model])
+        print(
+            f"{marker} {name}: mode={profile.api_mode} model={profile.model} "
+            f"models={model_count} key={detail}"
+        )
+    print(f"Prompt templates: {len(cfg.prompt_templates)}")
+    if missing:
+        print(f"Warnings: {missing} profile(s) have missing secret sources.")
+    return 1 if args.strict and missing else 0
 
 
 def cmd_templates(args: argparse.Namespace) -> int:
@@ -495,6 +531,21 @@ def _profile_for_loaded_session(
         reasoning_effort=args.reasoning_effort,
         stream=False if args.no_stream else None,
     )
+
+
+def _secret_status(profile: Profile) -> tuple[bool, str]:
+    if profile.api_mode == "codex" or profile.base_url == "codex://local":
+        return True, "not-required"
+    raw = profile.api_key or ""
+    if not raw:
+        return False, "missing:<empty>"
+    try:
+        resolved = profile.resolved_api_key()
+    except (OSError, ConfigError) as exc:
+        return False, f"missing:{redact_secret(raw)} ({exc.__class__.__name__})"
+    if not resolved:
+        return False, f"missing:{redact_secret(raw)}"
+    return True, f"ok:{redact_secret(raw)}"
 
 
 def install_readline_completion(cfg: object, store: ChatStore) -> object | None:

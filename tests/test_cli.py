@@ -120,6 +120,47 @@ class CliTests(unittest.TestCase):
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_config_check_redacts_and_supports_strict_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            envfile = Path(tmp) / "ok.env"
+            envfile.write_text("TELACHAT_TEST_KEY=secret-value\n", encoding="utf-8")
+            config = Path(tmp) / "config.toml"
+            config.write_text(
+                f"""
+default_profile = "ok"
+
+[profiles.ok]
+base_url = "http://127.0.0.1:9/v1"
+api_key = "envfile:{envfile}#TELACHAT_TEST_KEY"
+model = "demo"
+
+[profiles.missing]
+base_url = "http://127.0.0.1:9/v1"
+api_key = "env:TELACHAT_MISSING_TEST_KEY"
+model = "demo"
+""".strip(),
+                encoding="utf-8",
+            )
+            old_missing = os.environ.get("TELACHAT_MISSING_TEST_KEY")
+            os.environ.pop("TELACHAT_MISSING_TEST_KEY", None)
+            try:
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["--config", str(config), "config-check"]), 0)
+                text = out.getvalue()
+                self.assertIn("ok:envfile:", text)
+                self.assertIn("missing:env:TELACHAT_MISSING_TEST_KEY", text)
+                self.assertNotIn("secret-value", text)
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["--config", str(config), "config-check", "--strict"]),
+                        1,
+                    )
+            finally:
+                _restore_env("TELACHAT_MISSING_TEST_KEY", old_missing)
+
     def test_folders_command_manages_system_prompts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.8.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.9.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -19,6 +19,11 @@ Create the default configuration.
 .TP
 .B profiles
 Show configured provider profiles with redacted API keys.
+.TP
+.B config-check, config
+Check local configuration, model metadata, and secret references without an API
+request. Use \fB--strict\fR to fail when a non-Codex provider secret source is
+missing.
 .TP
 .B templates
 List configured prompt templates.
@@ -53,6 +58,8 @@ Start the Tk desktop frontend.
 .SH EXAMPLES
 .nf
 telachat doctor --chat
+telachat config-check
+telachat config-check --strict
 telachat ask -p tki "Hallo"
 telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
 telachat templates

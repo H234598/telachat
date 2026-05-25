@@ -4,6 +4,7 @@
 
 ```sh
 cd /home/teladi/telachat
+PYTHONPATH=src python3 -m telachat config-check
 make compile
 make test3
 make zipapp
@@ -18,6 +19,8 @@ sandbox. No external API key is needed.
 
 ```sh
 telachat doctor
+telachat config-check
+telachat config-check --strict
 telachat doctor --chat
 telachat templates
 telachat folders --show-system
@@ -45,8 +48,9 @@ ordering, answer regeneration, prompt templates, title sorting, content search
 across saved messages, CLI session filtering/sorting, and selective folder
 exports. It also covers per-session model persistence, legacy model-column
 migration, OpenAI Responses `reasoning.effort`, interactive CLI completion
-candidates, and documented terminal slash-command actions. GUI smoke tests also
-cover construction of the slash-command autocomplete widgets.
+candidates, offline config checks with secret redaction, and documented
+terminal slash-command actions. GUI smoke tests also cover construction of the
+slash-command autocomplete widgets.
 
 ## Expected default live configuration
 
