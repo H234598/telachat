@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.43.10 - 2026-05-25
+
+- Add focused regression coverage for Windows-style secret paths containing escape-like backslashes.
+
 ## 0.43.9 - 2026-05-25
 
 - Align configuration validation with GUI generation ranges for `temperature` and `top_p`.

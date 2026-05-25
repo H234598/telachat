@@ -1,5 +1,10 @@
 # Releases
 
+## 0.43.10 - 2026-05-25
+
+- Ergaenzt gezielte Regressionstests fuer Windows-artige Secret-Pfade mit
+  TOML-Escape-aehnlichen Backslashes.
+
 ## 0.43.9 - 2026-05-25
 
 - Die Konfigurationsvalidierung nutzt jetzt dieselben sinnvollen
