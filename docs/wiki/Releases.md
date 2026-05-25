@@ -1,5 +1,10 @@
 # Releases
 
+## 0.29.0 - 2026-05-25
+
+- `telachat --version` gibt die installierte Version aus.
+- Ein CLI-Test prueft die Ausgabe.
+
 ## 0.28.0 - 2026-05-25
 
 - GTK und Tk aktualisieren die Modell-Auswahl nach dem GUI-Check mit live

@@ -18,6 +18,13 @@ from telachat.store import ChatStore
 
 
 class CliTests(unittest.TestCase):
+    def test_version_option_prints_package_version(self) -> None:
+        out = io.StringIO()
+        with redirect_stdout(out), self.assertRaises(SystemExit) as raised:
+            main(["--version"])
+        self.assertEqual(raised.exception.code, 0)
+        self.assertRegex(out.getvalue(), r"^telachat \d+\.\d+\.\d+\n$")
+
     def test_init_and_profiles(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

@@ -4,6 +4,7 @@
 
 ```sh
 cd /home/teladi/telachat
+PYTHONPATH=src python3 -m telachat --version
 PYTHONPATH=src python3 -m telachat config-check
 PYTHONPATH=src python3 -m telachat config-check --json
 PYTHONPATH=src python3 -m telachat models --json
@@ -24,6 +25,7 @@ sandbox. No external API key is needed.
 
 ```sh
 telachat doctor
+telachat --version
 telachat models
 telachat models --live -p tki --json
 telachat config-check

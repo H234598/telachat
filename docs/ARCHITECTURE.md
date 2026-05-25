@@ -120,6 +120,7 @@ api_key = "env:PROVIDER_API_KEY"
 
 ```sh
 telachat init
+telachat --version
 telachat profiles
 telachat profiles --json
 telachat models

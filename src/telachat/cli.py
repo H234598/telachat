@@ -14,6 +14,7 @@ from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
 
+from . import __version__
 from .client import ApiError, ChatResult, OpenAICompatClient
 from .commands import (
     canonical_slash_command,
@@ -71,6 +72,11 @@ def build_parser() -> argparse.ArgumentParser:
         description="Telachat: lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.",
     )
     parser.add_argument("--config", type=Path, default=None, help="Pfad zu config.toml")
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_init = sub.add_parser("init", help="Standardkonfiguration anlegen")

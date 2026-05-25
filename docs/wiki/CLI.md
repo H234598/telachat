@@ -5,6 +5,7 @@ Telachat kann komplett aus dem Terminal genutzt werden.
 ## Basisbefehle
 
 ```sh
+telachat --version
 telachat init
 telachat profiles
 telachat models
