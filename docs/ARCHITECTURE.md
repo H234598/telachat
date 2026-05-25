@@ -247,6 +247,7 @@ GUI slash commands:
 /untag TAG [TAG...]
 /tags [SESSION]
 /stats
+/doctor
 /regen | /regenerate
 /templates
 /template NAME TEXT

@@ -40,11 +40,13 @@ class CommandCatalogTests(unittest.TestCase):
         self.assertIn("/theme [NAME]", help_text)
         self.assertIn("/find TEXT", help_text)
         self.assertIn("/stats", help_text)
+        self.assertIn("/doctor", help_text)
 
     def test_command_name_suggestions_include_aliases(self) -> None:
         self.assertIn("/permissions", slash_command_name_suggestions("/per"))
         self.assertIn("/theme", slash_command_name_suggestions("/the"))
         self.assertIn("/stats", slash_command_name_suggestions("/sta"))
+        self.assertIn("/doctor", slash_command_name_suggestions("/doc"))
         self.assertIn("/edit", slash_command_name_suggestions("/ed"))
         self.assertIn("/quit", slash_command_name_suggestions("/qu"))
         self.assertEqual(canonical_slash_command("/ablegen"), "/move")

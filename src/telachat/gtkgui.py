@@ -844,6 +844,9 @@ class GtkTelachatApp(Adw.Application):
         return "Bereit"
 
     def on_doctor(self, _button: Gtk.Button) -> None:
+        self.doctor()
+
+    def doctor(self) -> None:
         profile_name = self.selected_profile()
         model = self.selected_model()
         self.set_busy(True, "Pruefe...")
@@ -1151,6 +1154,8 @@ class GtkTelachatApp(Adw.Application):
             dialog.add_response("ok", "OK")
             dialog.present()
             self.status.set_text(format_stats_summary(stats))
+        elif command == "/doctor":
+            self.doctor()
         elif command in {"/edit-last", "/edit"}:
             if not rest:
                 self.status.set_text("Nutzung: /edit-last TEXT")

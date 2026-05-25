@@ -217,6 +217,15 @@ class GuiImportTests(unittest.TestCase):
         self.assertNotIn("SQLite:", showinfo.call_args.args[1])
         self.assertEqual(app.statuses[-1], "Sessions 2 | Nachrichten 4 | Ordner 1 | Tags 1")
 
+    def test_tk_doctor_command_starts_existing_check(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        calls: list[str] = []
+        app = SimpleNamespace(doctor=lambda: calls.append("doctor"))
+
+        module.TkTelachatApp.handle_command(app, "/doctor")
+
+        self.assertEqual(calls, ["doctor"])
+
     def test_gtk_response_status_reports_elapsed_time(self) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -268,6 +277,22 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(created[0].responses, [("ok", "OK")])
         self.assertTrue(created[0].presented)
         self.assertEqual(app.status.get_text(), "Sessions 2 | Nachrichten 4 | Ordner 1 | Tags 1")
+
+    def test_gtk_doctor_command_starts_existing_check(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        calls: list[str] = []
+        app = SimpleNamespace(doctor=lambda: calls.append("doctor"))
+
+        module.GtkTelachatApp.handle_command(app, "/doctor")
+
+        self.assertEqual(calls, ["doctor"])
 
 
 def _fake_stats() -> object:

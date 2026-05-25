@@ -30,6 +30,7 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/untag", "/untag TAG [TAG...]", "Tags vom aktuellen Chat entfernen"),
     SlashCommand("/tags", "/tags [SESSION]", "Tags anzeigen"),
     SlashCommand("/stats", "/stats", "Lokale Historienstatistik anzeigen"),
+    SlashCommand("/doctor", "/doctor", "Aktuelles Profil gegen /models pruefen"),
     SlashCommand(
         "/edit-last",
         "/edit-last TEXT",

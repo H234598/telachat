@@ -1684,6 +1684,13 @@ def _handle_command(
     elif command == "/stats":
         for line in format_stats_lines(store.stats(), include_database=False):
             print(line)
+    elif command == "/doctor":
+        try:
+            models = OpenAICompatClient(profile, retries=1).list_models()
+        except ApiError as exc:
+            print(f"/models: Fehler ({exc})", file=sys.stderr)
+        else:
+            print(f"/models: ok ({', '.join(models) if models else 'keine IDs gemeldet'})")
     elif command == "/archives":
         items = store.list_sessions(20, archive="archived")
         if not items:

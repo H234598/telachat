@@ -1,5 +1,12 @@
 # Releases
 
+## 0.38.0 - 2026-05-25
+
+- `/doctor` funktioniert jetzt im interaktiven CLI-Prompt sowie in Tk und GTK.
+- Die GUI nutzt dabei denselben Check wie der vorhandene Check-Button; das
+  Terminal meldet `/models` direkt im Chat.
+- Tests decken Command-Katalog, Terminal-Slash-Befehl und GUI-Dispatch ab.
+
 ## 0.37.1 - 2026-05-25
 
 - Ergaenzt GTK-Regressionstests fuer den `/stats`-Promptdialog.

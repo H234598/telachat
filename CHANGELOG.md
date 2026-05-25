@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.38.0 - 2026-05-25
+
+- Add `/doctor` to interactive CLI, Tk, and GTK prompt command paths.
+- Reuse the GUI Check action from the prompt and report `/models` reachability in terminal chat.
+- Cover command catalog, terminal slash-command, and GUI prompt dispatch behavior.
+
 ## 0.37.1 - 2026-05-25
 
 - Add GTK regression coverage for the `/stats` prompt dialog.

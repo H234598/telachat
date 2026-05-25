@@ -1024,6 +1024,8 @@ class TkTelachatApp:
                 "\n".join(format_stats_lines(stats, include_database=False)),
             )
             self.set_status(format_stats_summary(stats))
+        elif command == "/doctor":
+            self.doctor()
         elif command in {"/edit-last", "/edit"}:
             if not rest:
                 self.set_status("Nutzung: /edit-last TEXT")

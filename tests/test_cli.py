@@ -1266,6 +1266,7 @@ X-Test-Header = "yes"
                     side_effect=[
                         "/provider openai",
                         "/model gpt-5.5",
+                        "/doctor",
                         "/theme dracula",
                         "/theme",
                         "/move Arbeit",
@@ -1284,11 +1285,13 @@ X-Test-Header = "yes"
                         "/delete",
                         "/exit",
                     ],
-                ):
+                ), mock.patch("telachat.cli.OpenAICompatClient") as client_cls:
+                    client_cls.return_value.list_models.return_value = ["gpt-test"]
                     self.assertEqual(main(["chat", "--no-stream"]), 0)
                 text = out.getvalue()
                 self.assertIn("Aktiv: openai", text)
                 self.assertIn("Modell: gpt-5.5", text)
+                self.assertIn("/models: ok (gpt-test)", text)
                 self.assertIn("Theme gesetzt: dracula", text)
                 self.assertIn("Aktives Theme: dracula", text)
                 self.assertIn("Chat abgelegt: Arbeit", text)

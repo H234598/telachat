@@ -32,6 +32,7 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - `/archive`, `/unarchive` und `/archives` verwalten erledigte Chats.
 - `/tag`, `/untag` und `/tags` verwalten flexible Chat-Markierungen.
 - `/stats` zeigt lokale Historienzaehler ohne Chat-Inhalte.
+- `/doctor` startet denselben Erreichbarkeitscheck wie der Check-Button.
 - `/theme [NAME]` wechselt das GUI-Theme direkt aus dem Prompt.
 - `/find TEXT` zeigt Treffer in der aktuell geladenen Unterhaltung.
 
@@ -74,6 +75,7 @@ Slash-Commands funktionieren ebenfalls:
 /archives
 /tag projekt review
 /stats
+/doctor
 /folder-system Projektkontext
 /permissions
 ```
