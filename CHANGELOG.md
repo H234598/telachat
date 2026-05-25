@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.43.2 - 2026-05-25
+
+- Wrap unreadable `file:` and `envfile:` secret sources as `ConfigError` with compact user-facing messages.
+- Add regression coverage for missing secret files.
+
 ## 0.43.1 - 2026-05-25
 
 - Keep interactive chat sessions alive when a send fails because a configured secret envfile cannot be read.

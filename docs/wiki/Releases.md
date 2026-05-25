@@ -1,5 +1,11 @@
 # Releases
 
+## 0.43.2 - 2026-05-25
+
+- Nicht lesbare `file:`- und `envfile:`-Secretquellen werden jetzt als
+  `ConfigError` mit kompakter Meldung ausgegeben.
+- Regressionstests decken fehlende Secret-Dateien ab.
+
 ## 0.43.1 - 2026-05-25
 
 - Interaktive Chat-Sends bleiben nach Secret-/Envfile-Fehlern im Chat statt
