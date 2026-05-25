@@ -1,5 +1,12 @@
 # Releases
 
+## 0.47.1 - 2026-05-25
+
+- Ergaenzt eine Legacy-SQLite-Migration fuer sehr alte `messages`-Tabellen ohne
+  `metadata`-Spalte.
+- Deckt die Migration mit einem Regressionstest ab, damit Usage-Metadaten auch
+  auf alten Historien sicher gespeichert werden koennen.
+
 ## 0.47.0 - 2026-05-25
 
 - Speichert Provider-Token-Usage an Assistant-Nachrichten, wenn der Provider

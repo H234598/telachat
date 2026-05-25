@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.47.1 - 2026-05-25
+
+- Add a legacy SQLite migration for old `messages` tables that do not yet have the `metadata` column.
+- Cover the migration so token-usage metadata can be stored safely on older local histories.
+
 ## 0.47.0 - 2026-05-25
 
 - Persist provider token-usage metadata on saved assistant messages when usage is available.
