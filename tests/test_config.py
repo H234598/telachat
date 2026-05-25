@@ -207,6 +207,26 @@ model = "demo"
             self.assertEqual(cfg.profile("envfile").resolved_api_key(), "windows-envfile-secret")
             self.assertEqual(cfg.profile("file").resolved_api_key(), "windows-file-secret")
 
+    def test_secret_sources_preserve_raw_unc_prefixes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            path.write_text(
+                r"""
+default_profile = "unc"
+
+[profiles.unc]
+base_url = "https://api.openai.com/v1"
+api_key = "envfile:\\server\share\secret.env#OPENAI_API_KEY"
+model = "demo"
+""".strip(),
+                encoding="utf-8",
+            )
+            cfg = load_config(path)
+            self.assertEqual(
+                cfg.profile().api_key,
+                r"envfile:\\server\share\secret.env#OPENAI_API_KEY",
+            )
+
     def test_missing_secret_files_raise_config_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config_path = Path(tmp) / "config.toml"

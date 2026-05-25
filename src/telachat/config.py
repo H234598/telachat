@@ -312,6 +312,7 @@ def _escape_secret_source_backslashes(text: str) -> str:
 
 def _escape_lone_backslashes(value: str) -> str:
     escaped: list[str] = []
+    path_start = _secret_source_path_start(value)
     index = 0
     while index < len(value):
         char = value[index]
@@ -319,12 +320,24 @@ def _escape_lone_backslashes(value: str) -> str:
             escaped.append(char)
             index += 1
             continue
-        escaped.append("\\\\")
-        if index + 1 < len(value) and value[index + 1] == "\\":
-            index += 2
-        else:
+        run_start = index
+        while index < len(value) and value[index] == "\\":
             index += 1
+        run_length = index - run_start
+        if run_start == path_start and run_length == 2:
+            escaped.append("\\\\\\\\")
+        elif run_length % 2 == 0:
+            escaped.append("\\" * run_length)
+        else:
+            escaped.append("\\" * (run_length + 1))
     return "".join(escaped)
+
+
+def _secret_source_path_start(value: str) -> int:
+    for prefix in ("envfile:", "file:"):
+        if value.startswith(prefix):
+            return len(prefix)
+    return -1
 
 
 def _read_envfile_secret(spec: str) -> str:
