@@ -74,7 +74,6 @@ and local state under `$XDG_STATE_HOME`.
 
 - Per-session model/temperature overrides.
 - Stop/cancel in-flight request.
-- Prompt templates.
 - Config editor with validation and secret redaction.
 - Markdown rendering with copy buttons.
 - Token/latency counters when backends provide usage data.

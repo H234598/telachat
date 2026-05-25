@@ -78,7 +78,7 @@ class TkTelachatApp:
         self.paned.grid(row=0, column=0, sticky="nsew")
 
         self.sidebar = ttk.Frame(self.paned, style="Sidebar.TFrame", padding=14, width=300)
-        self.sidebar.rowconfigure(15, weight=1)
+        self.sidebar.rowconfigure(17, weight=1)
 
         title = ttk.Label(self.sidebar, text="Telachat", font=("Sans", 22, "bold"))
         title.grid(row=0, column=0, columnspan=2, sticky="w")
@@ -126,21 +126,39 @@ class TkTelachatApp:
         self.search_entry.grid(row=11, column=0, columnspan=2, sticky="ew", pady=(4, 10))
         self.search_entry.bind("<KeyRelease>", lambda _event: self.refresh_sessions())
 
+        ttk.Label(self.sidebar, text="Vorlage").grid(row=12, column=0, sticky="w")
+        self.template_var = tk.StringVar()
+        self.template_combo = ttk.Combobox(
+            self.sidebar,
+            textvariable=self.template_var,
+            state="readonly",
+            values=list(self.controller.prompt_templates()),
+            width=24,
+        )
+        self.template_combo.grid(row=13, column=0, sticky="ew", pady=(4, 0), padx=(0, 6))
+        ttk.Button(self.sidebar, text="Einsetzen", command=self.insert_template).grid(
+            row=13, column=1, sticky="ew", pady=(4, 0)
+        )
+        if self.controller.prompt_templates():
+            self.template_var.set(next(iter(self.controller.prompt_templates())))
+
         ttk.Button(self.sidebar, text="Neu", command=self.new_session).grid(
-            row=12, column=0, sticky="ew", padx=(0, 6)
-        )
-        ttk.Button(self.sidebar, text="Check", command=self.doctor).grid(row=12, column=1, sticky="ew")
-        ttk.Button(self.sidebar, text="Ordner +", command=self.create_folder_dialog).grid(
-            row=13, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
-        )
-        ttk.Button(self.sidebar, text="Ablegen", command=self.move_active_to_folder).grid(
-            row=13, column=1, sticky="ew", pady=(8, 0)
-        )
-        ttk.Button(self.sidebar, text="Ordner um", command=self.rename_selected_folder).grid(
             row=14, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
         )
-        ttk.Button(self.sidebar, text="Ordner -", command=self.delete_selected_folder).grid(
+        ttk.Button(self.sidebar, text="Check", command=self.doctor).grid(
             row=14, column=1, sticky="ew", pady=(8, 0)
+        )
+        ttk.Button(self.sidebar, text="Ordner +", command=self.create_folder_dialog).grid(
+            row=15, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
+        )
+        ttk.Button(self.sidebar, text="Ablegen", command=self.move_active_to_folder).grid(
+            row=15, column=1, sticky="ew", pady=(8, 0)
+        )
+        ttk.Button(self.sidebar, text="Ordner um", command=self.rename_selected_folder).grid(
+            row=16, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
+        )
+        ttk.Button(self.sidebar, text="Ordner -", command=self.delete_selected_folder).grid(
+            row=16, column=1, sticky="ew", pady=(8, 0)
         )
 
         self.session_list = tk.Listbox(
@@ -153,7 +171,7 @@ class TkTelachatApp:
             selectbackground="#0d6b6f",
             selectforeground="#ffffff",
         )
-        self.session_list.grid(row=15, column=0, columnspan=2, sticky="nsew", pady=(14, 0))
+        self.session_list.grid(row=17, column=0, columnspan=2, sticky="nsew", pady=(14, 0))
         self.session_list.bind("<<ListboxSelect>>", self._on_session_select)
 
         self.main = ttk.Frame(self.paned, padding=16)
@@ -370,6 +388,23 @@ class TkTelachatApp:
                 handle.write(self.controller.export_markdown(self.active_session.id))
             self.set_status(f"Exportiert: {target}")
 
+    def insert_template(self) -> None:
+        name = self.template_var.get()
+        if not name:
+            self.set_status("Keine Vorlage gewaehlt.")
+            return
+        try:
+            prompt = self.controller.apply_prompt_template(
+                name,
+                self.input_text.get("1.0", tk.END).strip(),
+            )
+        except KeyError as exc:
+            self.set_status(str(exc))
+            return
+        self.input_text.delete("1.0", tk.END)
+        self.input_text.insert("1.0", prompt)
+        self.set_status(f"Vorlage eingesetzt: {name}")
+
     def render_messages(self) -> None:
         self.chat_text.configure(state="normal")
         self.chat_text.delete("1.0", tk.END)
@@ -539,7 +574,7 @@ class TkTelachatApp:
         if command in {"/help", "/hilfe"}:
             messagebox.showinfo(
                 "Telachat Kommandos",
-                "/new | /neu\n/rename TITLE\n/delete\n/pin | /unpin\n/regen | /regenerate\n/folder NAME | /ordner NAME\n/rename-folder NAME\n/delete-folder\n/move NAME | /ablegen NAME\n/unfile\n/sort newest|oldest|title|title-desc|provider\n/search TEXT\n/provider NAME\n/model NAME\n/left | /links\n/system",
+                "/new | /neu\n/rename TITLE\n/delete\n/pin | /unpin\n/regen | /regenerate\n/templates\n/template NAME TEXT\n/folder NAME | /ordner NAME\n/rename-folder NAME\n/delete-folder\n/move NAME | /ablegen NAME\n/unfile\n/sort newest|oldest|title|title-desc|provider\n/search TEXT\n/provider NAME\n/model NAME\n/left | /links\n/system",
             )
         elif command in {"/new", "/neu"}:
             self.new_session()
@@ -558,6 +593,22 @@ class TkTelachatApp:
                 self.toggle_pin_active_session()
         elif command in {"/regen", "/regenerate"}:
             self.regenerate_active_session()
+        elif command == "/templates":
+            names = sorted(self.controller.prompt_templates())
+            self.set_status("Vorlagen: " + (", ".join(names) or "keine"))
+        elif command == "/template":
+            template_name, _, text = rest.partition(" ")
+            if not template_name:
+                self.set_status("Nutzung: /template NAME TEXT")
+            else:
+                try:
+                    prompt = self.controller.apply_prompt_template(template_name, text)
+                except KeyError as exc:
+                    self.set_status(str(exc))
+                else:
+                    self.input_text.delete("1.0", tk.END)
+                    self.input_text.insert("1.0", prompt)
+                    self.set_status(f"Vorlage eingesetzt: {template_name}")
         elif command in {"/folder", "/ordner"}:
             if rest:
                 folder = self.controller.create_folder(rest)

@@ -25,6 +25,27 @@ class ConfigTests(unittest.TestCase):
             self.assertIn("codex", cfg.profiles)
             self.assertEqual(cfg.profiles["chatgpt"].api_mode, "responses")
             self.assertEqual(cfg.profiles["codex"].api_mode, "codex")
+            self.assertIn("summarize", cfg.prompt_templates)
+            self.assertIn("{input}", cfg.prompt_templates["summarize"])
+
+    def test_custom_prompt_templates_load(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            path.write_text(
+                """
+default_profile = "local"
+[profiles.local]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "test"
+model = "demo"
+
+[prompt_templates]
+ticket = "Schreibe ein Ticket:\\n\\n{input}"
+""".strip(),
+                encoding="utf-8",
+            )
+            cfg = load_config(path)
+            self.assertEqual(cfg.prompt_templates, {"ticket": "Schreibe ein Ticket:\n\n{input}"})
 
     def test_env_api_key_resolution(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

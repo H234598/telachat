@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.2.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.3.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -75,6 +75,8 @@ Zeilenumbrueche.
 /pin
 /unpin
 /regen
+/templates
+/template NAME TEXT
 /folder NAME
 /rename-folder NAME
 /delete-folder
@@ -97,6 +99,8 @@ Nuetzliche Chat-Befehle:
 /pin
 /unpin
 /regen
+/templates
+/template NAME TEXT
 /profile [name]
 /system [prompt]
 /history [n]
@@ -110,6 +114,14 @@ Gespeicherte Sessions koennen auch direkt in der CLI gefiltert werden:
 telachat sessions --query projekt
 telachat sessions --folder Arbeit
 telachat sessions --sort title
+```
+
+Prompt-Templates kommen aus `[prompt_templates]` in `config.toml` und koennen
+per CLI oder GUI eingesetzt werden:
+
+```sh
+telachat templates
+telachat ask --template summarize "Langer Text..."
 ```
 
 ## Voreingestelltes TKI-Profil

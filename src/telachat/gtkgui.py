@@ -120,6 +120,16 @@ class GtkTelachatApp(Adw.Application):
         self.search_entry.connect("search-changed", self.on_filter_changed)
         self.sidebar.append(self.search_entry)
 
+        self.template_names = list(self.controller.prompt_templates())
+        self.sidebar.append(Gtk.Label(label="Vorlage", xalign=0))
+        self.template_dropdown = Gtk.DropDown.new(Gtk.StringList.new(self.template_names), None)
+        self.sidebar.append(self.template_dropdown)
+        template_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.sidebar.append(template_row)
+        insert_template_button = Gtk.Button(label="Einsetzen")
+        insert_template_button.connect("clicked", self.on_insert_template)
+        template_row.append(insert_template_button)
+
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.sidebar.append(row)
         new_button = Gtk.Button(label="Neu")
@@ -348,6 +358,28 @@ class GtkTelachatApp(Adw.Application):
 
     def clear_input(self) -> None:
         self.input_view.get_buffer().set_text("")
+
+    def set_input_prompt(self, text: str) -> None:
+        self.input_view.get_buffer().set_text(text)
+
+    def selected_template_name(self) -> str | None:
+        selected = self.template_dropdown.get_selected()
+        if selected < len(self.template_names):
+            return self.template_names[selected]
+        return None
+
+    def on_insert_template(self, _button: Gtk.Button) -> None:
+        name = self.selected_template_name()
+        if not name:
+            self.status.set_text("Keine Vorlage gewaehlt.")
+            return
+        try:
+            prompt = self.controller.apply_prompt_template(name, self.input_prompt())
+        except KeyError as exc:
+            self.status.set_text(str(exc))
+            return
+        self.set_input_prompt(prompt)
+        self.status.set_text(f"Vorlage eingesetzt: {name}")
 
     def set_busy(self, busy: bool, text: str) -> None:
         self.status.set_text(text)
@@ -709,7 +741,7 @@ class GtkTelachatApp(Adw.Application):
             dialog = Adw.MessageDialog.new(
                 self.window,
                 "Telachat Kommandos",
-                "/new | /neu\n/rename TITLE\n/delete\n/pin | /unpin\n/regen | /regenerate\n/folder NAME | /ordner NAME\n/rename-folder NAME\n/delete-folder\n/move NAME | /ablegen NAME\n/unfile\n/sort newest|oldest|title|title-desc|provider\n/search TEXT\n/provider NAME\n/model NAME\n/left | /links\n/system",
+                "/new | /neu\n/rename TITLE\n/delete\n/pin | /unpin\n/regen | /regenerate\n/templates\n/template NAME TEXT\n/folder NAME | /ordner NAME\n/rename-folder NAME\n/delete-folder\n/move NAME | /ablegen NAME\n/unfile\n/sort newest|oldest|title|title-desc|provider\n/search TEXT\n/provider NAME\n/model NAME\n/left | /links\n/system",
             )
             dialog.add_response("ok", "OK")
             dialog.present()
@@ -730,6 +762,21 @@ class GtkTelachatApp(Adw.Application):
                 self.on_toggle_pin_active_session(self.send_button)
         elif command in {"/regen", "/regenerate"}:
             self.on_regenerate_active_session(self.send_button)
+        elif command == "/templates":
+            names = sorted(self.controller.prompt_templates())
+            self.status.set_text("Vorlagen: " + (", ".join(names) or "keine"))
+        elif command == "/template":
+            template_name, _, text = rest.partition(" ")
+            if not template_name:
+                self.status.set_text("Nutzung: /template NAME TEXT")
+            else:
+                try:
+                    prompt = self.controller.apply_prompt_template(template_name, text)
+                except KeyError as exc:
+                    self.status.set_text(str(exc))
+                else:
+                    self.set_input_prompt(prompt)
+                    self.status.set_text(f"Vorlage eingesetzt: {template_name}")
         elif command in {"/folder", "/ordner"}:
             if rest:
                 folder = self.controller.create_folder(rest)

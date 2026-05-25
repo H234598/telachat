@@ -7,7 +7,12 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
-from .defaults import DEFAULT_CONFIG, DEFAULT_PROFILE, DEFAULT_SYSTEM_PROMPT
+from .defaults import (
+    DEFAULT_CONFIG,
+    DEFAULT_PROFILE,
+    DEFAULT_PROMPT_TEMPLATES,
+    DEFAULT_SYSTEM_PROMPT,
+)
 from .paths import config_path
 
 
@@ -74,6 +79,7 @@ class AppConfig:
     default_system_prompt: str
     max_history_messages: int
     profiles: dict[str, Profile]
+    prompt_templates: dict[str, str]
 
     def profile(self, name: str | None = None) -> Profile:
         wanted = name or self.default_profile
@@ -155,6 +161,7 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
         default_system_prompt=str(raw.get("default_system_prompt", DEFAULT_SYSTEM_PROMPT)),
         max_history_messages=int(raw.get("max_history_messages", 24)),
         profiles=profiles,
+        prompt_templates=_prompt_templates(raw.get("prompt_templates", DEFAULT_PROMPT_TEMPLATES)),
     )
 
 
@@ -185,6 +192,22 @@ def _models(values: dict[str, Any], default_model: str, profile_name: str) -> li
     if default_model not in clean:
         clean.insert(0, default_model)
     return clean
+
+
+def _prompt_templates(raw: object) -> dict[str, str]:
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise ConfigError("[prompt_templates] muss ein TOML-Objekt sein.")
+    templates: dict[str, str] = {}
+    for name, value in raw.items():
+        clean_name = str(name).strip()
+        if not clean_name:
+            raise ConfigError("Prompt-Template mit leerem Namen.")
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigError(f"Prompt-Template '{clean_name}' braucht Text.")
+        templates[clean_name] = value.strip()
+    return dict(sorted(templates.items()))
 
 
 def _read_envfile_secret(spec: str) -> str:

@@ -33,6 +33,20 @@ class TelachatController:
     def system_prompt(self) -> str:
         return self.config.default_system_prompt
 
+    def prompt_templates(self) -> dict[str, str]:
+        return self.config.prompt_templates
+
+    def apply_prompt_template(self, name: str, text: str = "") -> str:
+        try:
+            template = self.config.prompt_templates[name]
+        except KeyError as exc:
+            available = ", ".join(sorted(self.config.prompt_templates)) or "<keine>"
+            raise KeyError(f"Prompt-Template '{name}' fehlt. Verfuegbar: {available}") from exc
+        if "{input}" in template:
+            return template.replace("{input}", text.strip())
+        clean = text.strip()
+        return f"{template}\n\n{clean}".strip() if clean else template
+
     def list_sessions(
         self,
         limit: int = 40,

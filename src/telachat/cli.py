@@ -51,11 +51,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_profiles = sub.add_parser("profiles", help="Profile anzeigen")
     p_profiles.set_defaults(func=cmd_profiles)
 
+    p_templates = sub.add_parser("templates", help="Prompt-Templates anzeigen")
+    p_templates.set_defaults(func=cmd_templates)
+
     p_ask = sub.add_parser("ask", help="Einzelne Frage stellen")
     add_chat_options(p_ask)
     p_ask.add_argument("prompt", nargs="*", help="Prompt; leer liest interaktiv/stdin")
     p_ask.add_argument("--stdin", action="store_true", help="Prompt aus stdin lesen")
     p_ask.add_argument("--save", action="store_true", help="Frage und Antwort speichern")
+    p_ask.add_argument("--template", "-t", help="Prompt-Template auf den Prompt anwenden")
     p_ask.set_defaults(func=cmd_ask)
 
     p_chat = sub.add_parser("chat", help="Interaktiven Chat starten")
@@ -127,6 +131,17 @@ def cmd_profiles(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_templates(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    if not cfg.prompt_templates:
+        print("Keine Prompt-Templates konfiguriert.")
+        return 0
+    for name in sorted(cfg.prompt_templates):
+        first_line = cfg.prompt_templates[name].splitlines()[0]
+        print(f"{name:16} {first_line}")
+    return 0
+
+
 def cmd_ask(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     profile = _selected_profile(cfg, args)
@@ -134,6 +149,8 @@ def cmd_ask(args: argparse.Namespace) -> int:
     prompt = _read_prompt(args.prompt, args.stdin)
     if not prompt:
         raise ConfigError("Kein Prompt angegeben.")
+    if args.template:
+        prompt = _apply_prompt_template(cfg, args.template, prompt)
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt},
@@ -377,6 +394,8 @@ def _handle_command(
                 /pin                  Aktuelle Session anheften
                 /unpin                Aktuelle Session loesen
                 /regen                Letzte KI-Antwort neu generieren
+                /templates            Prompt-Templates anzeigen
+                /template NAME TEXT   Template anwenden und senden
                 /profile [name]       Profil anzeigen/wechseln
                 /profiles             Profile anzeigen
                 /system [prompt]      System-Prompt anzeigen/setzen
@@ -424,6 +443,34 @@ def _handle_command(
             )
         except ApiError as exc:
             print(f"Fehler: {exc}", file=sys.stderr)
+    elif command == "/templates":
+        if not cfg.prompt_templates:
+            print("Keine Prompt-Templates konfiguriert.")
+        for name in sorted(cfg.prompt_templates):
+            first_line = cfg.prompt_templates[name].splitlines()[0]
+            print(f"{name:16} {first_line}")
+    elif command == "/template":
+        template_name, _, text = rest.partition(" ")
+        if not template_name:
+            print("Nutzung: /template NAME TEXT")
+        else:
+            try:
+                prompt = _apply_prompt_template(cfg, template_name, text)
+            except ConfigError as exc:
+                print(f"Fehler: {exc}", file=sys.stderr)
+            else:
+                if session.title == "Neue Unterhaltung":
+                    session = _retitle_session(store, session.id, title_from_prompt(prompt))
+                store.add_message(session.id, "user", prompt)
+                history = store.messages(session.id, limit=cfg.max_history_messages)
+                messages = messages_for_api(system_prompt, history)
+                try:
+                    print("KI> ", end="", flush=True)
+                    answer = _run_chat(profile, messages, stream=stream)
+                except ApiError as exc:
+                    print(f"\nFehler: {exc}", file=sys.stderr)
+                else:
+                    store.add_message(session.id, "assistant", answer)
     elif command == "/profile":
         if not rest:
             print(f"Aktiv: {profile.name} ({profile.display_name})")
@@ -484,3 +531,17 @@ def _regenerate_session(
     print("KI> ", end="", flush=True)
     answer = _run_chat(profile, messages, stream=stream)
     store.add_message(session.id, "assistant", answer)
+
+
+def _apply_prompt_template(cfg: object, name: str, text: str = "") -> str:
+    try:
+        template = cfg.prompt_templates[name]
+    except KeyError as exc:
+        available = ", ".join(sorted(cfg.prompt_templates)) or "<keine>"
+        raise ConfigError(
+            f"Prompt-Template '{name}' existiert nicht. Verfuegbar: {available}"
+        ) from exc
+    clean = text.strip()
+    if "{input}" in template:
+        return template.replace("{input}", clean)
+    return f"{template}\n\n{clean}".strip() if clean else template

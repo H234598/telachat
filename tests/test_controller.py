@@ -11,6 +11,47 @@ from telachat.controller import TelachatController
 
 
 class ControllerTests(unittest.TestCase):
+    def test_apply_prompt_template(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                config_dir = Path(tmp) / "config" / "telachat"
+                config_dir.mkdir(parents=True)
+                (config_dir / "config.toml").write_text(
+                    """
+                    default_profile = "test"
+
+                    [profiles.test]
+                    label = "Test"
+                    base_url = "http://127.0.0.1:9/v1"
+                    api_key = "test"
+                    model = "demo"
+
+                    [prompt_templates]
+                    ticket = "Schreibe ein Ticket:\\n\\n{input}"
+                    prefix = "Antworte knapp."
+                    """,
+                    encoding="utf-8",
+                )
+                controller = TelachatController()
+                try:
+                    self.assertEqual(
+                        controller.apply_prompt_template("ticket", "Fehler beim Login"),
+                        "Schreibe ein Ticket:\n\nFehler beim Login",
+                    )
+                    self.assertEqual(
+                        controller.apply_prompt_template("prefix", "Fehler beim Login"),
+                        "Antworte knapp.\n\nFehler beim Login",
+                    )
+                finally:
+                    controller.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_regenerate_replaces_latest_assistant_message(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

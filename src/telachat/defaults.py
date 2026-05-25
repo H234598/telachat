@@ -11,6 +11,11 @@ DEFAULT_SYSTEM_PROMPT = (
     "Antworte in der Sprache des Nutzers, rechne sorgfaeltig und erfinde "
     "keine externen Fakten, wenn du sie nicht pruefen kannst."
 )
+DEFAULT_PROMPT_TEMPLATES = {
+    "summarize": "Fasse den folgenden Inhalt strukturiert zusammen:\n\n{input}",
+    "explain": "Erklaere das knapp, praktisch und mit einem Beispiel:\n\n{input}",
+    "translate_de": "Uebersetze ins Deutsche und erhalte Fachbegriffe, wenn sinnvoll:\n\n{input}",
+}
 
 DEFAULT_CONFIG = f"""# Telachat configuration.
 # Paths follow the XDG Base Directory spec:
@@ -24,6 +29,11 @@ DEFAULT_CONFIG = f"""# Telachat configuration.
 default_profile = "{DEFAULT_PROFILE}"
 default_system_prompt = "{DEFAULT_SYSTEM_PROMPT}"
 max_history_messages = 24
+
+[prompt_templates]
+summarize = "{DEFAULT_PROMPT_TEMPLATES["summarize"].replace(chr(10), "\\n").replace("{", "{{").replace("}", "}}")}"
+explain = "{DEFAULT_PROMPT_TEMPLATES["explain"].replace(chr(10), "\\n").replace("{", "{{").replace("}", "}}")}"
+translate_de = "{DEFAULT_PROMPT_TEMPLATES["translate_de"].replace(chr(10), "\\n").replace("{", "{{").replace("}", "}}")}"
 
 [profiles.{DEFAULT_PROFILE}]
 label = "HuggingFace TKI"

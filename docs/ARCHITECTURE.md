@@ -5,6 +5,7 @@
 - `telachat.config`
   - Reads `config.toml` using `tomllib`.
   - Validates provider profiles.
+  - Loads prompt templates from `[prompt_templates]`.
   - Resolves API keys from literal values, `env:NAME`, or `file:/path`.
 - `telachat.client`
   - Minimal OpenAI-compatible HTTP client.
@@ -80,6 +81,7 @@ api_key = "env:PROVIDER_API_KEY"
 ```sh
 telachat init
 telachat profiles
+telachat templates
 telachat doctor
 telachat doctor --chat
 telachat ask "Hallo"
@@ -101,6 +103,8 @@ GUI slash commands:
 /delete
 /pin | /unpin
 /regen | /regenerate
+/templates
+/template NAME TEXT
 /folder NAME | /ordner NAME
 /rename-folder NAME
 /delete-folder

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 - 2026-05-25
+
+- Add configurable prompt templates through `[prompt_templates]` in
+  `config.toml`.
+- Add `telachat templates` and `telachat ask --template NAME ...`.
+- Add `/templates` and `/template NAME TEXT` to interactive CLI chat and both
+  GUI prompt command paths.
+- Add GTK and Tk template selectors that insert a configured template into the
+  composer.
+- Add tests for template config loading, template application, CLI listing, and
+  templated one-shot prompts.
+
 ## 0.2.0 - 2026-05-25
 
 - Add native GTK and Tk desktop clients.
