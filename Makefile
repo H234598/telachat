@@ -10,7 +10,7 @@ check: compile test
 	git diff --check
 
 compile:
-	$(PYTHON) -m compileall -q src tests
+	$(PYTHON) -m compileall -q src tests packaging
 
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests -v
