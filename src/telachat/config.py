@@ -181,19 +181,29 @@ def set_config_theme(value: str, path: Path | None = None) -> str:
     text = target.read_text(encoding="utf-8")
     replacement = f'theme = "{theme}"'
     lines = text.splitlines()
+    default_profile_index: int | None = None
+    first_table_index = len(lines)
     for index, line in enumerate(lines):
-        if line.strip().startswith("theme"):
-            before, sep, _after = line.partition("=")
-            if sep and before.strip() == "theme":
-                lines[index] = replacement
-                target.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-                return theme
-    for index, line in enumerate(lines):
-        if line.strip().startswith("default_profile"):
-            lines.insert(index + 1, replacement)
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("["):
+            first_table_index = index
+            break
+        before, sep, _after = line.partition("=")
+        if not sep:
+            continue
+        key = before.strip()
+        if key == "theme":
+            lines[index] = replacement
             target.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
             return theme
-    lines.insert(0, replacement)
+        if key == "default_profile":
+            default_profile_index = index
+    insert_index = (
+        default_profile_index + 1 if default_profile_index is not None else first_table_index
+    )
+    lines.insert(insert_index, replacement)
     target.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
     return theme
 

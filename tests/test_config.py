@@ -51,6 +51,27 @@ class ConfigTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 set_config_theme("neon-glitter", path)
 
+    def test_set_theme_only_updates_top_level_theme(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            path.write_text(
+                """
+default_profile = "demo"
+
+[profiles.demo]
+base_url = "http://127.0.0.1:1/v1"
+api_key = ""
+model = "demo"
+theme = "profile-local"
+""".strip(),
+                encoding="utf-8",
+            )
+            self.assertEqual(set_config_theme("dark", path), "dark")
+            text = path.read_text(encoding="utf-8")
+            self.assertIn('default_profile = "demo"\ntheme = "dark"', text)
+            self.assertIn('theme = "profile-local"', text)
+            self.assertEqual(load_config(path).theme, "dark")
+
     def test_custom_prompt_templates_load(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "config.toml"

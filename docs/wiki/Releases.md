@@ -1,5 +1,11 @@
 # Releases
 
+## 0.12.1 - 2026-05-25
+
+- Patch-Fix: `telachat theme NAME` schreibt nur noch Top-Level-Config und
+  ueberschreibt kein gleichnamiges Feld in einem Profilblock.
+- Regressionstest fuer Theme-Einfuegung vor `[profiles.*]`.
+
 ## 0.12.0 - 2026-05-25
 
 - Zentrale Themes: `system`, `light`, `dark`, `high-contrast`.

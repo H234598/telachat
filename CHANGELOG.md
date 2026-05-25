@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.12.1 - 2026-05-25
+
+- Fix `telachat theme NAME` so it only updates top-level config keys and never
+  rewrites a profile-local `theme` field.
+- Add regression coverage for inserting a top-level theme before profile tables.
+- Add release-marker consistency coverage for README, changelog, wiki, manpages,
+  and package version.
+
 ## 0.12.0 - 2026-05-25
 
 - Add central theme definitions for `system`, `light`, `dark`, and
