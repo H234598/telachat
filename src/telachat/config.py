@@ -24,6 +24,9 @@ class ConfigError(RuntimeError):
     pass
 
 
+_HEADER_NAME_RE = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
+
+
 @dataclass(frozen=True)
 class Profile:
     name: str
@@ -146,15 +149,7 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
         base_url = _required_string(values, "base_url", name).rstrip("/")
         api_key = str(values.get("api_key", ""))
         model = _required_string(values, "model", name)
-        headers = values.get("headers")
-        if headers is not None:
-            if not isinstance(headers, dict) or not all(
-                isinstance(k, str) and isinstance(v, str) for k, v in headers.items()
-            ):
-                raise ConfigError(f"Profil '{name}' hat ungueltige headers.")
-            extra_headers = dict(headers)
-        else:
-            extra_headers = None
+        extra_headers = _headers(values.get("headers"), name)
         profiles[name] = Profile(
             name=name,
             label=str(values.get("label", name)),
@@ -263,6 +258,23 @@ def _models(values: dict[str, Any], default_model: str, profile_name: str) -> li
     if default_model not in clean:
         clean.insert(0, default_model)
     return clean
+
+
+def _headers(raw: object, profile_name: str) -> dict[str, str] | None:
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise ConfigError(f"Profil '{profile_name}' hat ungueltige headers.")
+    headers: dict[str, str] = {}
+    for name, value in raw.items():
+        if not isinstance(name, str) or not isinstance(value, str):
+            raise ConfigError(f"Profil '{profile_name}' hat ungueltige headers.")
+        if not _HEADER_NAME_RE.fullmatch(name):
+            raise ConfigError(f"Profil '{profile_name}' hat ungueltigen Header-Namen.")
+        if any(ord(char) < 32 or ord(char) == 127 for char in value):
+            raise ConfigError(f"Profil '{profile_name}' hat ungueltigen Header-Wert.")
+        headers[name] = value
+    return headers
 
 
 def _optional_reasoning_effort(value: object, profile_name: str) -> str | None:

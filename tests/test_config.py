@@ -136,6 +136,46 @@ api_mode = "unknown_mode"
             with self.assertRaisesRegex(ConfigError, "api_mode"):
                 load_config(path)
 
+    def test_profile_headers_are_validated(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            profile_base = """
+default_profile = "local"
+[profiles.local]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "test"
+model = "demo"
+"""
+            path.write_text(
+                profile_base
+                + """
+[profiles.local.headers]
+HTTP-Referer = "https://local.telachat"
+X-Title = "Telachat"
+""",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                load_config(path).profile().extra_headers,
+                {
+                    "HTTP-Referer": "https://local.telachat",
+                    "X-Title": "Telachat",
+                },
+            )
+
+            cases = [
+                ('headers = "bad"\n', "headers"),
+                ('[profiles.local.headers]\n"Bad Header" = "x"\n', "Header-Namen"),
+                ('[profiles.local.headers]\n"Bad:Header" = "x"\n', "Header-Namen"),
+                ('[profiles.local.headers]\nX-Test = "line\\nbreak"\n', "Header-Wert"),
+                ("[profiles.local.headers]\nX-Test = 7\n", "headers"),
+            ]
+            for suffix, pattern in cases:
+                with self.subTest(suffix=suffix):
+                    path.write_text(profile_base + suffix, encoding="utf-8")
+                    with self.assertRaisesRegex(ConfigError, pattern):
+                        load_config(path)
+
     def test_numeric_config_values_are_validated(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "config.toml"
