@@ -357,6 +357,29 @@ class StoreTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_stats_returns_zero_counts_for_empty_history(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                stats = store.stats()
+
+                self.assertEqual(stats.sessions_total, 0)
+                self.assertEqual(stats.sessions_active, 0)
+                self.assertEqual(stats.sessions_archived, 0)
+                self.assertEqual(stats.sessions_pinned, 0)
+                self.assertEqual(stats.sessions_unfiled, 0)
+                self.assertEqual(stats.folders_total, 0)
+                self.assertEqual(stats.folders_with_system_prompt, 0)
+                self.assertEqual(stats.tags_total, 0)
+                self.assertEqual(stats.tag_links_total, 0)
+                self.assertEqual(stats.tagged_sessions, 0)
+                self.assertEqual(stats.messages_total, 0)
+                self.assertEqual(stats.message_roles, ())
+                self.assertEqual(stats.session_profiles, ())
+                self.assertEqual(stats.session_models, ())
+            finally:
+                store.close()
+
     def test_stats_counts_local_history_without_message_content(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             store = ChatStore(Path(tmp) / "history.sqlite3")
