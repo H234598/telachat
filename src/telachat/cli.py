@@ -2143,6 +2143,6 @@ def _toml_key(value: str) -> str:
 
 
 def _redacted_header_value(header: str, value: str) -> str:
-    if re.search(r"auth|key|secret|token", header, re.IGNORECASE):
+    if re.search(r"auth|cookie|credential|key|secret|token", header, re.IGNORECASE):
         return redact_secret(value)
     return value

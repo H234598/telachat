@@ -932,6 +932,7 @@ models = ["demo", "demo-large"]
 
 [profiles.local-profile.headers]
 Authorization = "Bearer super-secret-value"
+Cookie = "session=super-secret-value"
 X-Test-Header = "yes"
 """.strip(),
                     encoding="utf-8",
@@ -968,6 +969,10 @@ X-Test-Header = "yes"
                 self.assertEqual(
                     parsed["profiles"]["local-profile"]["headers"]["Authorization"],
                     "Bea...lue",
+                )
+                self.assertEqual(
+                    parsed["profiles"]["local-profile"]["headers"]["Cookie"],
+                    "ses...lue",
                 )
                 self.assertEqual(
                     parsed["profiles"]["local-profile"]["headers"]["X-Test-Header"],
