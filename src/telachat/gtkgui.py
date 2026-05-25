@@ -934,6 +934,18 @@ class GtkTelachatApp(Adw.Application):
                     self.refresh_sessions()
                     self.render_messages()
                     self.status.set_text("Letzte Nutzernachricht aktualisiert. /regen erzeugt neu.")
+        elif command == "/fork":
+            if self.active_session:
+                self.active_session, self.messages = self.controller.fork_session(
+                    self.active_session.id,
+                    rest or None,
+                )
+                self.select_session_backend(self.active_session)
+                self.set_system_prompt(self.active_session.system_prompt)
+                self.update_active_title()
+                self.refresh_sessions()
+                self.render_messages()
+                self.status.set_text(f"Fork geladen: {self.active_session.title}")
         elif command in {"/regen", "/regenerate"}:
             self.on_regenerate_active_session(self.send_button)
         elif command == "/templates":

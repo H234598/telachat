@@ -94,6 +94,8 @@ pane are real resizable split panes rather than fixed sidebars.
 The shared command path includes `/edit-last TEXT`, which updates the latest
 user message and removes later messages before `/regen` creates a replacement
 answer.
+`/fork [TITLE]` and `telachat fork` copy a session into an independent history
+branch while preserving provider, model, folder, system prompt, and messages.
 Saved sessions store both provider and model. Loading a session restores those
 selectors in GTK/Tk and `telachat chat --session` uses the saved model unless a
 CLI override is given.
@@ -128,6 +130,7 @@ telachat sessions
 telachat sessions --query TEXT
 telachat sessions --folder NAME
 telachat sessions --sort newest|oldest|title|title-desc|provider
+telachat fork <session-id-or-prefix>
 telachat export <session-id>
 telachat export-folder <folder-name-or-id>
 telachat export-folder <folder-name-or-id> --single-file
@@ -174,6 +177,7 @@ GUI slash commands:
 /rename-folder NAME
 /delete-folder
 /edit-last TEXT | /edit TEXT
+/fork [TITLE]
 /move NAME | /ablegen NAME
 /unfile
 /sort newest|oldest|title|title-desc|provider
@@ -197,6 +201,7 @@ GUI slash commands:
 - SQLite folder prompts, sorting and history-search behavior.
 - SQLite session model metadata, legacy migration, exports, and backend restore.
 - Latest user-message editing and post-edit answer removal.
+- Session forking with independent copied history.
 - Backup ZIP content, secret redaction, and safe backup restore/import.
 - CLI init/profile behavior with temporary XDG directories.
 - Shared slash-command catalog behavior.

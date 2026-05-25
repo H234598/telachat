@@ -133,6 +133,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_sessions.set_defaults(func=cmd_sessions)
 
+    p_fork = sub.add_parser("fork", help="Session kopieren/verzweigen")
+    p_fork.add_argument("session", help="Session-ID oder Prefix")
+    p_fork.add_argument("-t", "--title", help="Titel fuer den neuen Fork")
+    p_fork.set_defaults(func=cmd_fork)
+
     p_export = sub.add_parser("export", help="Session als Markdown exportieren")
     p_export.add_argument("session", help="Session-ID oder Prefix")
     p_export.add_argument("-o", "--output", type=Path, help="Ausgabedatei")
@@ -414,6 +419,18 @@ def cmd_sessions(args: argparse.Namespace) -> int:
         for session in sessions:
             pin = "*" if session.pinned else " "
             print(f"{pin} {session.id}  {_backend_label(session):18}  {session.title}")
+    finally:
+        store.close()
+    return 0
+
+
+def cmd_fork(args: argparse.Namespace) -> int:
+    store = ChatStore()
+    try:
+        fork = store.fork_session(args.session, args.title)
+        print(f"Fork: {fork.id}  {_backend_label(fork):18}  {fork.title}")
+    except KeyError as exc:
+        raise ConfigError(f"Session nicht eindeutig gefunden: {args.session}") from exc
     finally:
         store.close()
     return 0
@@ -839,6 +856,14 @@ def _handle_command(
                 print(f"Fehler: {exc}", file=sys.stderr)
             else:
                 print("Letzte Nutzernachricht aktualisiert. /regen erzeugt eine neue Antwort.")
+    elif command == "/fork":
+        try:
+            session = store.fork_session(session.id, rest or None)
+            system_prompt = session.system_prompt
+        except KeyError as exc:
+            print(f"Fehler: {exc}", file=sys.stderr)
+        else:
+            print(f"Fork geladen: {session.id} {session.title}")
     elif command in {"/regen", "/regenerate"}:
         try:
             _regenerate_session(

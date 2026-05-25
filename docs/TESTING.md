@@ -65,6 +65,9 @@ Restore tests verify dry-run counts, duplicate-safe imports, session ID
 rewrites, and folder-name reuse.
 Edit-last tests verify that the latest user message can be replaced and that
 later assistant answers are removed before regeneration.
+Fork tests verify copied provider/model/folder/system metadata, copied message
+history, independent edits after forking, top-level CLI use, and `/fork` in
+interactive chat.
 
 ## Expected default live configuration
 

@@ -378,6 +378,64 @@ class ChatStore:
                 raise KeyError(session_id)
             return session
 
+    def fork_session(self, session_id: str, title: str | None = None) -> Session:
+        with self._lock:
+            source = self.get_session(session_id)
+            if source is None:
+                raise KeyError(session_id)
+            clean_title = " ".join((title or "").strip().split())
+            if not clean_title:
+                clean_title = f"{source.title} (Kopie)"
+            now = int(time.time())
+            fork_id = self._new_unique_id("sessions")
+            self.db.execute(
+                """
+                INSERT INTO sessions(
+                    id, title, profile, model, system_prompt,
+                    created_at, updated_at, folder_id, pinned
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+                """,
+                (
+                    fork_id,
+                    clean_title,
+                    source.profile,
+                    source.model,
+                    source.system_prompt,
+                    now,
+                    now,
+                    source.folder_id,
+                ),
+            )
+            rows = self.db.execute(
+                """
+                SELECT role, content, created_at, metadata
+                FROM messages
+                WHERE session_id = ?
+                ORDER BY created_at ASC, id ASC
+                """,
+                (source.id,),
+            ).fetchall()
+            for row in rows:
+                self.db.execute(
+                    """
+                    INSERT INTO messages(session_id, role, content, created_at, metadata)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        fork_id,
+                        row["role"],
+                        row["content"],
+                        row["created_at"],
+                        row["metadata"],
+                    ),
+                )
+            self.db.commit()
+            fork = self.get_session(fork_id)
+            if fork is None:
+                raise KeyError(fork_id)
+            return fork
+
     def set_session_pinned(self, session_id: str, pinned: bool) -> Session:
         with self._lock:
             self.db.execute(

@@ -1,4 +1,4 @@
-.TH TELACHAT-TK 1 "2026-05-25" "Telachat 0.13.0" "User Commands"
+.TH TELACHAT-TK 1 "2026-05-25" "Telachat 0.14.0" "User Commands"
 .SH NAME
 telachat-tk \- start the Tk desktop frontend for Telachat
 .SH SYNOPSIS
@@ -19,6 +19,8 @@ The prompt supports Slash-Command suggestions while typing. Press Tab to
 complete the current command and Shift+Enter to send a message.
 Use \fB/edit-last TEXT\fR to replace the latest user message and remove the
 following answer before regenerating.
+Use \fB/fork [TITLE]\fR to copy the current conversation into a new independent
+chat variant.
 .SH FILES
 .TP
 .I ~/.config/telachat/config.toml

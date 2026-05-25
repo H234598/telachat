@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.13.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.14.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -11,7 +11,8 @@ telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 is a local chat client with a CLI, GTK frontend, and Tk frontend. It stores chat
 history in SQLite, supports provider/model profiles, per-session model metadata,
 prompt templates, folders,
-folder system prompts, user-message editing, regeneration, and Markdown exports.
+folder system prompts, session forking, user-message editing, regeneration, and
+Markdown exports.
 .SH COMMANDS
 .TP
 .B init
@@ -45,6 +46,9 @@ Start an interactive CLI chat.
 .B sessions
 List saved sessions with optional search, folder filtering, and sorting.
 Session search also matches saved provider/model metadata.
+.TP
+.B fork
+Copy a saved session into a new independent chat.
 .TP
 .B export
 Export one session as Markdown.
@@ -81,6 +85,7 @@ telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
 telachat templates
 telachat ask --template summarize "Langer Text"
 telachat folders --create Arbeit --system "Antworte projektbezogen."
+telachat fork SESSION_ID --title "Variante A"
 telachat export-folder Arbeit -o ./arbeit-export
 telachat export-folder Arbeit --single-file -o arbeit.md
 telachat backup -o ./backups
@@ -102,6 +107,7 @@ completes the current command.
 /pin
 /unpin
 /edit-last TEXT
+/fork [TITLE]
 /regen
 /templates
 /template NAME TEXT

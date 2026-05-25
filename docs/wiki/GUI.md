@@ -21,6 +21,7 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - `Tab` vervollstaendigt den aktuellen Slash-Befehl.
 - `/edit-last TEXT` ersetzt die letzte Nutzernachricht und entfernt die danach
   liegende Antwort; `/regen` generiert danach neu.
+- `/fork [TITLE]` kopiert den aktuellen Chat und laedt den neuen Fork.
 
 ## Chatverwaltung
 
@@ -41,6 +42,7 @@ Slash-Commands funktionieren ebenfalls:
 /templates
 /template summarize Mein Text
 /edit-last Besser formulierter Prompt
+/fork Variante A
 /folder-system Projektkontext
 /permissions
 ```

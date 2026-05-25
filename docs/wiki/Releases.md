@@ -1,5 +1,14 @@
 # Releases
 
+## 0.14.0 - 2026-05-25
+
+- Neuer Befehl `telachat fork SESSION [--title TITLE]`.
+- Neuer Slash-Befehl `/fork [TITLE]` fuer CLI, GTK und Tk.
+- Forks kopieren Provider, Modell, Ordner, Systemprompt und Nachrichten in
+  eine neue unabhaengige Session; der Fork ist nicht angeheftet.
+- Tests pruefen Store, Controller, Command-Katalog, Top-Level-CLI und
+  interaktiven Slash-Fork.
+
 ## 0.13.0 - 2026-05-25
 
 - Neuer Slash-Befehl `/edit-last TEXT` mit Alias `/edit`.

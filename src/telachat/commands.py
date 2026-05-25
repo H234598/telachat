@@ -28,6 +28,7 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
         "Letzte Nutzernachricht ersetzen",
         aliases=("/edit",),
     ),
+    SlashCommand("/fork", "/fork [TITLE]", "Aktuellen Chat kopieren/verzweigen"),
     SlashCommand("/regen", "/regen", "Letzte KI-Antwort neu generieren", aliases=("/regenerate",)),
     SlashCommand("/templates", "/templates", "Prompt-Templates anzeigen"),
     SlashCommand("/template", "/template NAME TEXT", "Prompt-Template einsetzen"),

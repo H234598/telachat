@@ -804,6 +804,18 @@ class TkTelachatApp:
                     self.refresh_sessions()
                     self.render_messages()
                     self.set_status("Letzte Nutzernachricht aktualisiert. /regen erzeugt neu.")
+        elif command == "/fork":
+            if self.active_session:
+                self.active_session, self.messages = self.controller.fork_session(
+                    self.active_session.id,
+                    rest or None,
+                )
+                self.select_session_backend(self.active_session)
+                self.set_system_prompt_text(self.active_session.system_prompt)
+                self.update_active_title()
+                self.refresh_sessions()
+                self.render_messages()
+                self.set_status(f"Fork geladen: {self.active_session.title}")
         elif command in {"/regen", "/regenerate"}:
             self.regenerate_active_session()
         elif command == "/templates":

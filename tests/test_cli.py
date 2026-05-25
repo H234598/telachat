@@ -512,6 +512,65 @@ X-Test-Header = "yes"
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_fork_command_and_chat_slash_fork_copy_history(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(main(["init"]), 0)
+                store = ChatStore()
+                try:
+                    session = store.create_session(
+                        title="Fork original",
+                        profile="tki",
+                        system_prompt="System",
+                    )
+                    store.add_message(session.id, "user", "Hallo")
+                    store.add_message(session.id, "assistant", "Hi")
+                finally:
+                    store.close()
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["fork", session.id, "--title", "Fork per CLI"]),
+                        0,
+                    )
+                self.assertIn("Fork per CLI", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out), mock.patch(
+                    "builtins.input",
+                    side_effect=["/fork Fork per Slash", "/history 4", "/exit"],
+                ):
+                    self.assertEqual(main(["chat", "--session", session.id, "--no-stream"]), 0)
+                self.assertIn("Fork geladen:", out.getvalue())
+                self.assertIn("Fork per Slash", out.getvalue())
+                self.assertIn("Du> Hallo", out.getvalue())
+                store = ChatStore()
+                try:
+                    sessions = store.list_sessions(10, sort="title_asc")
+                    self.assertEqual(
+                        sorted(session.title for session in sessions),
+                        ["Fork original", "Fork per CLI", "Fork per Slash"],
+                    )
+                    for item in sessions:
+                        self.assertEqual(
+                            [
+                                (message.role, message.content)
+                                for message in store.messages(item.id)
+                            ],
+                            [("user", "Hallo"), ("assistant", "Hi")],
+                        )
+                finally:
+                    store.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_chat_command_completion_uses_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

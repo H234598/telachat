@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.14.0 - 2026-05-25
+
+- Add `telachat fork SESSION [--title TITLE]` to copy a saved chat into a new
+  independent session.
+- Add `/fork [TITLE]` to interactive CLI, GTK, and Tk so prompt variants can be
+  tried without changing the original conversation.
+- Preserve source provider, model, folder, system prompt, and messages while
+  leaving the new fork unpinned.
+- Add Store, Controller, command catalog, top-level CLI, and slash-command
+  regression tests.
+
 ## 0.13.0 - 2026-05-25
 
 - Add `/edit-last TEXT` with `/edit` alias for interactive CLI, GTK, and Tk.

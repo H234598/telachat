@@ -234,6 +234,14 @@ class TelachatController:
             raise KeyError(session_id)
         return session, self.store.messages(session.id)
 
+    def fork_session(
+        self,
+        session_id: str,
+        title: str | None = None,
+    ) -> tuple[Session, list[Message]]:
+        fork = self.store.fork_session(session_id, title)
+        return fork, self.store.messages(fork.id)
+
     def doctor(self, profile_name: str | None = None, model: str | None = None) -> list[str]:
         profile = self.config.profile(profile_name).with_overrides(model=model)
         return OpenAICompatClient(profile, retries=1).list_models()

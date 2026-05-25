@@ -45,6 +45,7 @@ telachat sessions --query TEXT
 telachat sessions --query gpt-5.5
 telachat sessions --folder NAME
 telachat sessions --sort newest
+telachat fork SESSION_ID --title "Variante A"
 telachat folders --create Projekt --system "Projektkontext"
 telachat folders --set-system Projekt "Neuer Projektkontext"
 telachat folders --show-system
@@ -64,6 +65,7 @@ Im interaktiven Chat funktionieren unter anderem:
 /pin
 /unpin
 /edit-last TEXT
+/fork [TITLE]
 /regen
 /folder NAME
 /move NAME
@@ -83,5 +85,7 @@ Slash-Befehle und Kontextwerte wie Provider, Modelle, Templates, Ordner,
 Session-Referenzen und Sortiermodi.
 `/edit-last TEXT` ersetzt die letzte Nutzernachricht, entfernt danach liegende
 Antworten und laesst dich mit `/regen` neu generieren.
+`/fork [TITLE]` kopiert den aktuellen Chat in eine neue Session und laedt diese
+direkt, damit du Varianten ausprobieren kannst.
 Gespeicherte Chats merken sich Provider und Modell; `telachat chat --session`
 nutzt diese Werte, solange du sie nicht per CLI-Option ueberschreibst.

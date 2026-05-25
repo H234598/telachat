@@ -95,6 +95,75 @@ class StoreTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_edit_last_user_message_does_not_touch_other_sessions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                first = store.create_session(
+                    title="First",
+                    profile="tki",
+                    system_prompt="System",
+                )
+                second = store.create_session(
+                    title="Second",
+                    profile="tki",
+                    system_prompt="System",
+                )
+                store.add_message(first.id, "user", "Alt")
+                store.add_message(first.id, "assistant", "Antwort")
+                store.add_message(second.id, "user", "Andere Frage")
+                store.add_message(second.id, "assistant", "Andere Antwort")
+
+                store.edit_last_user_message(first.id, "Neu")
+
+                self.assertEqual(
+                    [(message.role, message.content) for message in store.messages(first.id)],
+                    [("user", "Neu")],
+                )
+                self.assertEqual(
+                    [(message.role, message.content) for message in store.messages(second.id)],
+                    [("user", "Andere Frage"), ("assistant", "Andere Antwort")],
+                )
+            finally:
+                store.close()
+
+    def test_fork_session_copies_metadata_and_messages(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                folder = store.create_folder("Projekt", system_prompt="Ordner")
+                session = store.create_session(
+                    title="Original",
+                    profile="openai",
+                    model="gpt-5.5",
+                    system_prompt="System",
+                    folder_id=folder.id,
+                )
+                store.add_message(session.id, "user", "Frage")
+                store.add_message(session.id, "assistant", "Antwort")
+                store.set_session_pinned(session.id, True)
+
+                fork = store.fork_session(session.id, "  Variante A  ")
+
+                self.assertNotEqual(fork.id, session.id)
+                self.assertEqual(fork.title, "Variante A")
+                self.assertEqual(fork.profile, "openai")
+                self.assertEqual(fork.model, "gpt-5.5")
+                self.assertEqual(fork.system_prompt, "System")
+                self.assertEqual(fork.folder_id, folder.id)
+                self.assertFalse(fork.pinned)
+                self.assertEqual(
+                    [(message.role, message.content) for message in store.messages(fork.id)],
+                    [("user", "Frage"), ("assistant", "Antwort")],
+                )
+                store.edit_last_user_message(fork.id, "Andere Frage")
+                self.assertEqual(
+                    [(message.role, message.content) for message in store.messages(session.id)],
+                    [("user", "Frage"), ("assistant", "Antwort")],
+                )
+            finally:
+                store.close()
+
     def test_folders_sorting_and_search(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             store = ChatStore(Path(tmp) / "history.sqlite3")

@@ -165,6 +165,33 @@ class ControllerTests(unittest.TestCase):
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_fork_session_returns_new_history_copy(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                controller = TelachatController()
+                try:
+                    session, _messages = controller.new_session(title="Original")
+                    controller.store.add_message(session.id, "user", "Hallo")
+                    controller.store.add_message(session.id, "assistant", "Hi")
+
+                    fork, messages = controller.fork_session(session.id, "Fork")
+
+                    self.assertNotEqual(fork.id, session.id)
+                    self.assertEqual(fork.title, "Fork")
+                    self.assertEqual(
+                        [(message.role, message.content) for message in messages],
+                        [("user", "Hallo"), ("assistant", "Hi")],
+                    )
+                finally:
+                    controller.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_folder_system_prompt_is_used_for_new_session(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

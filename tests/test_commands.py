@@ -29,6 +29,7 @@ class CommandCatalogTests(unittest.TestCase):
         help_text = slash_command_help()
         self.assertIn("/folder-system TEXT", help_text)
         self.assertIn("/edit-last TEXT", help_text)
+        self.assertIn("/fork [TITLE]", help_text)
         self.assertIn("/export [datei.md]", help_text)
         self.assertIn("/provider NAME", help_text)
 
