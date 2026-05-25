@@ -151,6 +151,64 @@ class CliTests(unittest.TestCase):
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_export_folder_writes_index_and_sessions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["init"]), 0)
+                export_dir = Path(tmp) / "export"
+                bundle = Path(tmp) / "bundle.md"
+                store = ChatStore()
+                try:
+                    work = store.create_folder("Arbeit")
+                    alpha = store.create_session(
+                        title="Alpha Plan",
+                        profile="openai",
+                        system_prompt="System",
+                        folder_id=work.id,
+                    )
+                    beta = store.create_session(
+                        title="Beta Notiz",
+                        profile="tki",
+                        system_prompt="System",
+                    )
+                    store.add_message(alpha.id, "user", "Projektplan")
+                    store.add_message(alpha.id, "assistant", "Antwort")
+                    store.add_message(beta.id, "user", "Nicht im Export")
+                finally:
+                    store.close()
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["export-folder", "Arbeit", "-o", str(export_dir)]),
+                        0,
+                    )
+                self.assertTrue((export_dir / "index.md").exists())
+                exported = list(export_dir.glob("alpha-plan-*.md"))
+                self.assertEqual(len(exported), 1)
+                self.assertIn("Projektplan", exported[0].read_text(encoding="utf-8"))
+                self.assertNotIn("Nicht im Export", (export_dir / "index.md").read_text(encoding="utf-8"))
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["export-folder", "Arbeit", "--single-file", "-o", str(bundle)]),
+                        0,
+                    )
+                text = bundle.read_text(encoding="utf-8")
+                self.assertIn("Telachat Export: Arbeit", text)
+                self.assertIn("Projektplan", text)
+                self.assertNotIn("Nicht im Export", text)
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_chat_regenerate_command_replaces_last_answer(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

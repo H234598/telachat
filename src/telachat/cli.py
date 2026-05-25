@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 import textwrap
 from collections.abc import Iterable
@@ -100,6 +101,22 @@ def build_parser() -> argparse.ArgumentParser:
     p_export.add_argument("session", help="Session-ID oder Prefix")
     p_export.add_argument("-o", "--output", type=Path, help="Ausgabedatei")
     p_export.set_defaults(func=cmd_export)
+
+    p_export_folder = sub.add_parser("export-folder", help="Ordner als Markdown exportieren")
+    p_export_folder.add_argument("folder", help="Ordnername/-ID, 'all' oder 'none'")
+    p_export_folder.add_argument("-o", "--output", type=Path, help="Ausgabedatei/-ordner")
+    p_export_folder.add_argument(
+        "--sort",
+        choices=sorted(SESSION_SORTS),
+        default="title",
+        help="Sortierung der exportierten Sessions",
+    )
+    p_export_folder.add_argument(
+        "--single-file",
+        action="store_true",
+        help="Alle Chats in eine Markdown-Datei schreiben",
+    )
+    p_export_folder.set_defaults(func=cmd_export_folder)
 
     p_doctor = sub.add_parser("doctor", help="Konfiguration/API pruefen")
     p_doctor.add_argument("-p", "--profile", help="Profilname")
@@ -346,6 +363,49 @@ def cmd_export(args: argparse.Namespace) -> int:
     finally:
         store.close()
     return 0
+
+
+def cmd_export_folder(args: argparse.Namespace) -> int:
+    store = ChatStore()
+    try:
+        folder_id = _resolve_folder_filter(store, args.folder)
+        sessions = store.list_sessions(
+            10000,
+            folder_id=folder_id,
+            sort=SESSION_SORTS[args.sort],
+        )
+        if not sessions:
+            print("Keine Sessions fuer diesen Export gefunden.")
+            return 0
+        title = _folder_export_title(store, args.folder, folder_id)
+        if args.single_file:
+            markdown = _export_sessions_markdown(store, sessions, title)
+            if args.output:
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_text(markdown, encoding="utf-8")
+                print(args.output)
+            else:
+                print(markdown, end="")
+            return 0
+
+        output_dir = args.output or Path(f"telachat-export-{_safe_filename(title)}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        index_lines = [
+            f"# Telachat Export: {title}",
+            "",
+            f"- Sessions: {len(sessions)}",
+            "",
+        ]
+        for session in sessions:
+            file_name = f"{_safe_filename(session.title)}-{session.id}.md"
+            path = output_dir / file_name
+            path.write_text(store.export_markdown(session.id), encoding="utf-8")
+            index_lines.append(f"- [{session.title}]({file_name})")
+        (output_dir / "index.md").write_text("\n".join(index_lines).rstrip() + "\n", encoding="utf-8")
+        print(output_dir)
+        return 0
+    finally:
+        store.close()
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
@@ -614,3 +674,30 @@ def _apply_prompt_template(cfg: object, name: str, text: str = "") -> str:
     if "{input}" in template:
         return template.replace("{input}", clean)
     return f"{template}\n\n{clean}".strip() if clean else template
+
+
+def _folder_export_title(store: ChatStore, folder: str, folder_id: str | None) -> str:
+    if folder_id == "__none__":
+        return "Ohne Ordner"
+    if folder_id is None:
+        return "Alle Sessions"
+    item = store.get_folder(folder_id)
+    return item.name if item else folder
+
+
+def _export_sessions_markdown(store: ChatStore, sessions: list[object], title: str) -> str:
+    lines = [
+        f"# Telachat Export: {title}",
+        "",
+        f"- Sessions: {len(sessions)}",
+        "",
+    ]
+    for session in sessions:
+        lines.append(store.export_markdown(session.id).rstrip())
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _safe_filename(value: str) -> str:
+    clean = re.sub(r"[^A-Za-z0-9._-]+", "-", value.strip().lower()).strip(".-_")
+    return clean[:80] or "telachat"

@@ -15,7 +15,7 @@
   - SQLite-backed session and message history.
   - Enables folders, session listing, search, loading, and Markdown export.
 - `telachat.cli`
-  - `init`, `profiles`, `ask`, `chat`, `sessions`, `export`, `doctor`.
+  - `init`, `profiles`, `ask`, `chat`, `sessions`, `export`, `export-folder`, `doctor`.
 - `telachat.controller`
   - Shared application service for GUI frontends.
 - `telachat.gtkgui`
@@ -96,6 +96,8 @@ telachat sessions --query TEXT
 telachat sessions --folder NAME
 telachat sessions --sort newest|oldest|title|title-desc|provider
 telachat export <session-id>
+telachat export-folder <folder-name-or-id>
+telachat export-folder <folder-name-or-id> --single-file
 ```
 
 GUI slash commands:
@@ -127,7 +129,7 @@ GUI slash commands:
 - Config parsing and secret redaction.
 - API client against a local fake OpenAI-compatible HTTP server.
 - Non-streaming and streaming SSE responses.
-- SQLite session/message roundtrip and Markdown export.
+- SQLite session/message roundtrip, Markdown export, and selective folder export.
 - SQLite folder prompts, sorting and history-search behavior.
 - CLI init/profile behavior with temporary XDG directories.
 - Bytecode compilation and zipapp packaging.

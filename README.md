@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.4.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.5.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -117,6 +117,8 @@ Gespeicherte Sessions koennen auch direkt in der CLI gefiltert werden:
 telachat sessions --query projekt
 telachat sessions --folder Arbeit
 telachat sessions --sort title
+telachat export-folder Arbeit -o ./arbeit-export
+telachat export-folder Arbeit --single-file -o arbeit.md
 ```
 
 Ordner und ihre Projekt-Systemprompts lassen sich ebenfalls in der CLI

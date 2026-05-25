@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0 - 2026-05-25
+
+- Add selective folder export with `telachat export-folder FOLDER`.
+- Write directory exports with `index.md` plus one Markdown file per session.
+- Add `--single-file` folder exports for one combined Markdown artifact.
+- Add deterministic CLI coverage for folder directory and single-file exports.
+
 ## 0.4.0 - 2026-05-25
 
 - Add folder-level default system prompts so folders can behave like lightweight

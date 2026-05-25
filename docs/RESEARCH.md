@@ -80,7 +80,7 @@ and local state under `$XDG_STATE_HOME`.
 - Token/latency counters when backends provide usage data.
 - Tags in addition to folders and pinned chats.
 - Per-folder defaults for system prompt, model and attached knowledge/context.
-- Import/export bundles for a folder of chats without including API keys.
+- Import bundles for a folder of chats without including API keys.
 - Optional local provider presets for Ollama, LM Studio and Jan Server.
 - Tool/function-call viewer once a backend returns structured tool calls.
 

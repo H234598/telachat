@@ -34,6 +34,8 @@ telachat folders --create Projekt --system "Projektkontext"
 telachat folders --set-system Projekt "Neuer Projektkontext"
 telachat folders --show-system
 telachat export SESSION_ID
+telachat export-folder Projekt -o ./projekt-export
+telachat export-folder Projekt --single-file -o projekt.md
 ```
 
 ## Interaktive Slash-Commands

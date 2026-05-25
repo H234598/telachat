@@ -1,5 +1,11 @@
 # Releases
 
+## 0.5.0 - 2026-05-25
+
+- Selektiver Ordnerexport mit `telachat export-folder FOLDER`.
+- Verzeichnisexport mit `index.md` und einer Markdown-Datei pro Chat.
+- Optionaler `--single-file` Export fuer ein gebuendeltes Markdown.
+
 ## 0.4.0 - 2026-05-25
 
 - Ordner erhalten optionale Default-Systemprompts.
