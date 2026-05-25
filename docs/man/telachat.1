@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.20.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.21.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -62,6 +62,11 @@ Copy a saved session into a new independent chat.
 Export one session as Markdown. Use \fB--json\fR for structured output with
 session metadata and ordered messages.
 .TP
+.B import-session
+Import one \fBtelachat.session.v1\fR JSON export additively as a new session.
+Use \fB--title\fR, \fB--folder\fR, and \fB--json\fR for import metadata and
+structured output.
+.TP
 .B export-folder
 Export a selected folder as Markdown files or a single bundled Markdown file.
 .TP
@@ -102,6 +107,7 @@ telachat folders --create Arbeit --system "Antworte projektbezogen."
 telachat sessions --json
 telachat fork SESSION_ID --title "Variante A"
 telachat export SESSION_ID --json
+telachat import-session session.json --folder Importe
 telachat export-folder Arbeit -o ./arbeit-export
 telachat export-folder Arbeit --single-file -o arbeit.md
 telachat backup -o ./backups

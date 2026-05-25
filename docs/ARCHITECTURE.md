@@ -144,6 +144,7 @@ telachat sessions --json
 telachat fork <session-id-or-prefix>
 telachat export <session-id>
 telachat export <session-id> --json
+telachat import-session FILE.json
 telachat export-folder <folder-name-or-id>
 telachat export-folder <folder-name-or-id> --single-file
 telachat backup

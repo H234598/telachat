@@ -1,5 +1,12 @@
 # Releases
 
+## 0.21.0 - 2026-05-25
+
+- `telachat import-session FILE.json` importiert `telachat.session.v1`
+  additiv als neue Session.
+- `--title` und `--folder` setzen Zielmetadaten beim Import.
+- `--json` gibt die importierte Session und Nachrichtenanzahl strukturiert aus.
+
 ## 0.20.0 - 2026-05-25
 
 - `telachat export SESSION --json` exportiert eine einzelne Session

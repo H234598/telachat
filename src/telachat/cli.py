@@ -172,6 +172,30 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_export_folder.set_defaults(func=cmd_export_folder)
 
+    p_import_session = sub.add_parser(
+        "import-session",
+        help="Einzelne JSON-Session additiv importieren",
+    )
+    p_import_session.add_argument(
+        "session_json",
+        type=Path,
+        help="Export aus `telachat export --json`",
+    )
+    p_import_session.add_argument(
+        "--title",
+        help="Importierten Titel ueberschreiben",
+    )
+    p_import_session.add_argument(
+        "--folder",
+        help="Import in Ordner ablegen/Ordner anlegen",
+    )
+    p_import_session.add_argument(
+        "--json",
+        action="store_true",
+        help="Maschinenlesbares JSON ausgeben",
+    )
+    p_import_session.set_defaults(func=cmd_import_session)
+
     p_backup = sub.add_parser("backup", help="SQLite-Historie und redaktierte Config sichern")
     p_backup.add_argument("-o", "--output", type=Path, help="Backup-Zip oder Zielverzeichnis")
     p_backup.set_defaults(func=cmd_backup)
@@ -684,6 +708,64 @@ def cmd_export_folder(args: argparse.Namespace) -> int:
         return 0
     finally:
         store.close()
+
+
+def cmd_import_session(args: argparse.Namespace) -> int:
+    try:
+        payload = json.loads(args.session_json.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise ConfigError(f"Importdatei kann nicht gelesen werden: {args.session_json}") from exc
+    except json.JSONDecodeError as exc:
+        raise ConfigError(f"Ungueltige JSON-Importdatei: {exc}") from exc
+    if not isinstance(payload, dict) or payload.get("format") != "telachat.session.v1":
+        raise ConfigError("Importdatei ist kein telachat.session.v1 Export.")
+    source_session = payload.get("session")
+    source_messages = payload.get("messages")
+    if not isinstance(source_session, dict) or not isinstance(source_messages, list):
+        raise ConfigError("Importdatei braucht 'session' und 'messages'.")
+    clean_messages: list[tuple[str, str]] = []
+    for item in source_messages:
+        if not isinstance(item, dict):
+            raise ConfigError("Importnachricht ist kein Objekt.")
+        role = str(item.get("role") or "")
+        if role not in {"user", "assistant", "system"}:
+            raise ConfigError(f"Ungueltige Importrolle: {role or '<leer>'}")
+        content = item.get("content")
+        if not isinstance(content, str):
+            raise ConfigError("Importnachricht braucht Textinhalt.")
+        clean_messages.append((role, content))
+
+    store = ChatStore()
+    try:
+        folder_id = store.create_folder(args.folder).id if args.folder else None
+        imported = store.create_session(
+            title=args.title or str(source_session.get("title") or "Importierte Session"),
+            profile=str(source_session.get("profile") or "tki"),
+            model=str(source_session.get("model") or ""),
+            system_prompt=str(source_session.get("system_prompt") or ""),
+            folder_id=folder_id,
+        )
+        count = 0
+        for role, content in clean_messages:
+            store.add_message(imported.id, role, content)
+            count += 1
+        imported = store.get_session(imported.id) or imported
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "imported": _session_record(imported),
+                        "messages": count,
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+        else:
+            print(f"Importiert: {imported.id}  {count} Nachrichten  {imported.title}")
+    finally:
+        store.close()
+    return 0
 
 
 def cmd_backup(args: argparse.Namespace) -> int:

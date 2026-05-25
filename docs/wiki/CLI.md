@@ -61,6 +61,7 @@ telachat folders --show-system
 telachat folders --json --show-system
 telachat export SESSION_ID
 telachat export SESSION_ID --json
+telachat import-session session.json --folder Importe
 telachat export-folder Projekt -o ./projekt-export
 telachat export-folder Projekt --single-file -o projekt.md
 ```

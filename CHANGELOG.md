@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.21.0 - 2026-05-25
+
+- Add `telachat import-session FILE.json` for additive single-session imports.
+- Support `--title`, `--folder`, and `--json` for imported JSON sessions.
+- Validate import format and message roles before writing imported data.
+
 ## 0.20.0 - 2026-05-25
 
 - Add `telachat export SESSION --json` for machine-readable single-session

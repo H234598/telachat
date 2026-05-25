@@ -479,6 +479,38 @@ model = "demo"
                     json.loads(target.read_text(encoding="utf-8"))["messages"][0]["content"],
                     "Hallo JSON",
                 )
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(
+                            [
+                                "import-session",
+                                str(target),
+                                "--title",
+                                "Import JSON",
+                                "--folder",
+                                "Importe",
+                                "--json",
+                            ]
+                        ),
+                        0,
+                    )
+                imported = json.loads(out.getvalue())
+                self.assertEqual(imported["messages"], 2)
+                self.assertEqual(imported["imported"]["title"], "Import JSON")
+                store = ChatStore()
+                try:
+                    imported_session = store.get_session(imported["imported"]["id"])
+                    self.assertIsNotNone(imported_session)
+                    self.assertEqual(imported_session.model, "gpt-5.5")
+                    self.assertEqual(
+                        [(message.role, message.content) for message in store.messages(imported_session.id)],
+                        [("user", "Hallo JSON"), ("assistant", "Antwort JSON")],
+                    )
+                    self.assertEqual(store.get_folder(imported_session.folder_id).name, "Importe")
+                finally:
+                    store.close()
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
