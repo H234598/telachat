@@ -49,6 +49,17 @@ class _FakeCombo:
         self.values = list(kwargs.get("values", ()))
 
 
+class _FakeSpin:
+    def __init__(self, value: float) -> None:
+        self.value = value
+
+    def get_value(self) -> float:
+        return self.value
+
+    def get_value_as_int(self) -> int:
+        return int(self.value)
+
+
 class GuiImportTests(unittest.TestCase):
     def test_tk_gui_imports(self) -> None:
         module = importlib.import_module("telachat.tkgui")
@@ -143,6 +154,23 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(module.TkTelachatApp.selected_max_tokens(app), 1)
         self.assertEqual(app.temperature_var.get(), "2")
         self.assertEqual(app.max_tokens_var.get(), "1")
+
+    def test_gtk_generation_inputs_read_spin_values(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        app = SimpleNamespace(
+            temperature_spin=_FakeSpin(0.85),
+            max_tokens_spin=_FakeSpin(2048),
+        )
+
+        self.assertEqual(module.GtkTelachatApp.selected_temperature(app), 0.85)
+        self.assertEqual(module.GtkTelachatApp.selected_max_tokens(app), 2048)
 
 
 if __name__ == "__main__":
