@@ -39,6 +39,25 @@ class GitHubWorkflowTests(unittest.TestCase):
 
         self.assertEqual([], failures)
 
+    def test_release_uploads_do_not_use_raw_globs(self) -> None:
+        failures: list[str] = []
+        for workflow in sorted(WORKFLOW_DIR.glob("*.yml")) + sorted(
+            WORKFLOW_DIR.glob("*.yaml")
+        ):
+            lines = workflow.read_text(encoding="utf-8").splitlines()
+            for line_no, line in enumerate(lines, 1):
+                command = line.strip()
+                if not command.startswith("gh release upload "):
+                    continue
+                if "*" in command:
+                    failures.append(
+                        f"{workflow.relative_to(ROOT)}:{line_no} resolves release "
+                        "assets via raw wildcards; collect and validate explicit "
+                        "file paths before calling gh release upload."
+                    )
+
+        self.assertEqual([], failures)
+
 
 if __name__ == "__main__":
     unittest.main()
