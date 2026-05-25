@@ -72,11 +72,27 @@ class ThemeTests(unittest.TestCase):
             detect_system_theme({"TELACHAT_SYSTEM_THEME": "solarized_dark"}),
             "solarized-dark",
         )
+        self.assertEqual(
+            detect_system_theme(
+                {
+                    "TELACHAT_SYSTEM_THEME": "rose",
+                    "GTK_THEME": "Adwaita:dark",
+                }
+            ),
+            "rose",
+        )
 
     def test_system_theme_keeps_system_name_but_uses_detected_palette(self) -> None:
         with mock.patch.dict("os.environ", {"GTK_THEME": "Adwaita:dark"}, clear=True):
             self.assertEqual(theme_by_name("system").name, "system")
             self.assertEqual(theme_by_name("system").palette, theme_by_name("dark").palette)
+        with mock.patch.dict(
+            "os.environ",
+            {"TELACHAT_SYSTEM_THEME": "dracula", "GTK_THEME": "Adwaita"},
+            clear=True,
+        ):
+            self.assertEqual(theme_by_name("system").name, "system")
+            self.assertEqual(theme_by_name("system").palette, theme_by_name("dracula").palette)
 
     def test_unknown_theme_error_mentions_available_choices(self) -> None:
         with self.assertRaises(ValueError) as raised:

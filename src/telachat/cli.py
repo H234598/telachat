@@ -441,7 +441,7 @@ def cmd_chat(args: argparse.Namespace) -> int:
             if not user_input:
                 continue
             if user_input.startswith("/"):
-                keep_going, profile, system_prompt, session = _handle_command(
+                keep_going, cfg, profile, system_prompt, session = _handle_command(
                     user_input,
                     cfg,
                     store,
@@ -866,6 +866,8 @@ def cli_completion_candidates(line: str, cfg: object, store: ChatStore) -> list[
         return _completion_matches(_configured_models(cfg), prefix)
     if command == "/template":
         return _completion_matches(sorted(cfg.prompt_templates), prefix)
+    if command == "/theme":
+        return _completion_matches(theme_labels().keys(), prefix)
     if command in {"/folder", "/move", "/rename-folder"}:
         return _completion_matches([folder.name for folder in store.list_folders()], prefix)
     if command == "/load":
@@ -946,12 +948,12 @@ def _handle_command(
     session: object,
     *,
     stream: bool,
-) -> tuple[bool, Profile, str, object]:
+) -> tuple[bool, object, Profile, str, object]:
     command, _, rest = raw.partition(" ")
     command = canonical_slash_command(command.lower())
     rest = rest.strip()
     if command == "/exit":
-        return False, profile, system_prompt, session
+        return False, cfg, profile, system_prompt, session
     if command == "/help":
         print(slash_command_help())
     elif command == "/new":
@@ -1149,6 +1151,22 @@ def _handle_command(
             profile = profile.with_overrides(model=model)
             session = store.update_session_backend(session.id, profile.name, profile.model)
             print(f"Modell: {profile.model}")
+    elif command == "/theme":
+        labels = theme_labels()
+        if not rest:
+            width = max(14, *(len(name) for name in labels))
+            print(f"Aktives Theme: {cfg.theme}")
+            for name, label in labels.items():
+                marker = "*" if name == cfg.theme else " "
+                print(f"{marker} {name:{width}} {label}")
+        else:
+            try:
+                theme = set_config_theme(rest, cfg.path)
+            except ValueError as exc:
+                print(f"Fehler: {exc}", file=sys.stderr)
+            else:
+                cfg = load_config(cfg.path)
+                print(f"Theme gesetzt: {theme}")
     elif command == "/profiles":
         for name, item in sorted(cfg.profiles.items()):
             marker = "*" if name == profile.name else " "
@@ -1176,7 +1194,7 @@ def _handle_command(
         print(output)
     else:
         print(f"Unbekannter Befehl: {command}. /help hilft.")
-    return True, profile, system_prompt, session
+    return True, cfg, profile, system_prompt, session
 
 
 def _retitle_session(store: ChatStore, session_id: str, title: str) -> object:

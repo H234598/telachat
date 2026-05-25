@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.17.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.18.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -34,6 +34,7 @@ Show or set the persistent GUI theme. Supported themes are \fIsystem\fR,
 \fIforest\fR, and \fIrose\fR. The environment variable \fBTELACHAT_THEME\fR
 overrides the config for one process; \fBTELACHAT_SYSTEM_THEME\fR only fixes
 system-palette detection for one process.
+The same setting can be changed inside interactive chat with \fB/theme NAME\fR.
 .TP
 .B templates
 List configured prompt templates.
@@ -90,6 +91,8 @@ telachat config-check --strict
 telachat config-check --json
 telachat doctor --json --chat
 telachat theme dark
+telachat chat
+/theme dracula
 telachat ask -p tki "Hallo"
 telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
 telachat templates

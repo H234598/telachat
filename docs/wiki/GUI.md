@@ -22,6 +22,7 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - `/edit-last TEXT` ersetzt die letzte Nutzernachricht und entfernt die danach
   liegende Antwort; `/regen` generiert danach neu.
 - `/fork [TITLE]` kopiert den aktuellen Chat und laedt den neuen Fork.
+- `/theme [NAME]` wechselt das GUI-Theme direkt aus dem Prompt.
 
 ## Chatverwaltung
 
@@ -39,6 +40,8 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - `TELACHAT_SYSTEM_THEME` fixiert nur die System-Erkennung fuer einen Prozess.
 - Verfuegbare Paletten: `light`, `dark`, `high-contrast`, `solarized-light`,
   `solarized-dark`, `nord`, `dracula`, `gruvbox`, `ocean`, `forest`, `rose`.
+- Der Prompt-Befehl `/theme dracula` nutzt denselben gespeicherten Wert wie der
+  Theme-Waehler im Systembereich.
 
 ## Prompt-Templates
 

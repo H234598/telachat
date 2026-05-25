@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.0 - 2026-05-25
+
+- Add `/theme [NAME]` to interactive CLI, GTK, and Tk.
+- Add slash-command completion for theme names.
+- Add regression coverage for the prompt-level theme command and help text.
+- Harden system-theme tests for explicit override precedence.
+
 ## 0.17.0 - 2026-05-25
 
 - Expand the built-in GUI theme catalog with Solarized, Nord, Dracula, Gruvbox,

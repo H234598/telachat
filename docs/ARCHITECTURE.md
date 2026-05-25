@@ -26,6 +26,7 @@
     and context values when stdin is a TTY.
 - `telachat.commands`
   - Shared slash-command catalog for CLI help and GUI autocomplete.
+  - Theme names are completed from the central theme catalog for `/theme`.
 - `telachat.controller`
   - Shared application service for GUI frontends.
 - `telachat.gtkgui`
@@ -123,6 +124,8 @@ telachat config-check --strict
 telachat config-check --json
 telachat theme
 telachat theme dark
+telachat chat
+/theme dracula
 telachat templates
 telachat folders
 telachat doctor

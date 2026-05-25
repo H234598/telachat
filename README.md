@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.17.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.18.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -151,6 +151,12 @@ telachat theme
 telachat theme dark
 TELACHAT_THEME=high-contrast telachat-gtk
 TELACHAT_SYSTEM_THEME=solarized-dark telachat-tk
+```
+
+Im interaktiven Chat kann das Theme ebenfalls gewechselt werden:
+
+```text
+/theme dracula
 ```
 
 Gespeicherte Sessions koennen auch direkt in der CLI gefiltert werden:

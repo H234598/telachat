@@ -749,6 +749,7 @@ X-Test-Header = "yes"
                     self.assertIn("openai ", cli_completion_candidates("/provider op", cfg, store))
                     self.assertIn("gpt-5.5 ", cli_completion_candidates("/model gpt", cfg, store))
                     self.assertIn("summarize ", cli_completion_candidates("/template su", cfg, store))
+                    self.assertIn("dracula ", cli_completion_candidates("/theme dr", cfg, store))
                     self.assertIn("Arbeit ", cli_completion_candidates("/move Ar", cfg, store))
                     self.assertIn("title ", cli_completion_candidates("/sort ti", cfg, store))
                     self.assertTrue(
@@ -780,6 +781,8 @@ X-Test-Header = "yes"
                     side_effect=[
                         "/provider openai",
                         "/model gpt-5.5",
+                        "/theme dracula",
+                        "/theme",
                         "/move Arbeit",
                         "/rename Testtitel",
                         "/folder-system Ordnerkontext",
@@ -794,6 +797,8 @@ X-Test-Header = "yes"
                 text = out.getvalue()
                 self.assertIn("Aktiv: openai", text)
                 self.assertIn("Modell: gpt-5.5", text)
+                self.assertIn("Theme gesetzt: dracula", text)
+                self.assertIn("Aktives Theme: dracula", text)
                 self.assertIn("Chat abgelegt: Arbeit", text)
                 self.assertIn("Umbenannt: Testtitel", text)
                 self.assertIn("Ordner-Systemprompt gesetzt: Arbeit", text)

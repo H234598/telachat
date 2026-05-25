@@ -42,6 +42,7 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/search", "/search TEXT", "Chatliste durchsuchen"),
     SlashCommand("/provider", "/provider NAME", "Provider wechseln"),
     SlashCommand("/model", "/model NAME", "Modell wechseln"),
+    SlashCommand("/theme", "/theme [NAME]", "GUI-Theme anzeigen/wechseln"),
     SlashCommand("/permissions", "/permissions", "Provider und Secret-Quellen anzeigen"),
     SlashCommand("/left", "/left", "Linke Seite ein-/ausklappen", aliases=("/links",)),
     SlashCommand("/system", "/system [prompt]", "Systembereich ein-/ausklappen oder Prompt setzen"),

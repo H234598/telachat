@@ -1,5 +1,11 @@
 # Releases
 
+## 0.18.0 - 2026-05-25
+
+- Neuer Slash-Befehl `/theme [NAME]` fuer CLI, GTK und Tk.
+- Completion kennt Theme-Namen wie `dracula`.
+- Tests pruefen Hilfe, Completion und interaktives CLI-Setzen.
+
 ## 0.17.0 - 2026-05-25
 
 - Theme-Katalog erweitert: Solarized, Nord, Dracula, Gruvbox, Ocean, Forest und

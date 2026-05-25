@@ -898,6 +898,18 @@ class TkTelachatApp:
                 if rest.lower() == str(model).lower():
                     self.model_var.set(model)
                     break
+        elif command == "/theme":
+            if not rest:
+                self.set_status(f"Theme: {self.theme.label}")
+            else:
+                try:
+                    self.theme = self.controller.set_theme(rest)
+                except ValueError as exc:
+                    self.set_status(str(exc))
+                else:
+                    self.theme_var.set(self.controller.theme_labels()[self.theme.name])
+                    self._apply_theme_to_widgets()
+                    self.set_status(f"Theme: {self.theme.label}")
         elif command == "/permissions":
             lines = [
                 f"{name}: {redact_secret(profile.api_key)}"

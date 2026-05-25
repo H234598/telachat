@@ -1038,6 +1038,19 @@ class GtkTelachatApp(Adw.Application):
                 if rest.lower() == model.lower():
                     self.model_dropdown.set_selected(index)
                     break
+        elif command == "/theme":
+            if not rest:
+                self.status.set_text(f"Theme: {self.theme.label}")
+            else:
+                try:
+                    self.theme = self.controller.set_theme(rest)
+                except ValueError as exc:
+                    self.status.set_text(str(exc))
+                else:
+                    if self.theme.name in self.theme_names:
+                        self.theme_dropdown.set_selected(self.theme_names.index(self.theme.name))
+                    self._install_css()
+                    self.status.set_text(f"Theme: {self.theme.label}")
         elif command == "/permissions":
             lines = [
                 f"{name}: {redact_secret(profile.api_key)}"
