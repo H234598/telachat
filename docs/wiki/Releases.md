@@ -1,5 +1,10 @@
 # Releases
 
+## 0.39.1 - 2026-05-25
+
+- Tests decken jetzt auch die Tk- und GTK-Normalisierung fuer
+  `/regenerate` ueber den gemeinsamen Command-Katalog ab.
+
 ## 0.39.0 - 2026-05-25
 
 - Tk und GTK normalisieren Slash-Aliase jetzt ueber den gemeinsamen

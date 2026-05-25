@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.39.1 - 2026-05-25
+
+- Cover Tk and GTK `/regenerate` aliases through the shared command catalog.
+
 ## 0.39.0 - 2026-05-25
 
 - Normalize Tk and GTK slash-command aliases through the shared command catalog.
