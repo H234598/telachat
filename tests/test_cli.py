@@ -204,6 +204,38 @@ model = "demo"
                 profiles = {profile["name"]: profile for profile in payload["profiles"]}
                 self.assertFalse(profiles["missing"]["secret_ok"])
                 self.assertNotIn("secret-value", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["--config", str(config), "config-check", "--profile", "ok", "--strict"]),
+                        0,
+                    )
+                text = out.getvalue()
+                self.assertIn("Profile filter: ok", text)
+                self.assertIn("ok:envfile:", text)
+                self.assertNotIn("missing:env:TELACHAT_MISSING_TEST_KEY", text)
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(
+                            [
+                                "--config",
+                                str(config),
+                                "config-check",
+                                "--profile",
+                                "missing",
+                                "--json",
+                                "--strict",
+                            ]
+                        ),
+                        1,
+                    )
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["profile_filter"], "missing")
+                self.assertEqual(payload["missing_secrets"], 1)
+                self.assertEqual([profile["name"] for profile in payload["profiles"]], ["missing"])
             finally:
                 _restore_env("TELACHAT_MISSING_TEST_KEY", old_missing)
 

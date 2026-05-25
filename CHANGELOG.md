@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.26.0 - 2026-05-25
+
+- Add `config-check --profile NAME` to validate one configured profile.
+- Make `--strict` useful for a selected profile without counting optional
+  providers that are not being used.
+- Include `profile_filter` in JSON config-check output.
+- Fix Zipapp command exit codes by using a `SystemExit(main())` launcher.
+
 ## 0.25.0 - 2026-05-25
 
 - Add default local OpenAI-compatible provider presets for LM Studio, Ollama,

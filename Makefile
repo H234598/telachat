@@ -19,7 +19,7 @@ test3:
 
 zipapp:
 	mkdir -p dist
-	$(PYTHON) -m zipapp src -m telachat:main -p "/usr/bin/env python3" -o dist/$(APP).pyz
+	$(PYTHON) -m zipapp src -p "/usr/bin/env python3" -o dist/$(APP).pyz
 
 install:
 	mkdir -p "$(PREFIX)/bin"

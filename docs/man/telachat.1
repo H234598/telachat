@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.25.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.26.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -25,8 +25,9 @@ includes non-default local presets for LM Studio, Ollama, and Jan. Use
 .TP
 .B config-check, config
 Check local configuration, model metadata, and secret references without an API
-request. Use \fB--strict\fR to fail when a non-Codex provider secret source is
-missing. Use \fB--json\fR for redacted structured output.
+request. Use \fB--profile NAME\fR to check one profile. Use \fB--strict\fR to
+fail when checked non-Codex provider secret sources are missing. Use
+\fB--json\fR for redacted structured output.
 .TP
 .B theme
 Show or set the persistent GUI theme. Supported themes are \fIsystem\fR,
@@ -101,6 +102,7 @@ Start the Tk desktop frontend.
 telachat doctor --chat
 telachat config-check
 telachat config-check --strict
+telachat config-check --profile tki --strict
 telachat config-check --json
 telachat doctor --json --chat
 telachat theme dark

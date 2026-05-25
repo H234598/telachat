@@ -165,6 +165,9 @@ network/API check.
 The generated default config includes non-default local OpenAI-compatible
 presets for LM Studio, Ollama, and Jan. They are normal profiles and may fail
 `doctor` until the corresponding local server and model are running.
+`config-check --profile NAME --strict` narrows strict secret validation to one
+profile, which is useful when optional provider presets are intentionally not
+configured.
 `profiles`, `config-check`, `sessions`, `folders`, `export`, `export-folder`,
 and `doctor` also support `--json` for agent/script consumption. JSON output is
 redacted where it contains provider configuration; folder system prompts are

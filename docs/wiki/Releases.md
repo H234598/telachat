@@ -1,5 +1,12 @@
 # Releases
 
+## 0.26.0 - 2026-05-25
+
+- `config-check --profile NAME` prueft nur ein Profil.
+- `--strict` kann damit gezielt fuer ein Zielprofil genutzt werden, ohne
+  optionale Provider mitzuzählen.
+- JSON-Ausgabe enthaelt `profile_filter`.
+
 ## 0.25.0 - 2026-05-25
 
 - Standardkonfiguration enthaelt lokale Provider-Presets fuer LM Studio,

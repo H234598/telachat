@@ -8,6 +8,7 @@ Telachat kann komplett aus dem Terminal genutzt werden.
 telachat init
 telachat profiles
 telachat config-check
+telachat config-check --profile tki --strict
 telachat config-check --json
 telachat theme
 telachat templates

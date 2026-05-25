@@ -91,6 +91,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Mit Fehlercode beenden, wenn Secret-Quellen fehlen",
     )
+    p_config.add_argument(
+        "-p",
+        "--profile",
+        help="Nur dieses Profil pruefen",
+    )
     p_config.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_config.set_defaults(func=cmd_config_check)
 
@@ -319,8 +324,9 @@ def cmd_config_check(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     missing = 0
     profile_rows = []
-    for name in sorted(cfg.profiles):
-        profile = cfg.profiles[name]
+    profiles = [cfg.profile(args.profile)] if args.profile else [cfg.profiles[name] for name in sorted(cfg.profiles)]
+    for profile in profiles:
+        name = profile.name
         ok, detail = _secret_status(profile)
         if not ok:
             missing += 1
@@ -341,6 +347,7 @@ def cmd_config_check(args: argparse.Namespace) -> int:
                     "sqlite": str(db_path()),
                     "default_profile": cfg.default_profile,
                     "theme": cfg.theme,
+                    "profile_filter": args.profile,
                     "prompt_templates": len(cfg.prompt_templates),
                     "missing_secrets": missing,
                     "profiles": profile_rows,
@@ -355,6 +362,8 @@ def cmd_config_check(args: argparse.Namespace) -> int:
     print(f"SQLite: {db_path()}")
     print(f"Default profile: {cfg.default_profile}")
     print(f"Theme: {cfg.theme}")
+    if args.profile:
+        print(f"Profile filter: {args.profile}")
     for row in profile_rows:
         marker = "*" if row["default"] else " "
         print(

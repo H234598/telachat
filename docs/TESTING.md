@@ -33,6 +33,8 @@ telachat backup -o /tmp/telachat-backups
 telachat restore --dry-run /tmp/telachat-backups/FILE.zip
 telachat doctor --chat
 telachat doctor --json --chat
+telachat config-check --profile tki --strict
+python3 dist/telachat.pyz config-check --profile jan --json --strict
 telachat templates
 telachat folders --show-system
 telachat folders --json --show-system
