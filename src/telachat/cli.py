@@ -1687,7 +1687,7 @@ def _handle_command(
     elif command == "/doctor":
         try:
             models = OpenAICompatClient(profile, retries=1).list_models()
-        except ApiError as exc:
+        except (ApiError, ConfigError, OSError) as exc:
             print(f"/models: Fehler ({exc})", file=sys.stderr)
         else:
             print(f"/models: ok ({', '.join(models) if models else 'keine IDs gemeldet'})")
