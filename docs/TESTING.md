@@ -100,6 +100,8 @@ modes. `/stats` tests cover the shared content-free
 formatter plus terminal, Tk, and GTK prompt paths. `/doctor` prompt tests cover
 terminal `/models` output, local secret-source errors, and GUI dispatch to the
 existing Check action.
+GUI tests also cover shared alias normalization for `/q` and `/quit` closing
+Tk and GTK windows.
 Backup tests inspect the ZIP bundle and verify that envfile secret values and
 secret-like header values are not included. GUI smoke and regression tests also
 cover construction of the slash-command autocomplete widgets, visible

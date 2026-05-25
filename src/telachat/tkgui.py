@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 from .commands import (
+    canonical_slash_command,
     format_message_matches,
     format_stats_lines,
     format_stats_summary,
@@ -930,14 +931,16 @@ class TkTelachatApp:
 
     def handle_command(self, raw: str) -> None:
         command, _, rest = raw.partition(" ")
-        command = command.lower()
+        command = canonical_slash_command(command.lower())
         rest = rest.strip()
-        if command in {"/help", "/hilfe"}:
+        if command == "/exit":
+            self.root.destroy()
+        elif command == "/help":
             messagebox.showinfo(
                 "Telachat Kommandos",
                 slash_command_help(),
             )
-        elif command in {"/new", "/neu"}:
+        elif command == "/new":
             self.new_session()
         elif command == "/rename":
             if rest and self.active_session:
@@ -1053,7 +1056,7 @@ class TkTelachatApp:
                 self.refresh_sessions()
                 self.render_messages()
                 self.set_status(f"Fork geladen: {self.active_session.title}")
-        elif command in {"/regen", "/regenerate"}:
+        elif command == "/regen":
             self.regenerate_active_session()
         elif command == "/templates":
             names = sorted(self.controller.prompt_templates())
@@ -1082,7 +1085,7 @@ class TkTelachatApp:
             else:
                 self.set_system_prompt_text(self.controller.folder_system_prompt(folder_id))
                 self.set_status("Ordner-Prompt geladen.")
-        elif command in {"/folder", "/ordner"}:
+        elif command == "/folder":
             if rest:
                 folder = self.controller.create_folder(rest)
                 self.refresh_folders()
@@ -1097,7 +1100,7 @@ class TkTelachatApp:
                 self.refresh_sessions()
         elif command == "/delete-folder":
             self.delete_selected_folder()
-        elif command in {"/move", "/ablegen"}:
+        elif command == "/move":
             if rest and self.active_session:
                 folder = self.controller.create_folder(rest)
                 self.active_session = self.controller.move_session(self.active_session.id, folder.id)

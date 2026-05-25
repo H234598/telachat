@@ -12,6 +12,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
 from .commands import (
+    canonical_slash_command,
     format_message_matches,
     format_stats_lines,
     format_stats_summary,
@@ -1053,9 +1054,11 @@ class GtkTelachatApp(Adw.Application):
 
     def handle_command(self, raw: str) -> None:
         command, _, rest = raw.partition(" ")
-        command = command.lower()
+        command = canonical_slash_command(command.lower())
         rest = rest.strip()
-        if command in {"/help", "/hilfe"}:
+        if command == "/exit":
+            self.window.close()
+        elif command == "/help":
             dialog = Adw.MessageDialog.new(
                 self.window,
                 "Telachat Kommandos",
@@ -1063,7 +1066,7 @@ class GtkTelachatApp(Adw.Application):
             )
             dialog.add_response("ok", "OK")
             dialog.present()
-        elif command in {"/new", "/neu"}:
+        elif command == "/new":
             self.on_new(self.send_button)
         elif command == "/rename":
             if rest and self.active_session:
@@ -1183,7 +1186,7 @@ class GtkTelachatApp(Adw.Application):
                 self.refresh_sessions()
                 self.render_messages()
                 self.status.set_text(f"Fork geladen: {self.active_session.title}")
-        elif command in {"/regen", "/regenerate"}:
+        elif command == "/regen":
             self.on_regenerate_active_session(self.send_button)
         elif command == "/templates":
             names = sorted(self.controller.prompt_templates())
@@ -1211,7 +1214,7 @@ class GtkTelachatApp(Adw.Application):
             else:
                 self.set_system_prompt(self.controller.folder_system_prompt(folder_id))
                 self.status.set_text("Ordner-Prompt geladen.")
-        elif command in {"/folder", "/ordner"}:
+        elif command == "/folder":
             if rest:
                 folder = self.controller.create_folder(rest)
                 self.refresh_folders()
@@ -1226,7 +1229,7 @@ class GtkTelachatApp(Adw.Application):
                 self.refresh_sessions()
         elif command == "/delete-folder":
             self.on_delete_selected_folder(self.send_button)
-        elif command in {"/move", "/ablegen"}:
+        elif command == "/move":
             if rest and self.active_session:
                 folder = self.controller.create_folder(rest)
                 self.active_session = self.controller.move_session(self.active_session.id, folder.id)

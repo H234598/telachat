@@ -1,5 +1,12 @@
 # Releases
 
+## 0.39.0 - 2026-05-25
+
+- Tk und GTK normalisieren Slash-Aliase jetzt ueber den gemeinsamen
+  Command-Katalog.
+- `/exit`, `/quit` und `/q` schliessen das jeweilige GUI-Fenster.
+- Tests decken Tk- und GTK-Exit-Aliase ab.
+
 ## 0.38.2 - 2026-05-25
 
 - Profile mit ungueltigem `stream` oder `api_mode` werden jetzt beim Laden der

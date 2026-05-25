@@ -266,6 +266,7 @@ GUI slash commands:
 /permissions
 /left | /links
 /system
+/exit | /quit | /q
 ```
 
 ## Test strategy

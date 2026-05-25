@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.39.0 - 2026-05-25
+
+- Normalize Tk and GTK slash-command aliases through the shared command catalog.
+- Add GUI `/exit`, `/quit`, and `/q` prompt commands for closing the window.
+- Cover Tk and GTK exit aliases.
+
 ## 0.38.2 - 2026-05-25
 
 - Validate profile `stream` and `api_mode` values while loading config.

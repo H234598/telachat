@@ -81,6 +81,22 @@ class _FakeDialog:
         self.presented = True
 
 
+class _FakeWindow:
+    def __init__(self) -> None:
+        self.closed = False
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class _FakeRoot:
+    def __init__(self) -> None:
+        self.destroyed = False
+
+    def destroy(self) -> None:
+        self.destroyed = True
+
+
 class GuiImportTests(unittest.TestCase):
     def test_tk_gui_imports(self) -> None:
         module = importlib.import_module("telachat.tkgui")
@@ -226,6 +242,15 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(calls, ["doctor"])
 
+    def test_tk_exit_alias_closes_window(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        root = _FakeRoot()
+        app = SimpleNamespace(root=root)
+
+        module.TkTelachatApp.handle_command(app, "/q")
+
+        self.assertTrue(root.destroyed)
+
     def test_gtk_response_status_reports_elapsed_time(self) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -293,6 +318,22 @@ class GuiImportTests(unittest.TestCase):
         module.GtkTelachatApp.handle_command(app, "/doctor")
 
         self.assertEqual(calls, ["doctor"])
+
+    def test_gtk_exit_alias_closes_window(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        window = _FakeWindow()
+        app = SimpleNamespace(window=window)
+
+        module.GtkTelachatApp.handle_command(app, "/quit")
+
+        self.assertTrue(window.closed)
 
 
 def _fake_stats() -> object:
