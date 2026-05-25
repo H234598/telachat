@@ -1,5 +1,12 @@
 # Releases
 
+## 0.24.0 - 2026-05-25
+
+- `import-session` und `import-folder` unterstuetzen `--dry-run`.
+- Dry-Runs validieren JSON-Importe und melden Sessions/Nachrichten, ohne
+  SQLite zu beschreiben.
+- Tests stellen sicher, dass Dry-Runs keine Ordner oder Sessions anlegen.
+
 ## 0.23.0 - 2026-05-25
 
 - `telachat import-folder FILE.json` importiert `telachat.folder.v1` additiv.

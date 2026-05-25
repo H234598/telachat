@@ -129,6 +129,67 @@ class CliImportFolderTests(unittest.TestCase):
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_import_folder_dry_run_validates_without_writing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(main(["init"]), 0)
+                import_path = Path(tmp) / "folder.json"
+                import_path.write_text(
+                    json.dumps(
+                        {
+                            "format": "telachat.folder.v1",
+                            "folder": {
+                                "kind": "folder",
+                                "name": "Dry Folder",
+                                "system_prompt": "Dry system",
+                            },
+                            "sessions": [
+                                {
+                                    "session": {
+                                        "title": "Dry Run",
+                                        "profile": "openai",
+                                        "model": "gpt-5.5",
+                                        "system_prompt": "Dry session",
+                                    },
+                                    "messages": [
+                                        {"role": "user", "content": "Nur pruefen"},
+                                        {"role": "assistant", "content": "OK"},
+                                    ],
+                                }
+                            ],
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["import-folder", str(import_path), "--dry-run", "--json"]),
+                        0,
+                    )
+                result = json.loads(out.getvalue())
+                self.assertTrue(result["dry_run"])
+                self.assertEqual(result["folder"]["name"], "Dry Folder")
+                self.assertEqual(result["messages"], 2)
+                self.assertEqual(result["sessions"][0]["title"], "Dry Run")
+                self.assertEqual(result["sessions"][0]["messages"], 2)
+
+                store = ChatStore()
+                try:
+                    self.assertEqual(store.list_sessions(limit=10), [])
+                    self.assertEqual(store.list_folders(), [])
+                finally:
+                    store.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_import_folder_empty_bundle_recreates_folder(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

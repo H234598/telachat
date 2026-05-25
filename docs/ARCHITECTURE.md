@@ -145,10 +145,12 @@ telachat fork <session-id-or-prefix>
 telachat export <session-id>
 telachat export <session-id> --json
 telachat import-session FILE.json
+telachat import-session FILE.json --dry-run
 telachat export-folder <folder-name-or-id>
 telachat export-folder <folder-name-or-id> --single-file
 telachat export-folder <folder-name-or-id> --json
 telachat import-folder FILE.json
+telachat import-folder FILE.json --dry-run
 telachat backup
 telachat backup -o DIR
 telachat backup -o FILE.zip

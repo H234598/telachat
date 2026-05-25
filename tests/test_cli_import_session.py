@@ -20,6 +20,69 @@ def _restore_env(name: str, value: str | None) -> None:
 
 
 class CliImportSessionTests(unittest.TestCase):
+    def test_import_session_dry_run_validates_without_writing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(main(["init"]), 0)
+                import_path = Path(tmp) / "session.json"
+                import_path.write_text(
+                    json.dumps(
+                        {
+                            "format": "telachat.session.v1",
+                            "session": {
+                                "title": "Dry Session",
+                                "profile": "openai",
+                                "model": "gpt-5.5",
+                                "system_prompt": "Dry system",
+                            },
+                            "messages": [
+                                {"role": "user", "content": "Nur pruefen"},
+                                {"role": "assistant", "content": "OK"},
+                            ],
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(
+                            [
+                                "import-session",
+                                str(import_path),
+                                "--title",
+                                "Override Dry",
+                                "--folder",
+                                "Ziel",
+                                "--dry-run",
+                                "--json",
+                            ]
+                        ),
+                        0,
+                    )
+                result = json.loads(out.getvalue())
+                self.assertTrue(result["dry_run"])
+                self.assertEqual(result["folder"], "Ziel")
+                self.assertEqual(result["messages"], 2)
+                self.assertEqual(result["session"]["title"], "Override Dry")
+                self.assertEqual(result["session"]["model"], "gpt-5.5")
+
+                store = ChatStore()
+                try:
+                    self.assertEqual(store.list_sessions(limit=10), [])
+                    self.assertEqual(store.list_folders(), [])
+                finally:
+                    store.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_import_session_rejects_invalid_messages_before_writing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

@@ -199,6 +199,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Maschinenlesbares JSON ausgeben",
     )
+    p_import_session.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Nur validieren und zaehlen, nichts schreiben",
+    )
     p_import_session.set_defaults(func=cmd_import_session)
 
     p_import_folder = sub.add_parser(
@@ -218,6 +223,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Maschinenlesbares JSON ausgeben",
+    )
+    p_import_folder.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Nur validieren und zaehlen, nichts schreiben",
     )
     p_import_folder.set_defaults(func=cmd_import_folder)
 
@@ -692,6 +702,25 @@ def _folder_import_target(store: ChatStore, payload: dict[str, object], override
     return store.create_folder(name, system_prompt=str(folder.get("system_prompt") or ""))
 
 
+def _folder_import_preview(payload: dict[str, object], override: str | None) -> dict[str, object] | None:
+    if override:
+        return {
+            "name": override,
+            "source": "override",
+        }
+    folder = payload.get("folder")
+    if not isinstance(folder, dict) or folder.get("kind") != "folder":
+        return None
+    name = str(folder.get("name") or "").strip()
+    if not name:
+        return None
+    return {
+        "name": name,
+        "source": "bundle",
+        "has_system_prompt": bool(folder.get("system_prompt")),
+    }
+
+
 def cmd_fork(args: argparse.Namespace) -> int:
     store = ChatStore()
     try:
@@ -837,12 +866,34 @@ def cmd_import_session(args: argparse.Namespace) -> int:
     if not isinstance(payload, dict) or payload.get("format") != "telachat.session.v1":
         raise ConfigError("Importdatei ist kein telachat.session.v1 Export.")
     session_meta, clean_messages = _clean_session_import_payload(payload)
+    title = args.title or session_meta["title"]
+    if args.dry_run:
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "dry_run": True,
+                        "folder": args.folder,
+                        "messages": len(clean_messages),
+                        "session": {
+                            **session_meta,
+                            "title": title,
+                        },
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+        else:
+            target = f" in Ordner {args.folder}" if args.folder else ""
+            print(f"Trockenlauf: 1 Session  {len(clean_messages)} Nachrichten{target}  {title}")
+        return 0
 
     store = ChatStore()
     try:
         folder_id = store.create_folder(args.folder).id if args.folder else None
         imported = store.create_session(
-            title=args.title or session_meta["title"],
+            title=title,
             profile=session_meta["profile"],
             model=session_meta["model"],
             system_prompt=session_meta["system_prompt"],
@@ -887,12 +938,37 @@ def cmd_import_folder(args: argparse.Namespace) -> int:
     clean_sessions: list[tuple[dict[str, str], list[tuple[str, str]]]] = []
     for item in source_sessions:
         clean_sessions.append(_clean_session_import_payload(item))
+    total_messages = sum(len(messages) for _, messages in clean_sessions)
+    if args.dry_run:
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "dry_run": True,
+                        "folder": _folder_import_preview(payload, args.folder),
+                        "messages": total_messages,
+                        "sessions": [
+                            {
+                                **session_meta,
+                                "messages": len(messages),
+                            }
+                            for session_meta, messages in clean_sessions
+                        ],
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+        else:
+            target = f" in Ordner {args.folder}" if args.folder else ""
+            print(f"Trockenlauf: {len(clean_sessions)} Sessions  {total_messages} Nachrichten{target}")
+        return 0
 
     store = ChatStore()
     try:
         folder = _folder_import_target(store, payload, args.folder)
         imported_sessions: list[Session] = []
-        total_messages = 0
+        written_messages = 0
         for session_meta, messages in clean_sessions:
             imported = store.create_session(
                 title=session_meta["title"],
@@ -903,7 +979,7 @@ def cmd_import_folder(args: argparse.Namespace) -> int:
             )
             for role, content in messages:
                 store.add_message(imported.id, role, content)
-                total_messages += 1
+                written_messages += 1
             imported_sessions.append(store.get_session(imported.id) or imported)
         if args.json:
             folder_record = _folder_record(folder, include_system_prompt=True) if folder else None
@@ -914,7 +990,7 @@ def cmd_import_folder(args: argparse.Namespace) -> int:
                             "folder": folder_record,
                             "sessions": [_session_record(session) for session in imported_sessions],
                         },
-                        "messages": total_messages,
+                        "messages": written_messages,
                     },
                     indent=2,
                     sort_keys=True,
@@ -922,7 +998,7 @@ def cmd_import_folder(args: argparse.Namespace) -> int:
             )
         else:
             target = f" in Ordner {folder.name}" if folder else ""
-            print(f"Importiert: {len(imported_sessions)} Sessions  {total_messages} Nachrichten{target}")
+            print(f"Importiert: {len(imported_sessions)} Sessions  {written_messages} Nachrichten{target}")
     finally:
         store.close()
     return 0

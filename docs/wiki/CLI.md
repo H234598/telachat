@@ -67,6 +67,7 @@ telachat export-folder Projekt -o ./projekt-export
 telachat export-folder Projekt --single-file -o projekt.md
 telachat export-folder Projekt --json -o projekt.json
 telachat import-folder projekt.json --folder Importiert
+telachat import-folder projekt.json --dry-run --json
 ```
 
 ## Interaktive Slash-Commands

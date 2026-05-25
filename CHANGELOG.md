@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.24.0 - 2026-05-25
+
+- Add `--dry-run` to `import-session` and `import-folder`.
+- Validate JSON import files and report session/message counts without writing
+  folders, sessions, or messages.
+- Add regression coverage that dry-run imports leave SQLite unchanged.
+
 ## 0.23.0 - 2026-05-25
 
 - Add `telachat import-folder FILE.json` for additive imports of
