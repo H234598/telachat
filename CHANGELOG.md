@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.43.9 - 2026-05-25
+
+- Align configuration validation with GUI generation ranges for `temperature` and `top_p`.
+- Compile packaging helper modules during `make check`.
+
 ## 0.43.8 - 2026-05-25
 
 - Validate numeric configuration values and per-request generation overrides with clear `ConfigError` messages.

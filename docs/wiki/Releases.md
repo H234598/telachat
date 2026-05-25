@@ -1,5 +1,11 @@
 # Releases
 
+## 0.43.9 - 2026-05-25
+
+- Die Konfigurationsvalidierung nutzt jetzt dieselben sinnvollen
+  Generierungsbereiche wie die GUI fuer `temperature` und `top_p`.
+- `make check` kompiliert jetzt auch die Packaging-Hilfsmodule.
+
 ## 0.43.8 - 2026-05-25
 
 - Numerische Konfigurationswerte und per Request gesetzte Generierungswerte

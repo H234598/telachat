@@ -73,7 +73,13 @@ class Profile:
         if model is not None:
             updates["model"] = model
         if temperature is not None:
-            updates["temperature"] = _number(temperature, "temperature", self.name)
+            updates["temperature"] = _number_between(
+                temperature,
+                "temperature",
+                self.name,
+                minimum=0.0,
+                maximum=2.0,
+            )
         if max_tokens is not None:
             updates["max_tokens"] = _positive_int(max_tokens, "max_tokens", self.name)
         if reasoning_effort is not None:
@@ -156,8 +162,20 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
             api_key=api_key,
             model=model,
             models=_models(values, model, name),
-            temperature=_number(values.get("temperature", 0.2), "temperature", name),
-            top_p=_number(values.get("top_p", 0.9), "top_p", name),
+            temperature=_number_between(
+                values.get("temperature", 0.2),
+                "temperature",
+                name,
+                minimum=0.0,
+                maximum=2.0,
+            ),
+            top_p=_number_between(
+                values.get("top_p", 0.9),
+                "top_p",
+                name,
+                minimum=0.0,
+                maximum=1.0,
+            ),
             max_tokens=_positive_int(values.get("max_tokens", 512), "max_tokens", name),
             reasoning_effort=_optional_reasoning_effort(values.get("reasoning_effort"), name),
             timeout_seconds=_positive_int(
@@ -272,6 +290,22 @@ def _number(value: object, key: str, profile_name: str | None) -> float:
         raise ConfigError(_invalid_config_value(key, profile_name)) from exc
     if not math.isfinite(result):
         raise ConfigError(_invalid_config_value(key, profile_name))
+    return result
+
+
+def _number_between(
+    value: object,
+    key: str,
+    profile_name: str | None,
+    *,
+    minimum: float,
+    maximum: float,
+) -> float:
+    result = _number(value, key, profile_name)
+    if not minimum <= result <= maximum:
+        raise ConfigError(
+            f"{_field_label(key, profile_name)} muss zwischen {minimum:g} und {maximum:g} liegen."
+        )
     return result
 
 

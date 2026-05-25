@@ -148,7 +148,11 @@ model = "demo"
 """
             cases = [
                 ("temperature = true", "temperature"),
+                ("temperature = -0.1", "temperature"),
+                ("temperature = 2.1", "temperature"),
                 ('top_p = "nope"', "top_p"),
+                ("top_p = -0.1", "top_p"),
+                ("top_p = 1.1", "top_p"),
                 ("max_tokens = 0", "max_tokens"),
                 ('timeout_seconds = "slow"', "timeout_seconds"),
             ]
@@ -176,6 +180,8 @@ model = "demo"
             cfg = load_config(path)
             with self.assertRaisesRegex(ConfigError, "max_tokens"):
                 cfg.profile().with_overrides(max_tokens=0)
+            with self.assertRaisesRegex(ConfigError, "temperature"):
+                cfg.profile().with_overrides(temperature=2.1)
 
     def test_env_api_key_resolution(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
