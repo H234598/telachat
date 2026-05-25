@@ -1,5 +1,10 @@
 # Releases
 
+## 0.45.1 - 2026-05-25
+
+- Ergaenzt Regression-Coverage fuer `telachat ask --json --save`: die Session
+  wird gespeichert, `saved_session_id` wird ausgegeben, und stderr bleibt ruhig.
+
 ## 0.45.0 - 2026-05-25
 
 - `telachat ask --json` gibt One-Shot-Antworten maschinenlesbar mit Provider,

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.45.1 - 2026-05-25
+
+- Add regression coverage for `telachat ask --json --save` session persistence and quiet stderr.
+
 ## 0.45.0 - 2026-05-25
 
 - Add `telachat ask --json` for scriptable one-shot answers with provider, model, and usage metadata.
