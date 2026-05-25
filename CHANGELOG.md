@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.43.7 - 2026-05-25
+
+- Preserve raw UNC prefixes in Windows-style `file:` and `envfile:` secret-source paths.
+
 ## 0.43.6 - 2026-05-25
 
 - Preserve raw Windows backslashes in `file:` and `envfile:` secret sources written as TOML basic strings.

@@ -1,5 +1,10 @@
 # Releases
 
+## 0.43.7 - 2026-05-25
+
+- Windows-artige `file:`- und `envfile:`-Secret-Quellen behalten rohe
+  UNC-Praefixe wie `\\server\share` bei.
+
 ## 0.43.6 - 2026-05-25
 
 - `file:`- und `envfile:`-Secret-Quellen behalten rohe Windows-Backslashes in
