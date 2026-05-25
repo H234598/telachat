@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.47.4 - 2026-05-25
+
+- Return a stored metadata copy from `ChatStore.add_message()` so later caller-side dictionary mutations cannot affect the returned message state.
+- Add regression coverage proving saved message metadata stays isolated from input and returned metadata mutations.
+
 ## 0.47.3 - 2026-05-25
 
 - Add regression coverage proving assistant usage metadata survives session forks.

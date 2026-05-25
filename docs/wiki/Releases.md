@@ -1,5 +1,13 @@
 # Releases
 
+## 0.47.4 - 2026-05-25
+
+- Gibt aus `ChatStore.add_message()` eine gespeicherte Metadata-Kopie zurueck,
+  damit spaetere Dict-Mutationen am Aufruferobjekt den Message-Zustand nicht
+  nachtraeglich veraendern.
+- Ergaenzt Regression-Coverage, dass gespeicherte Message-Metadaten gegen
+  Mutationen an Eingabe- und Rueckgabe-Dicts isoliert bleiben.
+
 ## 0.47.3 - 2026-05-25
 
 - Ergaenzt Regression-Coverage, dass Assistant-Usage-Metadaten beim Forken von
