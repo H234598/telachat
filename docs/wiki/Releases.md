@@ -1,5 +1,14 @@
 # Releases
 
+## 0.8.0 - 2026-05-25
+
+- Gespeicherte Chats merken sich jetzt das konkret verwendete Modell.
+- SQLite-Migration fuer bestehende Sessions ohne Modell-Metadaten.
+- GTK/Tk stellen Provider und Modell beim Laden eines Chats wieder her.
+- `telachat chat --session` nutzt gespeicherte Session-Modelle, solange kein
+  CLI-Override gesetzt ist.
+- Sessionlisten, Suche und Markdown-Exporte enthalten Modell-Metadaten.
+
 ## 0.7.0 - 2026-05-25
 
 - Readline-Tab-Completion fuer `telachat chat`.

@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.7.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.8.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -9,7 +9,8 @@ telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH DESCRIPTION
 .B Telachat
 is a local chat client with a CLI, GTK frontend, and Tk frontend. It stores chat
-history in SQLite, supports provider/model profiles, prompt templates, folders,
+history in SQLite, supports provider/model profiles, per-session model metadata,
+prompt templates, folders,
 folder system prompts, regeneration, and Markdown exports.
 .SH COMMANDS
 .TP
@@ -33,6 +34,7 @@ Start an interactive CLI chat.
 .TP
 .B sessions
 List saved sessions with optional search, folder filtering, and sorting.
+Session search also matches saved provider/model metadata.
 .TP
 .B export
 Export one session as Markdown.

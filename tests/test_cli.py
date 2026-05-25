@@ -327,6 +327,44 @@ class CliTests(unittest.TestCase):
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_chat_persists_selected_model(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["init"]), 0)
+
+                with redirect_stdout(io.StringIO()), mock.patch(
+                    "builtins.input",
+                    side_effect=[
+                        "/provider openai",
+                        "/model gpt-5.5",
+                        "Hallo",
+                        "/exit",
+                    ],
+                ), mock.patch("telachat.cli._run_chat", return_value="Antwort"):
+                    self.assertEqual(main(["chat", "--no-stream"]), 0)
+
+                store = ChatStore()
+                try:
+                    sessions = store.list_sessions(10)
+                    self.assertEqual(len(sessions), 1)
+                    self.assertEqual(sessions[0].profile, "openai")
+                    self.assertEqual(sessions[0].model, "gpt-5.5")
+                    out = io.StringIO()
+                    with redirect_stdout(out):
+                        self.assertEqual(main(["sessions", "--query", "gpt-5.5"]), 0)
+                    self.assertIn("openai/gpt-5.5", out.getvalue())
+                finally:
+                    store.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
 
 def _restore_env(name: str, value: str | None) -> None:
     if value is None:

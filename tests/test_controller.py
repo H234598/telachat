@@ -72,6 +72,7 @@ class ControllerTests(unittest.TestCase):
                     base_url = "http://127.0.0.1:9/v1"
                     api_key = "test"
                     model = "demo"
+                    models = ["demo", "demo-large"]
                     stream = false
                     """,
                     encoding="utf-8",
@@ -94,11 +95,12 @@ class ControllerTests(unittest.TestCase):
                         payload = controller.regenerate(
                             session_id=session.id,
                             profile_name="test",
-                            model="demo",
+                            model="demo-large",
                             system_prompt="System",
                         )
 
                     self.assertEqual(payload.answer, "Neu")
+                    self.assertEqual(payload.session.model, "demo-large")
                     self.assertEqual(
                         [(message.role, message.content) for message in payload.messages],
                         [("user", "Hallo"), ("assistant", "Neu")],
@@ -133,6 +135,7 @@ class ControllerTests(unittest.TestCase):
                     base_url = "http://127.0.0.1:9/v1"
                     api_key = "test"
                     model = "demo"
+                    models = ["demo", "demo-large"]
                     """,
                     encoding="utf-8",
                 )
@@ -144,15 +147,69 @@ class ControllerTests(unittest.TestCase):
                     )
                     session, _messages = controller.new_session(
                         profile_name="test",
+                        model="demo-large",
                         system_prompt=None,
                         folder_id=folder.id,
                     )
                     self.assertEqual(session.system_prompt, "Projektkontext")
+                    self.assertEqual(session.model, "demo-large")
                     fallback, _messages = controller.new_session(
                         profile_name="test",
                         system_prompt=None,
                     )
                     self.assertEqual(fallback.system_prompt, "Allgemein")
+                    self.assertEqual(fallback.model, "demo")
+                finally:
+                    controller.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
+    def test_send_persists_selected_model(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                config_dir = Path(tmp) / "config" / "telachat"
+                config_dir.mkdir(parents=True)
+                (config_dir / "config.toml").write_text(
+                    """
+                    default_profile = "test"
+                    default_system_prompt = "System"
+                    max_history_messages = 8
+
+                    [profiles.test]
+                    label = "Test"
+                    base_url = "http://127.0.0.1:9/v1"
+                    api_key = "test"
+                    model = "demo"
+                    models = ["demo", "demo-large"]
+                    stream = false
+                    """,
+                    encoding="utf-8",
+                )
+                controller = TelachatController()
+                try:
+                    with mock.patch("telachat.controller.OpenAICompatClient") as client_cls:
+                        client_cls.return_value.chat.return_value = ChatResult(
+                            content="Antwort",
+                            raw={},
+                        )
+                        payload = controller.send(
+                            session_id=None,
+                            profile_name="test",
+                            model="demo-large",
+                            system_prompt="System",
+                            prompt="Hallo",
+                        )
+                    self.assertEqual(payload.session.profile, "test")
+                    self.assertEqual(payload.session.model, "demo-large")
+                    stored = controller.store.get_session(payload.session.id)
+                    self.assertIsNotNone(stored)
+                    assert stored is not None
+                    self.assertEqual(stored.model, "demo-large")
                 finally:
                     controller.close()
             finally:

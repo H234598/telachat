@@ -28,6 +28,7 @@ telachat ask --template explain "SQLite WAL"
 ```sh
 telachat sessions
 telachat sessions --query TEXT
+telachat sessions --query gpt-5.5
 telachat sessions --folder NAME
 telachat sessions --sort newest
 telachat folders --create Projekt --system "Projektkontext"
@@ -65,3 +66,5 @@ Im interaktiven Chat funktionieren unter anderem:
 Wenn `telachat chat` in einem echten Terminal laeuft, vervollstaendigt `Tab`
 Slash-Befehle und Kontextwerte wie Provider, Modelle, Templates, Ordner,
 Session-Referenzen und Sortiermodi.
+Gespeicherte Chats merken sich Provider und Modell; `telachat chat --session`
+nutzt diese Werte, solange du sie nicht per CLI-Option ueberschreibst.

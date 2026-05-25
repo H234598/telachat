@@ -309,6 +309,21 @@ class GtkTelachatApp(Adw.Application):
     def on_profile_changed(self, *_args: object) -> None:
         self.refresh_models()
 
+    def select_session_backend(self, session: Session) -> None:
+        try:
+            selected_profile = self.profile_names.index(session.profile)
+        except ValueError:
+            selected_profile = -1
+        if selected_profile >= 0:
+            self.profile_dropdown.set_selected(selected_profile)
+            self.refresh_models()
+        model = session.model or self.controller.config.profile(self.selected_profile()).model
+        if model and model not in self.model_names:
+            self.model_names = [model, *self.model_names]
+            self.model_dropdown.set_model(Gtk.StringList.new(self.model_names))
+        if model in self.model_names:
+            self.model_dropdown.set_selected(self.model_names.index(model))
+
     def on_filter_changed(self, *_args: object) -> None:
         self.refresh_sessions()
         if self.active_session is None:
@@ -443,6 +458,7 @@ class GtkTelachatApp(Adw.Application):
 
     def load_session(self, session_id: str) -> None:
         self.active_session, self.messages = self.controller.get_session(session_id)
+        self.select_session_backend(self.active_session)
         self.set_system_prompt(self.active_session.system_prompt)
         self.update_active_title()
         self.render_messages()
@@ -474,6 +490,7 @@ class GtkTelachatApp(Adw.Application):
     def on_new(self, _button: Gtk.Button) -> None:
         self.active_session, self.messages = self.controller.new_session(
             profile_name=self.selected_profile(),
+            model=self.selected_model(),
             system_prompt=self.system_prompt(),
             folder_id=self.selected_folder_id(for_new=True),
         )

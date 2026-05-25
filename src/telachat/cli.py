@@ -233,6 +233,7 @@ def cmd_ask(args: argparse.Namespace) -> int:
             session = store.create_session(
                 title=title_from_prompt(prompt),
                 profile=profile.name,
+                model=profile.model,
                 system_prompt=system_prompt,
             )
             store.add_message(session.id, "user", prompt)
@@ -258,12 +259,15 @@ def cmd_chat(args: argparse.Namespace) -> int:
             session = store.get_session(args.session)
             if session is None:
                 raise ConfigError(f"Session nicht eindeutig gefunden: {args.session}")
+            if args.profile is None:
+                profile = _profile_for_loaded_session(cfg, args, session)
             system_prompt = session.system_prompt
             print(f"{APP_TITLE}: Session {session.id} geladen: {session.title}")
         if session is None:
             session = store.create_session(
                 title="Neue Unterhaltung",
                 profile=profile.name,
+                model=profile.model,
                 system_prompt=system_prompt,
             )
             print(f"{APP_TITLE}: Neue Session {session.id}. /help zeigt Befehle.")
@@ -292,6 +296,8 @@ def cmd_chat(args: argparse.Namespace) -> int:
 
             if session.title == "Neue Unterhaltung":
                 session = _retitle_session(store, session.id, title_from_prompt(user_input))
+            if session.profile != profile.name or session.model != profile.model:
+                session = store.update_session_backend(session.id, profile.name, profile.model)
             store.add_message(session.id, "user", user_input)
             history = store.messages(session.id, limit=cfg.max_history_messages)
             messages = messages_for_api(system_prompt, history)
@@ -325,7 +331,7 @@ def cmd_sessions(args: argparse.Namespace) -> int:
             return 0
         for session in sessions:
             pin = "*" if session.pinned else " "
-            print(f"{pin} {session.id}  {session.profile:12}  {session.title}")
+            print(f"{pin} {session.id}  {_backend_label(session):18}  {session.title}")
     finally:
         store.close()
     return 0
@@ -476,6 +482,21 @@ def _selected_profile(cfg: object, args: argparse.Namespace) -> Profile:
     )
 
 
+def _profile_for_loaded_session(
+    cfg: object,
+    args: argparse.Namespace,
+    session: object,
+) -> Profile:
+    profile = cfg.profile(session.profile)
+    return profile.with_overrides(
+        model=args.model or session.model or None,
+        temperature=args.temperature,
+        max_tokens=args.max_tokens,
+        reasoning_effort=args.reasoning_effort,
+        stream=False if args.no_stream else None,
+    )
+
+
 def install_readline_completion(cfg: object, store: ChatStore) -> object | None:
     try:
         import readline
@@ -560,6 +581,12 @@ def _session_refs(store: ChatStore) -> list[str]:
     return refs
 
 
+def _backend_label(session: object) -> str:
+    if getattr(session, "model", ""):
+        return f"{session.profile}/{session.model}"
+    return session.profile
+
+
 def _read_prompt(parts: Iterable[str], read_stdin: bool) -> str:
     if read_stdin:
         return sys.stdin.read().strip()
@@ -605,7 +632,10 @@ def _handle_command(
     elif command == "/new":
         title = rest or "Neue Unterhaltung"
         session = store.create_session(
-            title=title, profile=profile.name, system_prompt=system_prompt
+            title=title,
+            profile=profile.name,
+            model=profile.model,
+            system_prompt=system_prompt,
         )
         print(f"Neue Session: {session.id}")
     elif command == "/rename":
@@ -620,6 +650,7 @@ def _handle_command(
         session = store.create_session(
             title="Neue Unterhaltung",
             profile=profile.name,
+            model=profile.model,
             system_prompt=system_prompt,
         )
         print(f"Session geloescht: {old_id}")
@@ -627,7 +658,7 @@ def _handle_command(
     elif command == "/sessions":
         for item in store.list_sessions(20):
             pin = "*" if item.pinned else " "
-            print(f"{pin} {item.id}  {item.profile:12}  {item.title}")
+            print(f"{pin} {item.id}  {_backend_label(item):18}  {item.title}")
     elif command == "/load":
         if not rest:
             print("Nutzung: /load <session-id-oder-prefix>")
@@ -675,6 +706,8 @@ def _handle_command(
             else:
                 if session.title == "Neue Unterhaltung":
                     session = _retitle_session(store, session.id, title_from_prompt(prompt))
+                if session.profile != profile.name or session.model != profile.model:
+                    session = store.update_session_backend(session.id, profile.name, profile.model)
                 store.add_message(session.id, "user", prompt)
                 history = store.messages(session.id, limit=cfg.max_history_messages)
                 messages = messages_for_api(system_prompt, history)
@@ -746,19 +779,20 @@ def _handle_command(
         else:
             for item in store.list_sessions(20, sort=sort_key):
                 pin = "*" if item.pinned else " "
-                print(f"{pin} {item.id}  {item.profile:12}  {item.title}")
+                print(f"{pin} {item.id}  {_backend_label(item):18}  {item.title}")
     elif command == "/search":
         if not rest:
             print("Nutzung: /search TEXT")
         else:
             for item in store.list_sessions(20, query=rest):
                 pin = "*" if item.pinned else " "
-                print(f"{pin} {item.id}  {item.profile:12}  {item.title}")
+                print(f"{pin} {item.id}  {_backend_label(item):18}  {item.title}")
     elif command in {"/profile", "/provider"}:
         if not rest:
             print(f"Aktiv: {profile.name} ({profile.display_name})")
         else:
             profile = cfg.profile(rest)
+            session = store.update_session_backend(session.id, profile.name, profile.model)
             print(f"Aktiv: {profile.name} ({profile.display_name})")
     elif command == "/model":
         if not rest:
@@ -767,6 +801,7 @@ def _handle_command(
             configured = profile.models or [profile.model]
             model = next((item for item in configured if item.lower() == rest.lower()), rest)
             profile = profile.with_overrides(model=model)
+            session = store.update_session_backend(session.id, profile.name, profile.model)
             print(f"Modell: {profile.model}")
     elif command == "/profiles":
         for name, item in sorted(cfg.profiles.items()):

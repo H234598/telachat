@@ -21,6 +21,7 @@ class Session:
     updated_at: int
     folder_id: str | None = None
     pinned: bool = False
+    model: str = ""
 
 
 @dataclass(frozen=True)
@@ -65,6 +66,7 @@ class ChatStore:
                     id TEXT PRIMARY KEY,
                     title TEXT NOT NULL,
                     profile TEXT NOT NULL,
+                    model TEXT NOT NULL DEFAULT '',
                     system_prompt TEXT NOT NULL,
                     created_at INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL,
@@ -106,6 +108,8 @@ class ChatStore:
                 self.db.execute("ALTER TABLE sessions ADD COLUMN folder_id TEXT")
             if "pinned" not in columns:
                 self.db.execute("ALTER TABLE sessions ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
+            if "model" not in columns:
+                self.db.execute("ALTER TABLE sessions ADD COLUMN model TEXT NOT NULL DEFAULT ''")
             folder_columns = {
                 row["name"]
                 for row in self.db.execute("PRAGMA table_info(folders)").fetchall()
@@ -121,6 +125,7 @@ class ChatStore:
         title: str,
         profile: str,
         system_prompt: str,
+        model: str | None = None,
         folder_id: str | None = None,
     ) -> Session:
         with self._lock:
@@ -128,13 +133,23 @@ class ChatStore:
             session_id = uuid.uuid4().hex[:12]
             self.db.execute(
                 """
-                INSERT INTO sessions(id, title, profile, system_prompt, created_at, updated_at, folder_id, pinned)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+                INSERT INTO sessions(id, title, profile, model, system_prompt, created_at, updated_at, folder_id, pinned)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
                 """,
-                (session_id, title, profile, system_prompt, now, now, folder_id),
+                (session_id, title, profile, model or "", system_prompt, now, now, folder_id),
             )
             self.db.commit()
-            return Session(session_id, title, profile, system_prompt, now, now, folder_id, False)
+            return Session(
+                session_id,
+                title,
+                profile,
+                system_prompt,
+                now,
+                now,
+                folder_id,
+                False,
+                model or "",
+            )
 
     def get_session(self, session_id_or_prefix: str) -> Session | None:
         with self._lock:
@@ -186,6 +201,7 @@ class ChatStore:
                     (
                         sessions.title LIKE ?
                         OR sessions.profile LIKE ?
+                        OR sessions.model LIKE ?
                         OR EXISTS (
                             SELECT 1 FROM messages
                             WHERE messages.session_id = sessions.id
@@ -194,7 +210,7 @@ class ChatStore:
                     )
                     """
                 )
-                params.extend([like, like, like])
+                params.extend([like, like, like, like])
 
             where = "WHERE " + " AND ".join(clauses) if clauses else ""
             params.append(limit)
@@ -332,6 +348,19 @@ class ChatStore:
                 raise KeyError(session_id)
             return session
 
+    def update_session_backend(self, session_id: str, profile: str, model: str) -> Session:
+        with self._lock:
+            now = int(time.time())
+            self.db.execute(
+                "UPDATE sessions SET profile = ?, model = ?, updated_at = ? WHERE id = ?",
+                (profile, model, now, session_id),
+            )
+            self.db.commit()
+            session = self.get_session(session_id)
+            if session is None:
+                raise KeyError(session_id)
+            return session
+
     def set_session_pinned(self, session_id: str, pinned: bool) -> Session:
         with self._lock:
             self.db.execute(
@@ -421,6 +450,7 @@ class ChatStore:
                 "",
                 f"- Title: {session.title}",
                 f"- Profile: {session.profile}",
+                f"- Model: {session.model or '-'}",
                 "",
             ]
             for message in self.messages(session.id):
@@ -457,6 +487,7 @@ def _session_from_row(row: sqlite3.Row) -> Session:
         updated_at=row["updated_at"],
         folder_id=row["folder_id"] if "folder_id" in row.keys() else None,
         pinned=bool(row["pinned"]) if "pinned" in row.keys() else False,
+        model=row["model"] if "model" in row.keys() else "",
     )
 
 

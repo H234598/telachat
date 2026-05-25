@@ -115,14 +115,17 @@ class TelachatController:
         self,
         *,
         profile_name: str | None = None,
+        model: str | None = None,
         system_prompt: str | None = None,
         title: str = "Neue Unterhaltung",
         folder_id: str | None = None,
     ) -> tuple[Session, list[Message]]:
+        profile = self.config.profile(profile_name).with_overrides(model=model)
         resolved_system_prompt = self.resolve_system_prompt(system_prompt, folder_id)
         session = self.store.create_session(
             title=title,
-            profile=profile_name or self.default_profile_name(),
+            profile=profile.name,
+            model=profile.model,
             system_prompt=resolved_system_prompt,
             folder_id=folder_id,
         )
@@ -149,11 +152,14 @@ class TelachatController:
             session = self.store.create_session(
                 title=title_from_prompt(clean),
                 profile=profile.name,
+                model=profile.model,
                 system_prompt=effective_system_prompt,
                 folder_id=folder_id,
             )
         elif session.title == "Neue Unterhaltung":
             session = self.store.update_session_title(session.id, title_from_prompt(clean))
+        if session.profile != profile.name or session.model != profile.model:
+            session = self.store.update_session_backend(session.id, profile.name, profile.model)
 
         self.store.add_message(session.id, "user", clean)
         history = self.store.messages(session.id, limit=self.config.max_history_messages)
@@ -181,7 +187,11 @@ class TelachatController:
         session = self.store.get_session(session_id)
         if session is None:
             raise KeyError(session_id)
-        profile = self.config.profile(profile_name or session.profile).with_overrides(model=model)
+        profile = self.config.profile(profile_name or session.profile).with_overrides(
+            model=model or session.model or None
+        )
+        if session.profile != profile.name or session.model != profile.model:
+            session = self.store.update_session_backend(session.id, profile.name, profile.model)
         self.store.delete_last_assistant_message(session.id)
         history = self.store.messages(session.id, limit=self.config.max_history_messages)
         if not any(message.role == "user" for message in history):

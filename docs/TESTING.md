@@ -43,9 +43,10 @@ The deterministic suite also covers folder creation, duplicate folder handling,
 folder-level system prompts, session moves, folder filters, pinned-chat
 ordering, answer regeneration, prompt templates, title sorting, content search
 across saved messages, CLI session filtering/sorting, and selective folder
-exports. It also covers OpenAI Responses `reasoning.effort`, interactive CLI
-completion candidates, and documented terminal slash-command actions. GUI smoke
-tests also cover construction of the slash-command autocomplete widgets.
+exports. It also covers per-session model persistence, legacy model-column
+migration, OpenAI Responses `reasoning.effort`, interactive CLI completion
+candidates, and documented terminal slash-command actions. GUI smoke tests also
+cover construction of the slash-command autocomplete widgets.
 
 ## Expected default live configuration
 

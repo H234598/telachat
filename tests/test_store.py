@@ -15,8 +15,12 @@ class StoreTests(unittest.TestCase):
             store = ChatStore(Path(tmp) / "history.sqlite3")
             try:
                 session = store.create_session(
-                    title="Test", profile="tki", system_prompt="System"
+                    title="Test",
+                    profile="tki",
+                    model="Qwen/Qwen2.5-1.5B-Instruct",
+                    system_prompt="System",
                 )
+                self.assertEqual(session.model, "Qwen/Qwen2.5-1.5B-Instruct")
                 store.add_message(session.id, "user", "Hallo")
                 store.add_message(session.id, "assistant", "Hi")
                 messages = store.messages(session.id)
@@ -34,6 +38,7 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual(api_messages[-1]["content"], "Hi")
                 exported = store.export_markdown(session.id)
                 self.assertIn("# Telachat Session", exported)
+                self.assertIn("- Model: Qwen/Qwen2.5-1.5B-Instruct", exported)
                 self.assertIn("Hallo", exported)
             finally:
                 store.close()
@@ -52,10 +57,17 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual(work.id, again.id)
 
                 alpha = store.create_session(
-                    title="Alpha", profile="openai", system_prompt="System", folder_id=work.id
+                    title="Alpha",
+                    profile="openai",
+                    model="gpt-5.5",
+                    system_prompt="System",
+                    folder_id=work.id,
                 )
                 beta = store.create_session(
-                    title="Beta", profile="huggingface", system_prompt="System"
+                    title="Beta",
+                    profile="huggingface",
+                    model="Qwen/Qwen2.5-1.5B-Instruct",
+                    system_prompt="System",
                 )
                 store.add_message(alpha.id, "user", "Projektplan")
                 store.add_message(beta.id, "user", "Notiz")
@@ -88,6 +100,14 @@ class StoreTests(unittest.TestCase):
                     [session.id for session in store.list_sessions(query="projekt")],
                     [alpha.id],
                 )
+                self.assertEqual(
+                    [session.id for session in store.list_sessions(query="gpt-5.5")],
+                    [alpha.id],
+                )
+
+                updated_backend = store.update_session_backend(beta.id, "openai", "gpt-5.5")
+                self.assertEqual(updated_backend.profile, "openai")
+                self.assertEqual(updated_backend.model, "gpt-5.5")
 
                 moved = store.move_session(beta.id, work.id)
                 self.assertEqual(moved.folder_id, work.id)
@@ -170,8 +190,49 @@ class StoreTests(unittest.TestCase):
                 self.assertIsNotNone(session)
                 assert session is not None
                 self.assertFalse(session.pinned)
+                self.assertEqual(session.model, "")
                 pinned = store.set_session_pinned(session.id, True)
                 self.assertTrue(pinned.pinned)
+            finally:
+                store.close()
+
+    def test_legacy_database_adds_model_column(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "history.sqlite3"
+            db = sqlite3.connect(path)
+            try:
+                db.execute(
+                    """
+                    CREATE TABLE sessions (
+                        id TEXT PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        profile TEXT NOT NULL,
+                        system_prompt TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        folder_id TEXT,
+                        pinned INTEGER NOT NULL DEFAULT 0
+                    )
+                    """
+                )
+                db.execute(
+                    """
+                    INSERT INTO sessions(id, title, profile, system_prompt, created_at, updated_at, folder_id, pinned)
+                    VALUES ('legacy-model', 'Legacy Model', 'openai', 'System', 1, 1, NULL, 0)
+                    """
+                )
+                db.commit()
+            finally:
+                db.close()
+
+            store = ChatStore(path)
+            try:
+                session = store.get_session("legacy-model")
+                self.assertIsNotNone(session)
+                assert session is not None
+                self.assertEqual(session.model, "")
+                updated = store.update_session_backend(session.id, "openai", "gpt-5.5")
+                self.assertEqual(updated.model, "gpt-5.5")
             finally:
                 store.close()
 

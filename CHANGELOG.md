@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0 - 2026-05-25
+
+- Persist the selected model on each saved chat session.
+- Add a SQLite migration for legacy sessions without model metadata.
+- Restore provider and model selectors in GTK/Tk when loading a saved chat.
+- Use saved session models for CLI `chat --session` unless explicitly
+  overridden.
+- Include session model metadata in session lists, search, and Markdown exports.
+
 ## 0.7.0 - 2026-05-25
 
 - Add Readline Tab completion for interactive `telachat chat`.

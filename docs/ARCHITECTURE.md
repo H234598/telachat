@@ -34,7 +34,7 @@
 SQLite tables:
 
 - `sessions`
-  - `id`, `title`, `profile`, `system_prompt`, `created_at`, `updated_at`, `folder_id`, `pinned`
+  - `id`, `title`, `profile`, `model`, `system_prompt`, `created_at`, `updated_at`, `folder_id`, `pinned`
 - `folders`
   - `id`, `name`, `created_at`, `updated_at`, `system_prompt`
 - `messages`
@@ -75,6 +75,9 @@ chat pinning, and a slash-command path through the same composer used for
 prompts. The GUI composers show slash-command suggestions while typing and Tab
 completes the current command. The left chat/provider pane and the right system
 pane are real resizable split panes rather than fixed sidebars.
+Saved sessions store both provider and model. Loading a session restores those
+selectors in GTK/Tk and `telachat chat --session` uses the saved model unless a
+CLI override is given.
 Folders can store a default system prompt. New chats created inside such a
 folder inherit that prompt unless the user explicitly overrides the system
 prompt.
@@ -143,6 +146,7 @@ GUI slash commands:
 - Non-streaming and streaming SSE responses.
 - SQLite session/message roundtrip, Markdown export, and selective folder export.
 - SQLite folder prompts, sorting and history-search behavior.
+- SQLite session model metadata, legacy migration, exports, and backend restore.
 - CLI init/profile behavior with temporary XDG directories.
 - Shared slash-command catalog behavior.
 - Interactive CLI Readline completion and documented terminal command actions.

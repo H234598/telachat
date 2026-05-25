@@ -273,6 +273,20 @@ class TkTelachatApp:
         self.model_combo.configure(values=models)
         self.model_var.set(profile.model)
 
+    def select_session_backend(self, session: Session) -> None:
+        for label, name in self.profile_display_to_name.items():
+            if name == session.profile:
+                self.profile_var.set(label)
+                self.refresh_models()
+                break
+        model = session.model or self.controller.profiles()[self.selected_profile()].model
+        models = list(self.model_combo.cget("values"))
+        if model and model not in models:
+            models.insert(0, model)
+            self.model_combo.configure(values=models)
+        if model:
+            self.model_var.set(model)
+
     def refresh_sessions(self) -> None:
         self.sessions = self.controller.list_sessions(
             80,
@@ -286,6 +300,7 @@ class TkTelachatApp:
 
     def load_session(self, session_id: str) -> None:
         self.active_session, self.messages = self.controller.get_session(session_id)
+        self.select_session_backend(self.active_session)
         self.set_system_prompt_text(self.active_session.system_prompt)
         self.update_active_title()
         self.render_messages()
@@ -293,6 +308,7 @@ class TkTelachatApp:
     def new_session(self) -> None:
         self.active_session, self.messages = self.controller.new_session(
             profile_name=self.selected_profile(),
+            model=self.model_var.get(),
             system_prompt=self.system_text.get("1.0", tk.END).strip(),
             folder_id=self.selected_folder_id(for_new=True),
         )
