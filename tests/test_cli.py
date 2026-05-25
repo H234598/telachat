@@ -232,6 +232,30 @@ model = "demo"
             finally:
                 _restore_env("TELACHAT_DOCTOR_TEST_KEY", old_key)
 
+    def test_doctor_json_without_chat_skips_chat_check(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp) / "config.toml"
+            _write_doctor_test_config(config)
+            old_key = os.environ.get("TELACHAT_DOCTOR_TEST_KEY")
+            os.environ["TELACHAT_DOCTOR_TEST_KEY"] = "secret-value"
+            try:
+                out = io.StringIO()
+                with redirect_stdout(out), mock.patch(
+                    "telachat.cli.OpenAICompatClient",
+                ) as client_cls:
+                    client_cls.return_value.list_models.return_value = ["demo"]
+                    self.assertEqual(
+                        main(["--config", str(config), "doctor", "--json"]),
+                        0,
+                    )
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["checks"]["models"]["models"], ["demo"])
+                self.assertIsNone(payload["checks"]["chat"])
+                client_cls.return_value.chat.assert_not_called()
+                self.assertNotIn("secret-value", out.getvalue())
+            finally:
+                _restore_env("TELACHAT_DOCTOR_TEST_KEY", old_key)
+
     def test_doctor_text_reports_models_before_chat_failure(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = Path(tmp) / "config.toml"

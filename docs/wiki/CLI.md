@@ -33,7 +33,9 @@ telachat ask --template explain "SQLite WAL"
 API-Anfrage. `telachat config-check --strict` liefert einen Fehlercode, wenn
 eine nicht-lokale Secret-Quelle fehlt.
 `telachat theme [NAME]` zeigt oder setzt das persistente GUI-Theme. Fuer
-temporäre Starts kann `TELACHAT_THEME=dark telachat-tk` genutzt werden.
+temporäre Starts kann `TELACHAT_THEME=dark telachat-tk` genutzt werden. Bei
+`theme = "system"` kann `TELACHAT_SYSTEM_THEME=solarized-dark` nur die
+System-Erkennung fuer einen Prozess fixieren.
 `telachat backup` schreibt ein ZIP mit SQLite-Historie, redaktierter Config und
 Manifest; rohe Secrets und Envfiles bleiben draussen.
 `telachat restore` importiert die Backup-Historie additiv in die bestehende

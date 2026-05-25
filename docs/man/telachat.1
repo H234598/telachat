@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.16.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.17.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -29,8 +29,11 @@ missing. Use \fB--json\fR for redacted structured output.
 .TP
 .B theme
 Show or set the persistent GUI theme. Supported themes are \fIsystem\fR,
-\fIlight\fR, \fIdark\fR, and \fIhigh-contrast\fR. The environment variable
-\fBTELACHAT_THEME\fR overrides the config for one process.
+\fIlight\fR, \fIdark\fR, \fIhigh-contrast\fR, \fIsolarized-light\fR,
+\fIsolarized-dark\fR, \fInord\fR, \fIdracula\fR, \fIgruvbox\fR, \fIocean\fR,
+\fIforest\fR, and \fIrose\fR. The environment variable \fBTELACHAT_THEME\fR
+overrides the config for one process; \fBTELACHAT_SYSTEM_THEME\fR only fixes
+system-palette detection for one process.
 .TP
 .B templates
 List configured prompt templates.

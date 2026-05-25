@@ -73,11 +73,14 @@ GUI theme:
 theme = "system"
 ```
 
-Allowed themes are `system`, `light`, `dark`, and `high-contrast`.
-`TELACHAT_THEME` overrides the config for one process and is useful for
-wrappers, test launches, and temporary desktop-specific starts. GTK maps
-`system`, `light`, and `dark` to Libadwaita color-scheme preferences and then
-applies Telachat-specific CSS tokens. Tk uses the same token palette directly.
+Allowed themes are `system`, `light`, `dark`, `high-contrast`,
+`solarized-light`, `solarized-dark`, `nord`, `dracula`, `gruvbox`, `ocean`,
+`forest`, and `rose`. `TELACHAT_THEME` overrides the config for one process and
+is useful for wrappers, test launches, and temporary desktop-specific starts.
+When the saved theme is `system`, `TELACHAT_SYSTEM_THEME` can force the detected
+palette for one process without changing the config. GTK maps `system`, `light`,
+and `dark` to Libadwaita color-scheme preferences and then applies
+Telachat-specific CSS tokens. Tk uses the same token palette directly.
 
 Additional built-in profiles:
 

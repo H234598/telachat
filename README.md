@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.16.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.17.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -137,14 +137,20 @@ Fuer Skripte und Agenten liefern `profiles --json`, `config-check --json`,
 redaktierte Daten.
 
 GUI-Themes werden dauerhaft ueber `theme = "system"` in `config.toml`
-gesteuert. Verfuegbar sind `system`, `light`, `dark` und `high-contrast`.
-Temporär kann das Umfeld uebersteuern, z.B. `TELACHAT_THEME=dark telachat-tk`.
-Die GUIs haben zusaetzlich eine Theme-Auswahl im Systembereich.
+gesteuert. Verfuegbar sind unter anderem `system`, `light`, `dark`,
+`high-contrast`, `solarized-light`, `solarized-dark`, `nord`, `dracula`,
+`gruvbox`, `ocean`, `forest` und `rose`. Temporär kann das Umfeld
+uebersteuern, z.B. `TELACHAT_THEME=dark telachat-tk`. Wenn `theme = "system"`
+aktiv ist, nutzt Telachat uebliche Desktop-/Terminal-Hinweise; mit
+`TELACHAT_SYSTEM_THEME=solarized-dark` kann nur die System-Erkennung fuer einen
+Prozess fixiert werden. Die GUIs haben zusaetzlich eine Theme-Auswahl im
+Systembereich.
 
 ```sh
 telachat theme
 telachat theme dark
 TELACHAT_THEME=high-contrast telachat-gtk
+TELACHAT_SYSTEM_THEME=solarized-dark telachat-tk
 ```
 
 Gespeicherte Sessions koennen auch direkt in der CLI gefiltert werden:

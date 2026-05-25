@@ -28,6 +28,7 @@ telachat config-check --strict
 telachat config-check --json
 telachat theme
 TELACHAT_THEME=dark telachat config-check
+TELACHAT_SYSTEM_THEME=solarized-dark telachat theme
 telachat backup -o /tmp/telachat-backups
 telachat restore --dry-run /tmp/telachat-backups/FILE.zip
 telachat doctor --chat
@@ -62,10 +63,10 @@ exports. It also covers per-session model persistence, legacy model-column
 migration, OpenAI Responses `reasoning.effort`, interactive CLI completion
 candidates, offline config checks with secret redaction, and documented
 terminal slash-command actions. Theme tests cover config persistence, env
-overrides, CLI setting, and controller persistence. Backup tests inspect the
-ZIP bundle and verify that envfile secret values and secret-like header values
-are not included. GUI smoke tests also cover construction of the slash-command
-autocomplete widgets.
+overrides, system-palette detection, CLI setting, and controller persistence.
+Backup tests inspect the ZIP bundle and verify that envfile secret values and
+secret-like header values are not included. GUI smoke tests also cover
+construction of the slash-command autocomplete widgets.
 CLI JSON tests cover profiles, config-check, sessions, folders, and doctor
 while checking that secret values remain redacted.
 Restore tests verify dry-run counts, duplicate-safe imports, session ID

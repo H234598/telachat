@@ -1,5 +1,15 @@
 # Releases
 
+## 0.17.0 - 2026-05-25
+
+- Theme-Katalog erweitert: Solarized, Nord, Dracula, Gruvbox, Ocean, Forest und
+  Rose.
+- `system` nutzt Desktop-/Terminal-Hinweise fuer die Palette.
+- `TELACHAT_SYSTEM_THEME` kann die System-Palette fuer einen Prozess fixieren,
+  ohne `theme = "system"` zu aendern.
+- Tests pruefen Theme-Aliase, System-Erkennung und `doctor --json` ohne
+  `--chat`.
+
 ## 0.16.0 - 2026-05-25
 
 - JSON-Ausgabe fuer `telachat doctor --json`.

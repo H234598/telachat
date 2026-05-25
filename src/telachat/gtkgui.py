@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import threading
 
 import gi
@@ -14,6 +15,7 @@ from .commands import slash_command_help, slash_command_suggestions
 from .config import redact_secret
 from .controller import TelachatController
 from .store import Message, Session
+from .themes import theme_by_name
 
 
 class GtkTelachatApp(Adw.Application):
@@ -281,6 +283,13 @@ class GtkTelachatApp(Adw.Application):
     def _install_css(self) -> None:
         palette = self.theme.palette
         style_manager = Adw.StyleManager.get_default()
+        if self.theme.name == "system" and "TELACHAT_SYSTEM_THEME" not in os.environ:
+            high_contrast = getattr(style_manager, "get_high_contrast", lambda: False)()
+            dark = getattr(style_manager, "get_dark", lambda: False)()
+            if high_contrast:
+                palette = theme_by_name("high-contrast").palette
+            elif dark:
+                palette = theme_by_name("dark").palette
         color_scheme = {
             "dark": "FORCE_DARK",
             "light": "FORCE_LIGHT",

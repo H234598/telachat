@@ -31,6 +31,15 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - Chats koennen gepinnt werden.
 - Suche und Sortierung sind in der Seitenleiste verfuegbar.
 
+## Themes
+
+- Beide GUIs nutzen denselben Theme-Katalog.
+- `system` folgt soweit moeglich Desktop-/Terminal-Hinweisen.
+- `TELACHAT_THEME` uebersteuert das gespeicherte Theme fuer einen Prozess.
+- `TELACHAT_SYSTEM_THEME` fixiert nur die System-Erkennung fuer einen Prozess.
+- Verfuegbare Paletten: `light`, `dark`, `high-contrast`, `solarized-light`,
+  `solarized-dark`, `nord`, `dracula`, `gruvbox`, `ocean`, `forest`, `rose`.
+
 ## Prompt-Templates
 
 Ab Version `0.3.0` enthalten beide GUIs einen Template-Waehler. Ein Template

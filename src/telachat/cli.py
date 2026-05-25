@@ -94,7 +94,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_config.set_defaults(func=cmd_config_check)
 
     p_theme = sub.add_parser("theme", help="GUI-Theme anzeigen oder setzen")
-    p_theme.add_argument("theme", nargs="?", help="system, light, dark oder high-contrast")
+    p_theme.add_argument("theme", nargs="?", metavar="NAME", help="Theme-Name oder Alias")
     p_theme.set_defaults(func=cmd_theme)
 
     p_templates = sub.add_parser("templates", help="Prompt-Templates anzeigen")
@@ -313,9 +313,11 @@ def cmd_theme(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     print(f"Aktives Theme: {cfg.theme}")
     print("Verfuegbar:")
-    for name, label in theme_labels().items():
+    labels = theme_labels()
+    width = max(14, *(len(name) for name in labels))
+    for name, label in labels.items():
         marker = "*" if name == cfg.theme else " "
-        print(f"{marker} {name:14} {label}")
+        print(f"{marker} {name:{width}} {label}")
     return 0
 
 

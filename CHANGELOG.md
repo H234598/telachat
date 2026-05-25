@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.17.0 - 2026-05-25
+
+- Expand the built-in GUI theme catalog with Solarized, Nord, Dracula, Gruvbox,
+  Ocean, Forest, and Rose palettes.
+- Add system-theme detection from common desktop and terminal environment
+  hints while keeping `theme = "system"` persistent.
+- Add `TELACHAT_SYSTEM_THEME` for one-process system-palette overrides without
+  changing the saved theme.
+- Add regression coverage for expanded theme aliases, system detection, and
+  doctor JSON without `--chat`.
+
 ## 0.16.0 - 2026-05-25
 
 - Add redacted JSON output for `telachat doctor --json`.
