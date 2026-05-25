@@ -530,6 +530,57 @@ class StoreTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_stats_ignores_invalid_usage_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                session = store.create_session(
+                    title="Usage Edge",
+                    profile="openai",
+                    system_prompt="System",
+                )
+                store.add_message(
+                    session.id,
+                    "assistant",
+                    "Teilweise gueltig",
+                    metadata={
+                        "usage": {
+                            "input_tokens": True,
+                            "output_tokens": -5,
+                            "total_tokens": "10",
+                            "cached_input_tokens": 3,
+                        }
+                    },
+                )
+                store.add_message(
+                    session.id,
+                    "assistant",
+                    "Falsche Struktur",
+                    metadata={"usage": ["nicht", "zaehlen"]},
+                )
+                corrupt = store.add_message(
+                    session.id,
+                    "assistant",
+                    "Kaputte JSON-Metadaten",
+                    metadata={"usage": {"input_tokens": 100}},
+                )
+                store.db.execute(
+                    "UPDATE messages SET metadata = ? WHERE id = ?",
+                    ("{", corrupt.id),
+                )
+                store.db.commit()
+
+                stats = store.stats()
+
+                self.assertEqual(stats.usage_records, 1)
+                self.assertEqual(stats.usage_input_tokens, 0)
+                self.assertEqual(stats.usage_output_tokens, 0)
+                self.assertEqual(stats.usage_total_tokens, 0)
+                self.assertEqual(stats.usage_cached_input_tokens, 3)
+                self.assertEqual(stats.usage_reasoning_tokens, 0)
+            finally:
+                store.close()
+
     def test_import_history_database_adds_copies_without_overwriting(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             source = ChatStore(Path(tmp) / "source.sqlite3")
