@@ -22,13 +22,22 @@ class StoreTests(unittest.TestCase):
                 )
                 self.assertEqual(session.model, "Qwen/Qwen2.5-1.5B-Instruct")
                 store.add_message(session.id, "user", "Hallo")
-                store.add_message(session.id, "assistant", "Hi")
+                store.add_message(
+                    session.id,
+                    "assistant",
+                    "Hi",
+                    metadata={"usage": {"input_tokens": 4, "output_tokens": 2}},
+                )
                 messages = store.messages(session.id)
                 self.assertEqual([m.role for m in messages], ["user", "assistant"])
                 deleted = store.delete_last_assistant_message(session.id)
                 self.assertIsNotNone(deleted)
                 assert deleted is not None
                 self.assertEqual(deleted.content, "Hi")
+                self.assertEqual(
+                    deleted.metadata,
+                    {"usage": {"input_tokens": 4, "output_tokens": 2}},
+                )
                 self.assertEqual([m.role for m in store.messages(session.id)], ["user"])
                 self.assertIsNone(store.delete_last_assistant_message(session.id))
                 store.add_message(session.id, "assistant", "Hi")
