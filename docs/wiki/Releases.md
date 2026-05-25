@@ -1,5 +1,14 @@
 # Releases
 
+## 0.47.3 - 2026-05-25
+
+- Ergaenzt Regression-Coverage, dass Assistant-Usage-Metadaten beim Forken von
+  Sessions erhalten bleiben.
+- Ergaenzt Regression-Coverage, dass additive History-Imports Usage-Metadaten
+  aus bestehenden SQLite-Historien erhalten.
+- Ergaenzt Regression-Coverage, dass geloeschte Assistant-Nachrichten ihre
+  Usage-Metadaten im Rueckgabewert behalten.
+
 ## 0.47.2 - 2026-05-25
 
 - Ergaenzt einen Workflow-Regressionstest, der rohe Wildcards direkt in

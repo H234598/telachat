@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.47.3 - 2026-05-25
+
+- Add regression coverage proving assistant usage metadata survives session forks.
+- Add regression coverage proving additive history imports preserve stored usage metadata.
+- Add regression coverage proving deleted assistant messages keep their usage metadata.
+
 ## 0.47.2 - 2026-05-25
 
 - Add workflow regression coverage that rejects raw wildcards passed directly to `gh release upload`.
