@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.43.4 - 2026-05-25
+
+- Validate controller-created folder backend defaults before storing them.
+
 ## 0.43.3 - 2026-05-25
 
 - Label stored `system` messages as `System` in Markdown exports instead of treating every non-user role as assistant text.

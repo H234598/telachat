@@ -1,5 +1,10 @@
 # Releases
 
+## 0.43.4 - 2026-05-25
+
+- Controller-seitig angelegte Ordner pruefen Default-Provider/-Modell jetzt
+  vor dem Speichern.
+
 ## 0.43.3 - 2026-05-25
 
 - Markdown-Exports beschriften gespeicherte `system`-Nachrichten jetzt als
