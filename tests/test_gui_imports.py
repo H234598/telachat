@@ -35,7 +35,7 @@ class _FakeText:
     def __init__(self, value: str) -> None:
         self.value = value
 
-    def get(self) -> str:
+    def get(self, *_args: object) -> str:
         return self.value
 
     def get_text(self) -> str:
@@ -233,6 +233,28 @@ class GuiImportTests(unittest.TestCase):
         self.assertNotIn("SQLite:", showinfo.call_args.args[1])
         self.assertEqual(app.statuses[-1], "Sessions 2 | Nachrichten 4 | Ordner 1 | Tags 1")
 
+    def test_tk_context_command_shows_content_free_estimate(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        app = SimpleNamespace(
+            controller=SimpleNamespace(config=SimpleNamespace(max_history_messages=1)),
+            messages=[
+                SimpleNamespace(content="Geheimer Projektplan"),
+                SimpleNamespace(content="Antwort"),
+            ],
+            system_text=_FakeText("System"),
+            statuses=[],
+        )
+        app.set_status = lambda text: app.statuses.append(text)
+
+        with mock.patch.object(module.messagebox, "showinfo") as showinfo:
+            module.TkTelachatApp.handle_command(app, "/context")
+
+        showinfo.assert_called_once()
+        self.assertEqual(showinfo.call_args.args[0], "Telachat Kontext")
+        self.assertIn("1 im naechsten Request", showinfo.call_args.args[1])
+        self.assertNotIn("Geheimer Projektplan", showinfo.call_args.args[1])
+        self.assertEqual(app.statuses[-1], "Kontext ca. 4 Tokens | 1/2 Nachrichten")
+
     def test_tk_doctor_command_starts_existing_check(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         calls: list[str] = []
@@ -311,6 +333,46 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(created[0].responses, [("ok", "OK")])
         self.assertTrue(created[0].presented)
         self.assertEqual(app.status.get_text(), "Sessions 2 | Nachrichten 4 | Ordner 1 | Tags 1")
+
+    def test_gtk_context_command_shows_content_free_estimate(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        created: list[_FakeDialog] = []
+
+        class FakeMessageDialog:
+            @staticmethod
+            def new(_parent: object, title: str, body: str) -> _FakeDialog:
+                dialog = _FakeDialog(title, body)
+                created.append(dialog)
+                return dialog
+
+        app = SimpleNamespace(
+            controller=SimpleNamespace(config=SimpleNamespace(max_history_messages=1)),
+            messages=[
+                SimpleNamespace(content="Geheimer Projektplan"),
+                SimpleNamespace(content="Antwort"),
+            ],
+            system_prompt=lambda: "System",
+            window=object(),
+            status=_FakeText(""),
+        )
+
+        with mock.patch.object(module.Adw, "MessageDialog", FakeMessageDialog):
+            module.GtkTelachatApp.handle_command(app, "/context")
+
+        self.assertEqual(len(created), 1)
+        self.assertEqual(created[0].title, "Telachat Kontext")
+        self.assertIn("1 im naechsten Request", created[0].body)
+        self.assertNotIn("Geheimer Projektplan", created[0].body)
+        self.assertEqual(created[0].responses, [("ok", "OK")])
+        self.assertTrue(created[0].presented)
+        self.assertEqual(app.status.get_text(), "Kontext ca. 4 Tokens | 1/2 Nachrichten")
 
     def test_gtk_doctor_command_starts_existing_check(self) -> None:
         with warnings.catch_warnings():

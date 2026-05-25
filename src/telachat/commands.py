@@ -16,6 +16,17 @@ class SlashCommand:
         return (self.name, *self.aliases)
 
 
+@dataclass(frozen=True)
+class ContextEstimate:
+    messages_total: int
+    history_messages: int
+    max_history_messages: int | None
+    system_chars: int
+    history_chars: int
+    total_chars: int
+    approx_tokens: int
+
+
 SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/help", "/help", "Befehle anzeigen", aliases=("/hilfe",)),
     SlashCommand("/new", "/new [Titel]", "Neue Session starten", aliases=("/neu",)),
@@ -30,6 +41,7 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/untag", "/untag TAG [TAG...]", "Tags vom aktuellen Chat entfernen"),
     SlashCommand("/tags", "/tags [SESSION]", "Tags anzeigen"),
     SlashCommand("/stats", "/stats", "Lokale Historienstatistik anzeigen"),
+    SlashCommand("/context", "/context", "Groesse des aktuellen Chat-Kontexts schaetzen"),
     SlashCommand("/doctor", "/doctor", "Aktuelles Profil gegen /models pruefen"),
     SlashCommand(
         "/edit-last",
@@ -122,6 +134,63 @@ def format_stats_summary(stats: object) -> str:
     )
 
 
+def estimate_context(
+    messages: Iterable[object],
+    system_prompt: str,
+    *,
+    max_history_messages: int | None = None,
+) -> ContextEstimate:
+    all_messages = list(messages)
+    if max_history_messages is None:
+        history = all_messages
+    elif max_history_messages <= 0:
+        history = []
+    else:
+        history = all_messages[-max_history_messages:]
+    system_chars = len(system_prompt)
+    history_chars = sum(len(str(getattr(message, "content", ""))) for message in history)
+    total_chars = system_chars + history_chars
+    return ContextEstimate(
+        messages_total=len(all_messages),
+        history_messages=len(history),
+        max_history_messages=max_history_messages,
+        system_chars=system_chars,
+        history_chars=history_chars,
+        total_chars=total_chars,
+        approx_tokens=_approx_tokens(total_chars),
+    )
+
+
+def format_context_lines(estimate: ContextEstimate) -> list[str]:
+    limit = (
+        "unbegrenzt"
+        if estimate.max_history_messages is None
+        else str(estimate.max_history_messages)
+    )
+    return [
+        (
+            "Kontext: "
+            f"{estimate.messages_total} Nachrichten gespeichert, "
+            f"{estimate.history_messages} im naechsten Request"
+        ),
+        (
+            "Zeichen: "
+            f"Nachrichten {estimate.history_chars}, "
+            f"System {estimate.system_chars}, "
+            f"gesamt {estimate.total_chars}"
+        ),
+        f"Schaetzung: ca. {estimate.approx_tokens} Tokens (Zeichen/4)",
+        f"History-Limit: {limit}",
+    ]
+
+
+def format_context_summary(estimate: ContextEstimate) -> str:
+    return (
+        f"Kontext ca. {estimate.approx_tokens} Tokens | "
+        f"{estimate.history_messages}/{estimate.messages_total} Nachrichten"
+    )
+
+
 def slash_command_suggestions(prefix: str, *, limit: int = 8) -> list[SlashCommand]:
     clean = prefix.strip().lower()
     if not clean.startswith("/"):
@@ -173,6 +242,12 @@ def _format_count_pairs(
         for label, count in pairs
     ]
     return ", ".join(labels) if labels else "-"
+
+
+def _approx_tokens(chars: int) -> int:
+    if chars <= 0:
+        return 0
+    return (chars + 3) // 4
 
 
 def format_message_matches(

@@ -8,6 +8,9 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 
 from .commands import (
     canonical_slash_command,
+    estimate_context,
+    format_context_lines,
+    format_context_summary,
     format_message_matches,
     format_stats_lines,
     format_stats_summary,
@@ -1027,6 +1030,17 @@ class TkTelachatApp:
                 "\n".join(format_stats_lines(stats, include_database=False)),
             )
             self.set_status(format_stats_summary(stats))
+        elif command == "/context":
+            estimate = estimate_context(
+                self.messages,
+                self.system_text.get("1.0", tk.END).strip(),
+                max_history_messages=self.controller.config.max_history_messages,
+            )
+            messagebox.showinfo(
+                "Telachat Kontext",
+                "\n".join(format_context_lines(estimate)),
+            )
+            self.set_status(format_context_summary(estimate))
         elif command == "/doctor":
             self.doctor()
         elif command in {"/edit-last", "/edit"}:

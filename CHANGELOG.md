@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.40.0 - 2026-05-25
+
+- Add content-free chat context estimates via `telachat context` and `/context`.
+- Show stored/request message counts, character totals, and approximate tokens.
+- Cover CLI, Tk, GTK, and shared formatting paths.
+
 ## 0.39.2 - 2026-05-25
 
 - Cover every declared slash-command alias resolving to its canonical command.

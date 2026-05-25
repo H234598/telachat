@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.39.2" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.40.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -68,6 +68,11 @@ output.
 Show local history inventory without message content. Counts sessions,
 messages, folders, tags, profiles, and models. Use \fB--json\fR for
 structured output.
+.TP
+.B context
+Estimate one session's next-request context size without message content.
+Reports stored/request messages, character counts, and approximate tokens. Use
+\fB--json\fR for structured output.
 .TP
 .B archive
 Hide one session from normal session lists without deleting it.
@@ -141,6 +146,7 @@ telachat ask --template summarize "Langer Text"
 telachat folders --create Arbeit --system "Antworte projektbezogen."
 telachat sessions --json
 telachat stats --json
+telachat context SESSION_ID --json
 telachat sessions --tag projekt
 telachat sessions --archived
 telachat sessions --all
@@ -180,6 +186,7 @@ completes the current command.
 /untag TAG [TAG...]
 /tags [SESSION]
 /stats
+/context
 /doctor
 /edit-last TEXT
 /fork [TITLE]

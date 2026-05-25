@@ -96,10 +96,10 @@ candidates, offline config checks with secret redaction, and documented
 terminal slash-command actions, including `/theme` and `/find`. Theme tests
 cover config persistence, env overrides, system-palette detection, CLI setting,
 and controller persistence. Config tests validate profile booleans and API
-modes. `/stats` tests cover the shared content-free
-formatter plus terminal, Tk, and GTK prompt paths. `/doctor` prompt tests cover
-terminal `/models` output, local secret-source errors, and GUI dispatch to the
-existing Check action.
+modes. `/stats` and `/context` tests cover shared content-free formatters plus
+terminal, Tk, and GTK prompt paths. `/doctor` prompt tests cover terminal
+`/models` output, local secret-source errors, and GUI dispatch to the existing
+Check action.
 Command catalog tests assert that every declared alias resolves to its
 canonical command. GUI tests also cover shared alias normalization for `/q` and
 `/quit` closing Tk and GTK windows, plus `/regenerate` dispatching through the
@@ -113,9 +113,10 @@ tests verify that generation overrides reach the API profile and that Responses
 requests include temperature/top-p/max-output parameters. Controller and GUI
 tests also cover elapsed-time propagation for successful responses.
 Store and CLI tests cover content-free local statistics for sessions, messages,
-folders, tags, profiles, and models.
-CLI JSON tests cover profiles, models, config-check, sessions, stats, folders, and doctor
-while checking that secret values remain redacted.
+folders, tags, profiles, and models, plus content-free context estimates for
+single sessions.
+CLI JSON tests cover profiles, models, config-check, sessions, stats, context,
+folders, and doctor while checking that secret values remain redacted.
 Restore tests verify dry-run counts, duplicate-safe imports, session ID
 rewrites, and folder-name reuse.
 Edit-last tests verify that the latest user message can be replaced and that

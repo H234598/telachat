@@ -210,6 +210,24 @@ class CliTests(unittest.TestCase):
                 self.assertIn("Nachrichten: 3 gesamt", text)
                 self.assertIn("Profile: openai=1, tki=1", text)
                 self.assertNotIn("Geheimer Projektplan", text)
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["context", session.id, "--json"]), 0)
+                context_payload = json.loads(out.getvalue())
+                self.assertEqual(context_payload["messages"]["stored"], 2)
+                self.assertEqual(context_payload["messages"]["next_request"], 2)
+                self.assertEqual(context_payload["characters"]["system"], 6)
+                self.assertGreater(context_payload["estimate"]["approx_tokens"], 0)
+                self.assertNotIn("Geheimer Projektplan", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["context", session.id]), 0)
+                context_text = out.getvalue()
+                self.assertIn("Kontext:", context_text)
+                self.assertIn("History-Limit: 24", context_text)
+                self.assertNotIn("Geheimer Projektplan", context_text)
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)

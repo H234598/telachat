@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.39.2`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.40.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -33,6 +33,7 @@ telachat config-check
 telachat config-check --json
 telachat theme
 telachat stats
+telachat context <session-id>
 telachat backup
 telachat doctor --json
 ```
@@ -106,6 +107,7 @@ dass Varianten ausprobiert werden koennen, ohne den Originalverlauf zu aendern.
 /untag TAG [TAG...]
 /tags [SESSION]
 /stats
+/context
 /doctor
 /edit-last TEXT
 /fork [TITLE]
@@ -144,6 +146,7 @@ Nuetzliche Chat-Befehle:
 /untag TAG [TAG...]
 /tags [SESSION]
 /stats
+/context
 /doctor
 /edit-last TEXT
 /fork [TITLE]
@@ -162,10 +165,14 @@ Nuetzliche Chat-Befehle:
 Im interaktiven Terminal-Chat nutzt Telachat Readline-Completion: `Tab`
 vervollstaendigt Slash-Befehle und passende Kontextwerte wie Profile, Modelle,
 Templates, Ordner, Session-IDs, Session-Titel und Sortiermodi.
+`/context` zeigt content-frei, wie gross der aktuell geladene Chat fuer den
+naechsten Request grob wird: gespeicherte/gesendete Nachrichten, Zeichenumfang
+und eine einfache Tokenschaetzung.
+
 Fuer Skripte und Agenten liefern `profiles --json`, `models --json`,
-`config-check --json`, `sessions --json`, `stats --json`, `folders --json`,
-`export --json`, `export-folder --json` und `doctor --json` strukturierte Daten;
-Provider-/Secret-Konfiguration bleibt redaktiert.
+`config-check --json`, `sessions --json`, `stats --json`, `context --json`,
+`folders --json`, `export --json`, `export-folder --json` und `doctor --json`
+strukturierte Daten; Provider-/Secret-Konfiguration bleibt redaktiert.
 
 GUI-Themes werden dauerhaft ueber `theme = "system"` in `config.toml`
 gesteuert. Verfuegbar sind unter anderem `system`, `light`, `dark`,

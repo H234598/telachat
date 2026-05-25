@@ -13,6 +13,9 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
 from .commands import (
     canonical_slash_command,
+    estimate_context,
+    format_context_lines,
+    format_context_summary,
     format_message_matches,
     format_stats_lines,
     format_stats_summary,
@@ -1157,6 +1160,20 @@ class GtkTelachatApp(Adw.Application):
             dialog.add_response("ok", "OK")
             dialog.present()
             self.status.set_text(format_stats_summary(stats))
+        elif command == "/context":
+            estimate = estimate_context(
+                self.messages,
+                self.system_prompt(),
+                max_history_messages=self.controller.config.max_history_messages,
+            )
+            dialog = Adw.MessageDialog.new(
+                self.window,
+                "Telachat Kontext",
+                "\n".join(format_context_lines(estimate)),
+            )
+            dialog.add_response("ok", "OK")
+            dialog.present()
+            self.status.set_text(format_context_summary(estimate))
         elif command == "/doctor":
             self.doctor()
         elif command in {"/edit-last", "/edit"}:

@@ -6,6 +6,9 @@ from types import SimpleNamespace
 from telachat.commands import (
     SLASH_COMMANDS,
     canonical_slash_command,
+    estimate_context,
+    format_context_lines,
+    format_context_summary,
     format_message_matches,
     format_stats_lines,
     format_stats_summary,
@@ -41,6 +44,7 @@ class CommandCatalogTests(unittest.TestCase):
         self.assertIn("/theme [NAME]", help_text)
         self.assertIn("/find TEXT", help_text)
         self.assertIn("/stats", help_text)
+        self.assertIn("/context", help_text)
         self.assertIn("/doctor", help_text)
 
     def test_command_name_suggestions_include_aliases(self) -> None:
@@ -61,6 +65,26 @@ class CommandCatalogTests(unittest.TestCase):
                     self.assertEqual(canonical_slash_command(alias), command.name)
 
         self.assertEqual(canonical_slash_command("/unknown"), "/unknown")
+
+    def test_context_estimate_is_content_free(self) -> None:
+        messages = [
+            SimpleNamespace(content="Geheimer Projektplan"),
+            SimpleNamespace(content="Antwort"),
+        ]
+
+        estimate = estimate_context(messages, "System", max_history_messages=1)
+
+        self.assertEqual(estimate.messages_total, 2)
+        self.assertEqual(estimate.history_messages, 1)
+        self.assertEqual(estimate.system_chars, 6)
+        self.assertEqual(estimate.history_chars, 7)
+        self.assertEqual(estimate.total_chars, 13)
+        self.assertEqual(estimate.approx_tokens, 4)
+        text = "\n".join(format_context_lines(estimate))
+        self.assertIn("1 im naechsten Request", text)
+        self.assertIn("History-Limit: 1", text)
+        self.assertNotIn("Geheimer Projektplan", text)
+        self.assertEqual(format_context_summary(estimate), "Kontext ca. 4 Tokens | 1/2 Nachrichten")
 
     def test_stats_formatting_is_content_free(self) -> None:
         stats = SimpleNamespace(

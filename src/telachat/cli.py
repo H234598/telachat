@@ -17,7 +17,10 @@ from pathlib import Path
 from . import __version__
 from .client import ApiError, ChatResult, OpenAICompatClient
 from .commands import (
+    ContextEstimate,
     canonical_slash_command,
+    estimate_context,
+    format_context_lines,
     format_message_matches,
     format_stats_lines,
     slash_command_help,
@@ -182,6 +185,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_stats = sub.add_parser("stats", help="Lokale Historienstatistik anzeigen")
     p_stats.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_stats.set_defaults(func=cmd_stats)
+
+    p_context = sub.add_parser("context", help="Kontextgroesse einer Session schaetzen")
+    p_context.add_argument("session", help="Session-ID oder Prefix")
+    p_context.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
+    p_context.set_defaults(func=cmd_context)
 
     p_tags = sub.add_parser("tags", help="Session-Tags anzeigen/verwalten")
     p_tags.add_argument("session", nargs="?", help="Session-ID oder Prefix; leer listet alle Tags")
@@ -710,6 +718,29 @@ def cmd_stats(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_context(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    store = ChatStore()
+    try:
+        session = store.get_session(args.session)
+        if session is None:
+            raise ConfigError(f"Session nicht gefunden: {args.session}")
+        estimate = estimate_context(
+            store.messages(session.id),
+            session.system_prompt,
+            max_history_messages=cfg.max_history_messages,
+        )
+        if args.json:
+            print(json.dumps(_context_record(session, estimate), indent=2, sort_keys=True))
+            return 0
+        print(f"{APP_TITLE} context: {session.title} ({session.id})")
+        for line in format_context_lines(estimate):
+            print(line)
+    finally:
+        store.close()
+    return 0
+
+
 def cmd_tags(args: argparse.Namespace) -> int:
     store = ChatStore()
     try:
@@ -891,6 +922,31 @@ def _stats_record(stats: StoreStats) -> dict[str, object]:
             {"model": model, "sessions": count}
             for model, count in stats.session_models
         ],
+    }
+
+
+def _context_record(session: Session, estimate: ContextEstimate) -> dict[str, object]:
+    return {
+        "session": {
+            "id": session.id,
+            "title": session.title,
+            "profile": session.profile,
+            "model": session.model,
+        },
+        "messages": {
+            "stored": estimate.messages_total,
+            "next_request": estimate.history_messages,
+            "max_history_messages": estimate.max_history_messages,
+        },
+        "characters": {
+            "system": estimate.system_chars,
+            "messages": estimate.history_chars,
+            "total": estimate.total_chars,
+        },
+        "estimate": {
+            "approx_tokens": estimate.approx_tokens,
+            "method": "ceil(characters/4)",
+        },
     }
 
 
@@ -1683,6 +1739,14 @@ def _handle_command(
             print(_format_session_line(item))
     elif command == "/stats":
         for line in format_stats_lines(store.stats(), include_database=False):
+            print(line)
+    elif command == "/context":
+        estimate = estimate_context(
+            store.messages(session.id),
+            system_prompt,
+            max_history_messages=getattr(cfg, "max_history_messages", None),
+        )
+        for line in format_context_lines(estimate):
             print(line)
     elif command == "/doctor":
         try:

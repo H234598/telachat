@@ -162,6 +162,8 @@ telachat sessions --sort newest|oldest|title|title-desc|provider
 telachat sessions --json
 telachat stats
 telachat stats --json
+telachat context SESSION
+telachat context SESSION --json
 telachat archive SESSION
 telachat unarchive SESSION
 telachat tags [SESSION]
@@ -196,7 +198,7 @@ presets for LM Studio, Ollama, and Jan. They are normal profiles and may fail
 `config-check --profile NAME --strict` narrows strict secret validation to one
 profile, which is useful when optional provider presets are intentionally not
 configured.
-`profiles`, `models`, `config-check`, `sessions`, `stats`, `folders`,
+`profiles`, `models`, `config-check`, `sessions`, `stats`, `context`, `folders`,
 `export`, `export-folder`, and `doctor` also support `--json` for agent/script
 consumption. JSON output is redacted where it contains provider configuration;
 folder system prompts are
@@ -206,6 +208,10 @@ that folder as a portable data bundle.
 `stats` is read-only and does not include message content. It counts sessions,
 messages by role, folders, tag assignments, profile usage, and model usage so a
 local database can be inspected quickly from scripts.
+
+`context` is also read-only and content-free. It estimates one session's next
+request size from the system prompt, the configured history-message window, and
+message lengths, reporting character counts and a coarse token estimate.
 
 Sessions can also carry normalized tags in the `session_tags` table. Tags are
 many-to-one labels independent of folders; session search can match tags,
@@ -247,6 +253,7 @@ GUI slash commands:
 /untag TAG [TAG...]
 /tags [SESSION]
 /stats
+/context
 /doctor
 /regen | /regenerate
 /templates

@@ -1,5 +1,12 @@
 # Releases
 
+## 0.40.0 - 2026-05-25
+
+- Neuer content-freier Kontextumfang: `telachat context SESSION` und
+  `/context` zeigen Nachrichtenzaehler, Zeichenumfang und grobe Tokenschaetzung
+  fuer den naechsten Request.
+- Tests decken CLI, Tk, GTK und gemeinsame Formatierung ab.
+
 ## 0.39.2 - 2026-05-25
 
 - Tests pruefen jetzt fuer jeden deklarierten Slash-Alias die Aufloesung auf
