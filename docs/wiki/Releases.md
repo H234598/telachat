@@ -1,5 +1,13 @@
 # Releases
 
+## 0.23.0 - 2026-05-25
+
+- `telachat import-folder FILE.json` importiert `telachat.folder.v1` additiv.
+- `--folder` legt alle importierten Sessions in einen Zielordner.
+- `--json` gibt Zielordner, importierte Sessions und Nachrichtenanzahl
+  strukturiert aus.
+- Der Import validiert alle Sessions und Nachrichten vor dem Schreiben.
+
 ## 0.22.0 - 2026-05-25
 
 - `telachat export-folder FOLDER --json` exportiert mehrere Sessions als

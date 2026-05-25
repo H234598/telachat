@@ -39,6 +39,7 @@ telachat folders --json --show-system
 telachat export SESSION_ID --json
 telachat import-session session.json --json
 telachat export-folder Arbeit --json
+telachat import-folder folder.json --json
 telachat export-folder Arbeit -o /tmp/telachat-export
 telachat sessions --json
 telachat chat

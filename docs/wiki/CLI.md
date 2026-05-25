@@ -66,6 +66,7 @@ telachat import-session session.json --folder Importe
 telachat export-folder Projekt -o ./projekt-export
 telachat export-folder Projekt --single-file -o projekt.md
 telachat export-folder Projekt --json -o projekt.json
+telachat import-folder projekt.json --folder Importiert
 ```
 
 ## Interaktive Slash-Commands

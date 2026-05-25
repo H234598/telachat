@@ -148,6 +148,7 @@ telachat import-session FILE.json
 telachat export-folder <folder-name-or-id>
 telachat export-folder <folder-name-or-id> --single-file
 telachat export-folder <folder-name-or-id> --json
+telachat import-folder FILE.json
 telachat backup
 telachat backup -o DIR
 telachat backup -o FILE.zip

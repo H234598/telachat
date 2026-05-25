@@ -201,6 +201,26 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_import_session.set_defaults(func=cmd_import_session)
 
+    p_import_folder = sub.add_parser(
+        "import-folder",
+        help="JSON-Ordnerexport additiv importieren",
+    )
+    p_import_folder.add_argument(
+        "folder_json",
+        type=Path,
+        help="Export aus `telachat export-folder --json`",
+    )
+    p_import_folder.add_argument(
+        "--folder",
+        help="Zielordner ueberschreiben/Ordner anlegen",
+    )
+    p_import_folder.add_argument(
+        "--json",
+        action="store_true",
+        help="Maschinenlesbares JSON ausgeben",
+    )
+    p_import_folder.set_defaults(func=cmd_import_folder)
+
     p_backup = sub.add_parser("backup", help="SQLite-Historie und redaktierte Config sichern")
     p_backup.add_argument("-o", "--output", type=Path, help="Backup-Zip oder Zielverzeichnis")
     p_backup.set_defaults(func=cmd_backup)
@@ -631,6 +651,47 @@ def _folder_export_record(
     return record
 
 
+def _clean_session_import_payload(payload: object) -> tuple[dict[str, str], list[tuple[str, str]]]:
+    if not isinstance(payload, dict):
+        raise ConfigError("Importsession ist kein Objekt.")
+    source_session = payload.get("session")
+    source_messages = payload.get("messages")
+    if not isinstance(source_session, dict) or not isinstance(source_messages, list):
+        raise ConfigError("Importdatei braucht 'session' und 'messages'.")
+    clean_messages: list[tuple[str, str]] = []
+    for item in source_messages:
+        if not isinstance(item, dict):
+            raise ConfigError("Importnachricht ist kein Objekt.")
+        role = str(item.get("role") or "")
+        if role not in {"user", "assistant", "system"}:
+            raise ConfigError(f"Ungueltige Importrolle: {role or '<leer>'}")
+        content = item.get("content")
+        if not isinstance(content, str):
+            raise ConfigError("Importnachricht braucht Textinhalt.")
+        clean_messages.append((role, content))
+    return (
+        {
+            "title": str(source_session.get("title") or "Importierte Session"),
+            "profile": str(source_session.get("profile") or "tki"),
+            "model": str(source_session.get("model") or ""),
+            "system_prompt": str(source_session.get("system_prompt") or ""),
+        },
+        clean_messages,
+    )
+
+
+def _folder_import_target(store: ChatStore, payload: dict[str, object], override: str | None) -> Folder | None:
+    if override:
+        return store.create_folder(override)
+    folder = payload.get("folder")
+    if not isinstance(folder, dict) or folder.get("kind") != "folder":
+        return None
+    name = str(folder.get("name") or "").strip()
+    if not name:
+        return None
+    return store.create_folder(name, system_prompt=str(folder.get("system_prompt") or ""))
+
+
 def cmd_fork(args: argparse.Namespace) -> int:
     store = ChatStore()
     try:
@@ -775,30 +836,16 @@ def cmd_import_session(args: argparse.Namespace) -> int:
         raise ConfigError(f"Ungueltige JSON-Importdatei: {exc}") from exc
     if not isinstance(payload, dict) or payload.get("format") != "telachat.session.v1":
         raise ConfigError("Importdatei ist kein telachat.session.v1 Export.")
-    source_session = payload.get("session")
-    source_messages = payload.get("messages")
-    if not isinstance(source_session, dict) or not isinstance(source_messages, list):
-        raise ConfigError("Importdatei braucht 'session' und 'messages'.")
-    clean_messages: list[tuple[str, str]] = []
-    for item in source_messages:
-        if not isinstance(item, dict):
-            raise ConfigError("Importnachricht ist kein Objekt.")
-        role = str(item.get("role") or "")
-        if role not in {"user", "assistant", "system"}:
-            raise ConfigError(f"Ungueltige Importrolle: {role or '<leer>'}")
-        content = item.get("content")
-        if not isinstance(content, str):
-            raise ConfigError("Importnachricht braucht Textinhalt.")
-        clean_messages.append((role, content))
+    session_meta, clean_messages = _clean_session_import_payload(payload)
 
     store = ChatStore()
     try:
         folder_id = store.create_folder(args.folder).id if args.folder else None
         imported = store.create_session(
-            title=args.title or str(source_session.get("title") or "Importierte Session"),
-            profile=str(source_session.get("profile") or "tki"),
-            model=str(source_session.get("model") or ""),
-            system_prompt=str(source_session.get("system_prompt") or ""),
+            title=args.title or session_meta["title"],
+            profile=session_meta["profile"],
+            model=session_meta["model"],
+            system_prompt=session_meta["system_prompt"],
             folder_id=folder_id,
         )
         count = 0
@@ -819,6 +866,63 @@ def cmd_import_session(args: argparse.Namespace) -> int:
             )
         else:
             print(f"Importiert: {imported.id}  {count} Nachrichten  {imported.title}")
+    finally:
+        store.close()
+    return 0
+
+
+def cmd_import_folder(args: argparse.Namespace) -> int:
+    try:
+        payload = json.loads(args.folder_json.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise ConfigError(f"Importdatei kann nicht gelesen werden: {args.folder_json}") from exc
+    except json.JSONDecodeError as exc:
+        raise ConfigError(f"Ungueltige JSON-Importdatei: {exc}") from exc
+    if not isinstance(payload, dict) or payload.get("format") != "telachat.folder.v1":
+        raise ConfigError("Importdatei ist kein telachat.folder.v1 Export.")
+    source_sessions = payload.get("sessions")
+    if not isinstance(source_sessions, list):
+        raise ConfigError("Importdatei braucht 'sessions'.")
+
+    clean_sessions: list[tuple[dict[str, str], list[tuple[str, str]]]] = []
+    for item in source_sessions:
+        clean_sessions.append(_clean_session_import_payload(item))
+
+    store = ChatStore()
+    try:
+        folder = _folder_import_target(store, payload, args.folder)
+        imported_sessions: list[Session] = []
+        total_messages = 0
+        for session_meta, messages in clean_sessions:
+            imported = store.create_session(
+                title=session_meta["title"],
+                profile=session_meta["profile"],
+                model=session_meta["model"],
+                system_prompt=session_meta["system_prompt"],
+                folder_id=folder.id if folder else None,
+            )
+            for role, content in messages:
+                store.add_message(imported.id, role, content)
+                total_messages += 1
+            imported_sessions.append(store.get_session(imported.id) or imported)
+        if args.json:
+            folder_record = _folder_record(folder, include_system_prompt=True) if folder else None
+            print(
+                json.dumps(
+                    {
+                        "imported": {
+                            "folder": folder_record,
+                            "sessions": [_session_record(session) for session in imported_sessions],
+                        },
+                        "messages": total_messages,
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+        else:
+            target = f" in Ordner {folder.name}" if folder else ""
+            print(f"Importiert: {len(imported_sessions)} Sessions  {total_messages} Nachrichten{target}")
     finally:
         store.close()
     return 0

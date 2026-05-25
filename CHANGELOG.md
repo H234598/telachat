@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.23.0 - 2026-05-25
+
+- Add `telachat import-folder FILE.json` for additive imports of
+  `telachat.folder.v1` exports.
+- Support `--folder` and `--json` for scripted multi-session imports.
+- Validate every bundled session and message before creating folders or
+  sessions, preventing partial imports on bad data.
+
 ## 0.22.0 - 2026-05-25
 
 - Add `telachat export-folder FOLDER --json` for machine-readable
