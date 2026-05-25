@@ -1,5 +1,10 @@
 # Releases
 
+## 0.43.3 - 2026-05-25
+
+- Markdown-Exports beschriften gespeicherte `system`-Nachrichten jetzt als
+  `System`, statt jede Nicht-User-Rolle als Assistant zu behandeln.
+
 ## 0.43.2 - 2026-05-25
 
 - Nicht lesbare `file:`- und `envfile:`-Secretquellen werden jetzt als
