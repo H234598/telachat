@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.43.1 - 2026-05-25
+
+- Keep interactive chat sessions alive when a send fails because a configured secret envfile cannot be read.
+- Report `ApiError`, `ConfigError`, and `OSError` send failures inside `/template` and normal chat sends without exiting the loop.
+
 ## 0.43.0 - 2026-05-25
 
 - Add optional folder default backends: provider/profile plus model.

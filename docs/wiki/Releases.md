@@ -1,5 +1,12 @@
 # Releases
 
+## 0.43.1 - 2026-05-25
+
+- Interaktive Chat-Sends bleiben nach Secret-/Envfile-Fehlern im Chat statt
+  die Sitzung zu beenden.
+- Normale Chat-Sends und `/template` melden `ApiError`, `ConfigError` und
+  `OSError` kompakt im Prompt.
+
 ## 0.43.0 - 2026-05-25
 
 - Ordner koennen jetzt optional Default-Provider und Default-Modell speichern.
