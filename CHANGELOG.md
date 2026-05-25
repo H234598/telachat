@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0 - 2026-05-25
+
+- Add a shared slash-command catalog for CLI, GTK, and Tk.
+- Add prompt autocomplete for slash commands in both GUIs.
+- Add `/permissions` to show provider and redacted secret sources.
+- Add `telachat(1)`, `telachat-tk(1)`, and `telachat-gtk(1)` manpages.
+- Install manpages through `make install`.
+- Rename the default TKI/Hugging Face model from the Bavarder-compatible
+  `gpt-4` alias to the real `Qwen/Qwen2.5-1.5B-Instruct` model name.
+
 ## 0.5.0 - 2026-05-25
 
 - Add selective folder export with `telachat export-folder FOLDER`.

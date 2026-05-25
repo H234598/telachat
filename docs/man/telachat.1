@@ -1,0 +1,115 @@
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.6.0" "User Commands"
+.SH NAME
+telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
+.SH SYNOPSIS
+.B telachat
+[\fB--config\fR \fIPATH\fR]
+\fICOMMAND\fR
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B Telachat
+is a local chat client with a CLI, GTK frontend, and Tk frontend. It stores chat
+history in SQLite, supports provider/model profiles, prompt templates, folders,
+folder system prompts, regeneration, and Markdown exports.
+.SH COMMANDS
+.TP
+.B init
+Create the default configuration.
+.TP
+.B profiles
+Show configured provider profiles with redacted API keys.
+.TP
+.B templates
+List configured prompt templates.
+.TP
+.B folders
+List or manage chat folders and folder-level system prompts.
+.TP
+.B ask
+Send a single prompt.
+.TP
+.B chat
+Start an interactive CLI chat.
+.TP
+.B sessions
+List saved sessions with optional search, folder filtering, and sorting.
+.TP
+.B export
+Export one session as Markdown.
+.TP
+.B export-folder
+Export a selected folder as Markdown files or a single bundled Markdown file.
+.TP
+.B doctor
+Check profile configuration and the configured API.
+.TP
+.B gtk, gui
+Start the GTK desktop frontend.
+.TP
+.B tk
+Start the Tk desktop frontend.
+.SH EXAMPLES
+.nf
+telachat doctor --chat
+telachat ask -p tki "Hallo"
+telachat ask -p openai -m gpt-5.4-mini "Hallo"
+telachat templates
+telachat ask --template summarize "Langer Text"
+telachat folders --create Arbeit --system "Antworte projektbezogen."
+telachat export-folder Arbeit -o ./arbeit-export
+telachat export-folder Arbeit --single-file -o arbeit.md
+telachat-tk
+telachat-gtk
+.fi
+.SH SLASH COMMANDS
+Interactive CLI chat and both GUIs understand slash commands in the prompt.
+The GUI prompt shows command suggestions while typing and Tab completes the
+current command.
+.PP
+.nf
+/help
+/new [Titel]
+/rename TITLE
+/delete
+/pin
+/unpin
+/regen
+/templates
+/template NAME TEXT
+/folder NAME
+/folder-system TEXT
+/rename-folder NAME
+/delete-folder
+/move NAME
+/unfile
+/sort newest|oldest|title|title-desc|provider
+/search TEXT
+/provider NAME
+/model NAME
+/permissions
+/left
+/system [prompt]
+/sessions
+/load ID
+/profile [name]
+/profiles
+/history [n]
+/export [datei.md]
+/exit
+.fi
+.SH FILES
+.TP
+.I ~/.config/telachat/config.toml
+Default configuration.
+.TP
+.I ~/.local/share/telachat/history.sqlite3
+SQLite chat history.
+.TP
+.I ~/.config/telachat/*.env
+Recommended location for local API-key envfiles. Keep these files private.
+.SH SECURITY
+Do not store real API tokens in the repository, Wiki, or Gists. Prefer
+\fBenv:NAME\fR or \fBenvfile:/path#NAME\fR references in configuration.
+.SH SEE ALSO
+.BR telachat-tk (1),
+.BR telachat-gtk (1)

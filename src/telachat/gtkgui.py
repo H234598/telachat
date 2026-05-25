@@ -10,6 +10,8 @@ gi.require_version("Adw", "1")
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
+from .commands import slash_command_help, slash_command_suggestions
+from .config import redact_secret
 from .controller import TelachatController
 from .store import Message, Session
 
@@ -224,6 +226,10 @@ class GtkTelachatApp(Adw.Application):
         self.send_button = Gtk.Button(label="Senden")
         self.send_button.connect("clicked", self.on_send)
         composer.append(self.send_button)
+        self.command_popover = Gtk.Popover()
+        self.command_popover.set_parent(self.input_view)
+        self.command_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        self.command_popover.set_child(self.command_box)
 
         self.settings = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self.settings.set_size_request(300, -1)
@@ -482,6 +488,7 @@ class GtkTelachatApp(Adw.Application):
             return
         if prompt.startswith("/"):
             self.clear_input()
+            self.hide_command_suggestions()
             self.handle_command(prompt)
             return
         profile_name = self.selected_profile()
@@ -490,6 +497,7 @@ class GtkTelachatApp(Adw.Application):
         session_id = self.active_session.id if self.active_session else None
         folder_id = self.selected_folder_id(for_new=True)
         self.clear_input()
+        self.hide_command_suggestions()
         self.set_busy(True, "Denke...")
         threading.Thread(
             target=self._send_worker,
@@ -505,10 +513,52 @@ class GtkTelachatApp(Adw.Application):
         state: Gdk.ModifierType,
     ) -> bool:
         enter_pressed = keyval in {Gdk.KEY_Return, Gdk.KEY_KP_Enter}
+        if keyval == Gdk.KEY_Escape:
+            self.hide_command_suggestions()
+            return False
+        if keyval == Gdk.KEY_Tab:
+            self.complete_slash_command()
+            return True
         if enter_pressed and state & Gdk.ModifierType.SHIFT_MASK:
             self.on_send(self.send_button)
             return True
+        GLib.idle_add(self.refresh_command_suggestions)
         return False
+
+    def refresh_command_suggestions(self) -> bool:
+        text = self.input_prompt()
+        first_token = text.split(maxsplit=1)[0] if text.startswith("/") else ""
+        suggestions = slash_command_suggestions(first_token)
+        if not suggestions:
+            self.hide_command_suggestions()
+            return GLib.SOURCE_REMOVE
+        while child := self.command_box.get_first_child():
+            self.command_box.remove(child)
+        self.current_command_suggestions = suggestions
+        for item in suggestions:
+            label = Gtk.Label(label=f"{item.usage}  -  {item.description}", xalign=0)
+            label.set_margin_top(4)
+            label.set_margin_bottom(4)
+            label.set_margin_start(8)
+            label.set_margin_end(8)
+            self.command_box.append(label)
+        self.command_popover.popup()
+        return GLib.SOURCE_REMOVE
+
+    def hide_command_suggestions(self) -> None:
+        if hasattr(self, "command_popover"):
+            self.command_popover.popdown()
+
+    def complete_slash_command(self) -> None:
+        text = self.input_prompt()
+        first_token = text.split(maxsplit=1)[0] if text.startswith("/") else ""
+        suggestions = slash_command_suggestions(first_token, limit=1)
+        if not suggestions:
+            self.refresh_command_suggestions()
+            return
+        rest = text.partition(" ")[2]
+        self.set_input_prompt(f"{suggestions[0].name} {rest}".rstrip() + " ")
+        self.hide_command_suggestions()
 
     def _send_worker(
         self,
@@ -773,7 +823,7 @@ class GtkTelachatApp(Adw.Application):
             dialog = Adw.MessageDialog.new(
                 self.window,
                 "Telachat Kommandos",
-                "/new | /neu\n/rename TITLE\n/delete\n/pin | /unpin\n/regen | /regenerate\n/templates\n/template NAME TEXT\n/folder NAME | /ordner NAME\n/folder-system TEXT\n/rename-folder NAME\n/delete-folder\n/move NAME | /ablegen NAME\n/unfile\n/sort newest|oldest|title|title-desc|provider\n/search TEXT\n/provider NAME\n/model NAME\n/left | /links\n/system",
+                slash_command_help(),
             )
             dialog.add_response("ok", "OK")
             dialog.present()
@@ -875,6 +925,18 @@ class GtkTelachatApp(Adw.Application):
                 if rest.lower() == model.lower():
                     self.model_dropdown.set_selected(index)
                     break
+        elif command == "/permissions":
+            lines = [
+                f"{name}: {redact_secret(profile.api_key)}"
+                for name, profile in sorted(self.controller.profiles().items())
+            ]
+            dialog = Adw.MessageDialog.new(
+                self.window,
+                "Telachat Berechtigungen",
+                "\n".join(lines),
+            )
+            dialog.add_response("ok", "OK")
+            dialog.present()
         elif command in {"/left", "/links"}:
             self.sidebar.set_visible(not self.sidebar.get_visible())
         elif command == "/system":

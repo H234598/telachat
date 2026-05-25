@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.5.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.6.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -30,8 +30,9 @@ telachat init
 telachat doctor
 ```
 
-Der Wrapper wird nach `~/.local/bin/telachat` installiert. Falls der Befehl in
-einer Shell nicht gefunden wird, pruefe, ob `~/.local/bin` im `PATH` steht.
+Der Wrapper wird nach `~/.local/bin/telachat` installiert, Manpages nach
+`~/.local/share/man/man1`. Falls der Befehl in einer Shell nicht gefunden wird,
+pruefe, ob `~/.local/bin` im `PATH` steht.
 
 ## Schnellstart
 
@@ -66,7 +67,8 @@ Default-Systemprompt tragen, damit sie als kleine Projektkontexte funktionieren.
 
 Im Texteingabefeld funktioniert auch eine kleine Kommandozeile:
 `Shift+Enter` schickt die Nachricht ab, normales `Enter` bleibt fuer
-Zeilenumbrueche.
+Zeilenumbrueche. Beim Tippen von Slash-Befehlen zeigen GTK und Tk sofort
+Vorschlaege; `Tab` vervollstaendigt den aktuellen Befehl.
 
 ```text
 /help
@@ -88,6 +90,7 @@ Zeilenumbrueche.
 /search TEXT
 /provider NAME
 /model NAME
+/permissions
 /left
 /system
 ```
@@ -105,6 +108,7 @@ Nuetzliche Chat-Befehle:
 /template NAME TEXT
 /folder-system TEXT
 /profile [name]
+/permissions
 /system [prompt]
 /history [n]
 /export [datei.md]
@@ -139,6 +143,14 @@ telachat templates
 telachat ask --template summarize "Langer Text..."
 ```
 
+Manpages:
+
+```sh
+man telachat
+man telachat-tk
+man telachat-gtk
+```
+
 ## Voreingestelltes TKI-Profil
 
 ```toml
@@ -146,7 +158,7 @@ telachat ask --template summarize "Langer Text..."
 label = "TKI"
 base_url = "https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1"
 api_key = "env:TELACHAT_QWEN_API_KEY"
-model = "gpt-4"
+model = "Qwen/Qwen2.5-1.5B-Instruct"
 temperature = 0.2
 top_p = 0.9
 max_tokens = 512
@@ -155,9 +167,8 @@ stream = true
 api_mode = "chat_completions"
 ```
 
-Das `model = "gpt-4"` ist absichtlich kompatibel zu Bavarder/TKI. Der Space
-routet es intern auf Qwen. Der Space erwartet inzwischen einen Bearer-Key; auf
-diesem Host liegt `Telachat_API_Teladi` in
+Das Modell wird mit seinem echten Qwen-Namen angesprochen. Der Space erwartet
+inzwischen einen Bearer-Key; auf diesem Host liegt `Telachat_API_Teladi` in
 `~/.config/telachat/qwen.env` und wird per
 `envfile:~/.config/telachat/qwen.env#TELACHAT_QWEN_API_KEY` referenziert.
 

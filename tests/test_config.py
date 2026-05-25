@@ -16,7 +16,7 @@ class ConfigTests(unittest.TestCase):
             cfg = load_config(path)
             profile = cfg.profile()
             self.assertEqual(profile.name, "tki")
-            self.assertEqual(profile.model, "gpt-4")
+            self.assertEqual(profile.model, "Qwen/Qwen2.5-1.5B-Instruct")
             self.assertIn("Qwen/Qwen2.5-1.5B-Instruct", profile.models)
             self.assertTrue(profile.base_url.endswith("/v1"))
             self.assertIn("huggingface", cfg.profiles)

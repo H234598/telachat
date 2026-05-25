@@ -56,6 +56,7 @@ Im interaktiven Chat funktionieren unter anderem:
 /search TEXT
 /provider NAME
 /model NAME
+/permissions
 /templates
 /template NAME TEXT
 /folder-system TEXT

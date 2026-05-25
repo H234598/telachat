@@ -17,6 +17,8 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - Die Seitenbreiten sind per Splitter anpassbar.
 - `Shift+Enter` sendet eine Nachricht.
 - `Enter` fuegt einen Zeilenumbruch ein.
+- Slash-Befehle zeigen beim Tippen Vorschlaege.
+- `Tab` vervollstaendigt den aktuellen Slash-Befehl.
 
 ## Chatverwaltung
 
@@ -37,6 +39,7 @@ Slash-Commands funktionieren ebenfalls:
 /templates
 /template summarize Mein Text
 /folder-system Projektkontext
+/permissions
 ```
 
 Der Button `Ordner-Prompt` speichert den aktuell sichtbaren Systemprompt fuer

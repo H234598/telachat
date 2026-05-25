@@ -1,5 +1,15 @@
 # Releases
 
+## 0.6.0 - 2026-05-25
+
+- Gemeinsamer Slash-Command-Katalog fuer CLI, GTK und Tk.
+- Autocomplete fuer Slash-Befehle in beiden GUIs.
+- Neuer Slash-Befehl `/permissions` fuer Provider und redaktierte Secret-Quellen.
+- Manpages `telachat(1)`, `telachat-tk(1)` und `telachat-gtk(1)`.
+- `make install` installiert die Manpages lokal mit.
+- TKI/Hugging-Face nutzt jetzt den echten Modellnamen
+  `Qwen/Qwen2.5-1.5B-Instruct` statt des alten `gpt-4`-Alias.
+
 ## 0.5.0 - 2026-05-25
 
 - Selektiver Ordnerexport mit `telachat export-folder FOLDER`.

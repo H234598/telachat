@@ -1,0 +1,25 @@
+.TH TELACHAT-TK 1 "2026-05-25" "Telachat 0.6.0" "User Commands"
+.SH NAME
+telachat-tk \- start the Tk desktop frontend for Telachat
+.SH SYNOPSIS
+.B telachat-tk
+.SH DESCRIPTION
+.B telachat-tk
+starts the native Tk/ttk desktop frontend. It uses the same configuration,
+SQLite history, provider profiles, folders, prompt templates, and slash
+commands as the
+.B telachat
+CLI.
+.PP
+The prompt supports Slash-Command suggestions while typing. Press Tab to
+complete the current command and Shift+Enter to send a message.
+.SH FILES
+.TP
+.I ~/.config/telachat/config.toml
+Default configuration.
+.TP
+.I ~/.local/share/telachat/history.sqlite3
+SQLite chat history.
+.SH SEE ALSO
+.BR telachat (1),
+.BR telachat-gtk (1)

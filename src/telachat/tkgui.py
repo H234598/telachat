@@ -6,6 +6,8 @@ import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
+from .commands import slash_command_help, slash_command_suggestions
+from .config import redact_secret
 from .controller import TelachatController
 from .store import Message, Session
 
@@ -225,6 +227,19 @@ class TkTelachatApp:
         self.input_text.bind("<Control-KP_Enter>", self._send_from_shortcut)
         self.input_text.bind("<Shift-Return>", self._send_from_shortcut)
         self.input_text.bind("<Shift-KP_Enter>", self._send_from_shortcut)
+        self.input_text.bind("<KeyRelease>", self.on_input_changed)
+        self.input_text.bind("<Tab>", self.complete_slash_command)
+        self.input_text.bind("<Escape>", self.hide_command_suggestions)
+        self.command_suggestions = tk.Listbox(
+            composer,
+            height=4,
+            borderwidth=1,
+            highlightthickness=1,
+            bg="#fffdf8",
+            activestyle="none",
+        )
+        self.command_suggestions.bind("<Double-Button-1>", self.on_command_suggestion_selected)
+        self.command_suggestions.bind("<Return>", self.on_command_suggestion_selected)
         self.send_button = ttk.Button(composer, text="Senden", command=self.send_message)
         self.send_button.grid(row=0, column=1, sticky="ns")
 
@@ -292,6 +307,7 @@ class TkTelachatApp:
             return
         if prompt.startswith("/"):
             self.input_text.delete("1.0", tk.END)
+            self.hide_command_suggestions()
             self.handle_command(prompt)
             return
         profile_name = self.selected_profile()
@@ -300,6 +316,7 @@ class TkTelachatApp:
         session_id = self.active_session.id if self.active_session else None
         folder_id = self.selected_folder_id(for_new=True)
         self.input_text.delete("1.0", tk.END)
+        self.hide_command_suggestions()
         self.set_busy(True, "Denke...")
         threading.Thread(
             target=self._send_worker,
@@ -365,6 +382,49 @@ class TkTelachatApp:
     def _send_from_shortcut(self, _event: object) -> str:
         self.send_message()
         return "break"
+
+    def on_input_changed(self, event: object) -> None:
+        key = getattr(event, "keysym", "")
+        if key in {"Tab", "Return", "KP_Enter", "Escape", "Shift_L", "Shift_R", "Control_L", "Control_R"}:
+            return
+        self.refresh_command_suggestions()
+
+    def refresh_command_suggestions(self) -> None:
+        text = self.input_text.get("1.0", "end-1c")
+        first_token = text.split(maxsplit=1)[0] if text.startswith("/") else ""
+        suggestions = slash_command_suggestions(first_token)
+        if not suggestions:
+            self.hide_command_suggestions()
+            return
+        self.command_suggestions.delete(0, tk.END)
+        for item in suggestions:
+            self.command_suggestions.insert(tk.END, f"{item.usage}  -  {item.description}")
+        self.command_suggestions.grid(row=1, column=0, sticky="ew", padx=(0, 10), pady=(4, 0))
+        self.command_suggestions.selection_set(0)
+
+    def hide_command_suggestions(self, _event: object | None = None) -> str:
+        self.command_suggestions.grid_remove()
+        return "break"
+
+    def complete_slash_command(self, _event: object) -> str:
+        text = self.input_text.get("1.0", "end-1c")
+        first_token = text.split(maxsplit=1)[0] if text.startswith("/") else ""
+        suggestions = slash_command_suggestions(first_token)
+        if not suggestions:
+            self.refresh_command_suggestions()
+            return "break"
+        selection = self.command_suggestions.curselection()
+        index = selection[0] if selection else 0
+        command = suggestions[index].name if index < len(suggestions) else suggestions[0].name
+        rest = text.partition(" ")[2]
+        replacement = f"{command} {rest}".rstrip() + " "
+        self.input_text.delete("1.0", tk.END)
+        self.input_text.insert("1.0", replacement)
+        self.hide_command_suggestions()
+        return "break"
+
+    def on_command_suggestion_selected(self, _event: object) -> None:
+        self.complete_slash_command(_event)
 
     def doctor(self) -> None:
         self.set_busy(True, "Pruefe...")
@@ -608,7 +668,7 @@ class TkTelachatApp:
         if command in {"/help", "/hilfe"}:
             messagebox.showinfo(
                 "Telachat Kommandos",
-                "/new | /neu\n/rename TITLE\n/delete\n/pin | /unpin\n/regen | /regenerate\n/templates\n/template NAME TEXT\n/folder NAME | /ordner NAME\n/folder-system TEXT\n/rename-folder NAME\n/delete-folder\n/move NAME | /ablegen NAME\n/unfile\n/sort newest|oldest|title|title-desc|provider\n/search TEXT\n/provider NAME\n/model NAME\n/left | /links\n/system",
+                slash_command_help(),
             )
         elif command in {"/new", "/neu"}:
             self.new_session()
@@ -707,6 +767,12 @@ class TkTelachatApp:
                 if rest.lower() == str(model).lower():
                     self.model_var.set(model)
                     break
+        elif command == "/permissions":
+            lines = [
+                f"{name}: {redact_secret(profile.api_key)}"
+                for name, profile in sorted(self.controller.profiles().items())
+            ]
+            messagebox.showinfo("Telachat Berechtigungen", "\n".join(lines))
         elif command in {"/left", "/links"}:
             self.toggle_sidebar()
         elif command == "/system":

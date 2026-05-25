@@ -5,7 +5,7 @@ APP_TITLE = "Telachat"
 DEFAULT_PROFILE = "tki"
 DEFAULT_BASE_URL = "https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1"
 DEFAULT_API_KEY = "env:TELACHAT_QWEN_API_KEY"
-DEFAULT_MODEL = "gpt-4"
+DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
 DEFAULT_SYSTEM_PROMPT = (
     "Du bist Telachat, ein direkter, praktischer KI-Assistent. "
     "Antworte in der Sprache des Nutzers, rechne sorgfaeltig und erfinde "
@@ -40,7 +40,7 @@ label = "HuggingFace TKI"
 base_url = "{DEFAULT_BASE_URL}"
 api_key = "{DEFAULT_API_KEY}"
 model = "{DEFAULT_MODEL}"
-models = ["gpt-4", "Qwen/Qwen2.5-1.5B-Instruct", "qwen2-5-1-5b-instruct-free"]
+models = ["Qwen/Qwen2.5-1.5B-Instruct", "qwen2-5-1-5b-instruct-free"]
 temperature = 0.2
 top_p = 0.9
 max_tokens = 512
@@ -53,7 +53,7 @@ label = "HuggingFace"
 base_url = "{DEFAULT_BASE_URL}"
 api_key = "{DEFAULT_API_KEY}"
 model = "Qwen/Qwen2.5-1.5B-Instruct"
-models = ["Qwen/Qwen2.5-1.5B-Instruct", "qwen2-5-1-5b-instruct-free", "gpt-4"]
+models = ["Qwen/Qwen2.5-1.5B-Instruct", "qwen2-5-1-5b-instruct-free"]
 temperature = 0.2
 top_p = 0.9
 max_tokens = 512

@@ -9,6 +9,7 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from .client import ApiError, ChatResult, OpenAICompatClient
+from .commands import slash_command_help
 from .config import ConfigError, Profile, ensure_default_config, load_config, redact_secret
 from .defaults import APP_TITLE
 from .paths import config_path, db_path
@@ -498,28 +499,7 @@ def _handle_command(
     if command in {"/exit", "/quit", "/q"}:
         return False, profile, system_prompt, session
     if command == "/help":
-        print(
-            textwrap.dedent(
-                """
-                /help                 Befehle anzeigen
-                /exit                 Chat beenden
-                /new [Titel]          Neue Session starten
-                /sessions             Sessions anzeigen
-                /load <id-prefix>     Session laden
-                /pin                  Aktuelle Session anheften
-                /unpin                Aktuelle Session loesen
-                /regen                Letzte KI-Antwort neu generieren
-                /templates            Prompt-Templates anzeigen
-                /template NAME TEXT   Template anwenden und senden
-                /folder-system TEXT   Default-Systemprompt des Ordners setzen
-                /profile [name]       Profil anzeigen/wechseln
-                /profiles             Profile anzeigen
-                /system [prompt]      System-Prompt anzeigen/setzen
-                /history [n]          Letzte Nachrichten anzeigen
-                /export [datei.md]    Aktuelle Session exportieren
-                """
-            ).strip()
-        )
+        print(slash_command_help())
     elif command == "/new":
         title = rest or "Neue Unterhaltung"
         session = store.create_session(
@@ -610,6 +590,10 @@ def _handle_command(
         for name, item in sorted(cfg.profiles.items()):
             marker = "*" if name == profile.name else " "
             print(f"{marker} {name}: {item.base_url} model={item.model}")
+    elif command == "/permissions":
+        print(f"Config: {cfg.path}")
+        for name, item in sorted(cfg.profiles.items()):
+            print(f"{name:12} api_key={redact_secret(item.api_key)}")
     elif command == "/system":
         if rest:
             system_prompt = rest

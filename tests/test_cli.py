@@ -29,7 +29,7 @@ class CliTests(unittest.TestCase):
                     self.assertEqual(main(["profiles"]), 0)
                 text = out.getvalue()
                 self.assertIn("tki", text)
-                self.assertIn("gpt-4", text)
+                self.assertIn("Qwen/Qwen2.5-1.5B-Instruct", text)
                 self.assertNotIn("sk-", text)
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)

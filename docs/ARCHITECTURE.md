@@ -16,6 +16,8 @@
   - Enables folders, session listing, search, loading, and Markdown export.
 - `telachat.cli`
   - `init`, `profiles`, `ask`, `chat`, `sessions`, `export`, `export-folder`, `doctor`.
+- `telachat.commands`
+  - Shared slash-command catalog for CLI help and GUI autocomplete.
 - `telachat.controller`
   - Shared application service for GUI frontends.
 - `telachat.gtkgui`
@@ -54,7 +56,7 @@ Default profile:
 label = "TKI"
 base_url = "https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1"
 api_key = "envfile:/home/teladi/.config/telachat/qwen.env#TELACHAT_QWEN_API_KEY"
-model = "gpt-4"
+model = "Qwen/Qwen2.5-1.5B-Instruct"
 ```
 
 Additional built-in profiles:
@@ -66,8 +68,9 @@ Additional built-in profiles:
 GUI frontends expose profiles as providers and `Profile.models` as the second
 model-selection step. They also expose folder filtering, sorting, text search,
 chat pinning, and a slash-command path through the same composer used for
-prompts. The left chat/provider pane and the right system pane are real
-resizable split panes rather than fixed sidebars.
+prompts. The GUI composers show slash-command suggestions while typing and Tab
+completes the current command. The left chat/provider pane and the right system
+pane are real resizable split panes rather than fixed sidebars.
 Folders can store a default system prompt. New chats created inside such a
 folder inherit that prompt unless the user explicitly overrides the system
 prompt.
@@ -120,6 +123,7 @@ GUI slash commands:
 /search TEXT
 /provider NAME
 /model NAME
+/permissions
 /left | /links
 /system
 ```
@@ -132,5 +136,6 @@ GUI slash commands:
 - SQLite session/message roundtrip, Markdown export, and selective folder export.
 - SQLite folder prompts, sorting and history-search behavior.
 - CLI init/profile behavior with temporary XDG directories.
+- Shared slash-command catalog behavior.
 - Bytecode compilation and zipapp packaging.
 - Optional live `doctor --chat` against the configured HF Space.

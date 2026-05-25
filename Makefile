@@ -27,6 +27,10 @@ install:
 	install -m 0755 bin/$(APP)-gtk "$(PREFIX)/bin/$(APP)-gtk"
 	install -m 0755 bin/$(APP)-tk "$(PREFIX)/bin/$(APP)-tk"
 	install -m 0755 bin/$(APP)-gui "$(PREFIX)/bin/$(APP)-gui"
+	mkdir -p "$(PREFIX)/share/man/man1"
+	install -m 0644 docs/man/$(APP).1 "$(PREFIX)/share/man/man1/$(APP).1"
+	install -m 0644 docs/man/$(APP)-gtk.1 "$(PREFIX)/share/man/man1/$(APP)-gtk.1"
+	install -m 0644 docs/man/$(APP)-tk.1 "$(PREFIX)/share/man/man1/$(APP)-tk.1"
 
 doctor:
 	PYTHONPATH=src $(PYTHON) -m telachat doctor

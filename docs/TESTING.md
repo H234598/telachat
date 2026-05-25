@@ -7,6 +7,7 @@ cd /home/teladi/telachat
 make compile
 make test3
 make zipapp
+man ./docs/man/telachat.1
 ```
 
 The fake OpenAI-compatible HTTP server in `tests/test_client.py` binds to
@@ -21,6 +22,7 @@ telachat doctor --chat
 telachat templates
 telachat folders --show-system
 telachat export-folder Arbeit -o /tmp/telachat-export
+telachat chat
 telachat ask --template summarize "Was hat sich geaendert?"
 telachat ask "Was ist 812 - 512?"
 telachat ask -p codex "Antworte nur mit: CODEX-OK"
@@ -40,14 +42,15 @@ The deterministic suite also covers folder creation, duplicate folder handling,
 folder-level system prompts, session moves, folder filters, pinned-chat
 ordering, answer regeneration, prompt templates, title sorting, content search
 across saved messages, CLI session filtering/sorting, and selective folder
-exports.
+exports. GUI smoke tests also cover construction of the slash-command
+autocomplete widgets.
 
 ## Expected default live configuration
 
 ```text
 Profile: tki / TKI
 API: https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1
-Model: gpt-4
+Model: Qwen/Qwen2.5-1.5B-Instruct
 Key: local envfile `/home/teladi/.config/telachat/qwen.env`
 ```
 
