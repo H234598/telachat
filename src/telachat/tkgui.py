@@ -9,6 +9,7 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 from .commands import format_message_matches, slash_command_help, slash_command_suggestions
 from .config import redact_secret
 from .controller import TelachatController
+from .model_choices import merge_model_choices
 from .store import Message, Session
 
 
@@ -360,6 +361,15 @@ class TkTelachatApp:
         models = profile.models or [profile.model]
         self.model_combo.configure(values=models)
         self.model_var.set(profile.model)
+
+    def update_model_choices_from_live(self, live_models: list[str]) -> None:
+        selected = self.model_var.get()
+        configured = list(self.model_combo.cget("values"))
+        merged = merge_model_choices(selected, live_models, configured)
+        if not merged:
+            return
+        self.model_combo.configure(values=merged)
+        self.model_var.set(selected if selected in merged else merged[0])
 
     def select_session_backend(self, session: Session) -> None:
         for label, name in self.profile_display_to_name.items():
@@ -948,6 +958,7 @@ class TkTelachatApp:
                     self.render_messages()
                     self.set_busy(False, "Bereit")
                 elif kind == "doctor":
+                    self.update_model_choices_from_live(payload)
                     self.set_busy(False, "OK: " + (", ".join(payload) or "Modelle erreichbar"))
                 elif kind == "error":
                     self.set_busy(False, "Fehler")

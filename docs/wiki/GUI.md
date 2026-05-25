@@ -15,6 +15,8 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - Rechts: Systemprompt.
 - Linke Seite und Systemprompt sind einklappbar.
 - Die Seitenbreiten sind per Splitter anpassbar.
+- `Check` fragt `/models` live fuer den gewaehlten Provider ab und ergaenzt die
+  Modellauswahl mit den gemeldeten IDs.
 - `Shift+Enter` sendet eine Nachricht.
 - `Enter` fuegt einen Zeilenumbruch ein.
 - Slash-Befehle zeigen beim Tippen Vorschlaege.

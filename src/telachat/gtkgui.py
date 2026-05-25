@@ -14,6 +14,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 from .commands import format_message_matches, slash_command_help, slash_command_suggestions
 from .config import redact_secret
 from .controller import TelachatController
+from .model_choices import merge_model_choices
 from .store import Message, Session
 from .themes import theme_by_name
 
@@ -375,6 +376,17 @@ class GtkTelachatApp(Adw.Application):
             selected = 0
         self.model_dropdown.set_selected(selected)
 
+    def update_model_choices_from_live(self, live_models: list[str]) -> None:
+        selected = self.selected_model()
+        merged = merge_model_choices(selected, live_models, self.model_names)
+        if not merged:
+            return
+        self.model_names = merged
+        self.model_dropdown.set_model(Gtk.StringList.new(self.model_names))
+        self.model_dropdown.set_selected(
+            self.model_names.index(selected) if selected in self.model_names else 0
+        )
+
     def on_profile_changed(self, *_args: object) -> None:
         self.refresh_models()
 
@@ -724,6 +736,7 @@ class GtkTelachatApp(Adw.Application):
             GLib.idle_add(self._error, exc)
 
     def _doctor_done(self, models: list[str]) -> bool:
+        self.update_model_choices_from_live(models)
         self.set_busy(False, "OK: " + (", ".join(models) or "Modelle erreichbar"))
         return GLib.SOURCE_REMOVE
 

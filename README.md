@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.27.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.28.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -69,6 +69,8 @@ Ordnern abgelegt, nach Datum/Titel/Provider sortiert und ueber Titel, Provider
 oder Nachrichteninhalt gesucht werden. Wichtige Chats koennen angeheftet
 werden; gepinnte Chats stehen in Listen zuerst. Das pro Chat verwendete Modell
 wird gespeichert und beim Laden wieder in der Provider/Modell-Auswahl gesetzt.
+Der GUI-Button `Check` fragt `/models` live fuer den gewaehlten Provider ab und
+ergaenzt die Modellauswahl mit den gemeldeten IDs.
 Ordner koennen einen eigenen
 Default-Systemprompt tragen, damit sie als kleine Projektkontexte funktionieren.
 

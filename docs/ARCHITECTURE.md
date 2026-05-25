@@ -93,9 +93,11 @@ Additional built-in profiles:
 GUI frontends expose profiles as providers and `Profile.models` as the second
 model-selection step. They also expose folder filtering, sorting, text search,
 chat pinning, and a slash-command path through the same composer used for
-prompts. The GUI composers show slash-command suggestions while typing and Tab
-completes the current command. The left chat/provider pane and the right system
-pane are real resizable split panes rather than fixed sidebars.
+prompts. The live Check action merges `/models` results into the model selector
+while keeping the current selection first. The GUI composers show slash-command
+suggestions while typing and Tab completes the current command. The left
+chat/provider pane and the right system pane are real resizable split panes
+rather than fixed sidebars.
 The shared command path includes `/edit-last TEXT`, which updates the latest
 user message and removes later messages before `/regen` creates a replacement
 answer.
@@ -229,6 +231,7 @@ GUI slash commands:
 - Theme config parsing, env overrides, CLI setting, and GUI controller
   persistence.
 - Configured and live model inventory output.
+- GUI model-choice merge behavior after live model discovery.
 - Offline config-check behavior and strict missing-secret handling.
 - Redacted JSON output for profiles, models, config-check, sessions, folders, and
   doctor.

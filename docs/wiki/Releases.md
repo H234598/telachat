@@ -1,5 +1,13 @@
 # Releases
 
+## 0.28.0 - 2026-05-25
+
+- GTK und Tk aktualisieren die Modell-Auswahl nach dem GUI-Check mit live
+  gemeldeten `/models`-IDs.
+- Das aktuell gewaehlte Modell bleibt vorne; Live- und konfigurierte Modelle
+  werden ohne Duplikate zusammengefuehrt.
+- Neue Tests pruefen diese Merge-Logik separat.
+
 ## 0.27.0 - 2026-05-25
 
 - `telachat models` zeigt konfigurierte Modelle pro Profil.

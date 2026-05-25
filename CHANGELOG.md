@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.28.0 - 2026-05-25
+
+- Update GTK and Tk model selectors with live `/models` results after the GUI
+  Check action.
+- Keep the currently selected model first while merging live and configured
+  model IDs without duplicates.
+- Add focused tests for model-choice merging.
+
 ## 0.27.0 - 2026-05-25
 
 - Add `telachat models` for configured model inventory across profiles.
