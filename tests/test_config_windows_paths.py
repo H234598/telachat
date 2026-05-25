@@ -10,8 +10,10 @@ from telachat.config import load_config
 class ConfigWindowsPathTests(unittest.TestCase):
     def test_secret_source_basic_strings_keep_escape_like_backslashes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            env_path = Path(tmp) / r"C:\new\tab.env"
-            file_path = Path(tmp) / r"C:\tab\new-token.txt"
+            secret_dir = Path(tmp) / "new"
+            secret_dir.mkdir()
+            env_path = secret_dir / "tab.env"
+            file_path = secret_dir / "new-token.txt"
             env_path.write_text("OPENAI_API_KEY=windows-env-secret\n", encoding="utf-8")
             file_path.write_text("windows-file-secret\n", encoding="utf-8")
 
