@@ -182,6 +182,23 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(status, "Antwort in 1.2s")
 
+    def test_gtk_response_status_reports_elapsed_time(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+
+        status = module.GtkTelachatApp.response_status(
+            SimpleNamespace(),
+            SimpleNamespace(elapsed_seconds=2.05),
+        )
+
+        self.assertEqual(status, "Antwort in 2.0s")
+
 
 if __name__ == "__main__":
     unittest.main()
