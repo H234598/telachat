@@ -1,5 +1,9 @@
 # Releases
 
+## 0.36.1 - 2026-05-25
+
+- Ergaenzt Regressionstests fuer `telachat stats` auf einer leeren Historie.
+
 ## 0.36.0 - 2026-05-25
 
 - `telachat stats` zeigt lokale Historienstatistiken ohne Nachrichtentexte.

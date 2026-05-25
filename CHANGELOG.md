@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.36.1 - 2026-05-25
+
+- Add regression coverage for zero-count `telachat stats` behavior on an empty
+  history database.
+
 ## 0.36.0 - 2026-05-25
 
 - Add `telachat stats` for local, content-free history inventory.
