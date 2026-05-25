@@ -13,7 +13,12 @@ class GuiImportTests(unittest.TestCase):
     def test_gtk_gui_imports(self) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
-            module = importlib.import_module("telachat.gtkgui")
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
         self.assertTrue(hasattr(module, "GtkTelachatApp"))
 
 

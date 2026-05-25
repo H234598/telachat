@@ -140,6 +140,31 @@ model = "demo"
             cfg = load_config(path)
             self.assertEqual(cfg.profile().resolved_api_key(), "envfile-secret")
 
+    @unittest.skipUnless(os.name == "nt", "Windows path recovery resolves native Windows paths")
+    def test_envfile_windows_backslashes_are_recovered(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            env_dir = Path(tmp) / "windows" / "secrets"
+            env_dir.mkdir(parents=True)
+            env_path = env_dir / "openai.env"
+            env_path.write_text(
+                "OPENAI_API_KEY=windows-envfile-secret\n",
+                encoding="utf-8",
+            )
+            raw_windows_path = str(env_path).replace("/", "\\")
+            path = Path(tmp) / "config.toml"
+            path.write_text(
+                f"""
+default_profile = "openai"
+[profiles.openai]
+base_url = "https://api.openai.com/v1"
+api_key = "envfile:{raw_windows_path}#OPENAI_API_KEY"
+model = "demo"
+""".strip(),
+                encoding="utf-8",
+            )
+            cfg = load_config(path)
+            self.assertEqual(cfg.profile().resolved_api_key(), "windows-envfile-secret")
+
     def test_redact_secret(self) -> None:
         self.assertEqual(redact_secret("hf-space"), "<redacted>")
         self.assertEqual(redact_secret("env:KEY"), "env:KEY")

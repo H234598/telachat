@@ -3,8 +3,12 @@ ManifestDPIAware true
 
 !include "MUI2.nsh"
 
+!ifndef PRODUCT_VERSION
+!define PRODUCT_VERSION "dev"
+!endif
+
 Name "Telachat"
-OutFile "dist\TelachatTk-Setup.exe"
+OutFile "dist\TelachatTk-Setup-${PRODUCT_VERSION}.exe"
 InstallDir "$LOCALAPPDATA\Telachat"
 RequestExecutionLevel user
 

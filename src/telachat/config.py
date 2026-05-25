@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import stat
 import tomllib
 from dataclasses import dataclass, replace
@@ -118,10 +119,17 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
         ensure_default_config(target)
     if not target.exists():
         raise ConfigError(f"Konfigurationsdatei fehlt: {target}")
+    raw_text = target.read_text(encoding="utf-8")
     try:
-        raw = tomllib.loads(target.read_text(encoding="utf-8"))
+        raw = tomllib.loads(raw_text)
     except tomllib.TOMLDecodeError as exc:
-        raise ConfigError(f"Ungueltige TOML-Konfiguration in {target}: {exc}") from exc
+        recovered = _recover_envfile_windows_paths(raw_text)
+        if recovered == raw_text:
+            raise ConfigError(f"Ungueltige TOML-Konfiguration in {target}: {exc}") from exc
+        try:
+            raw = tomllib.loads(recovered)
+        except tomllib.TOMLDecodeError:
+            raise ConfigError(f"Ungueltige TOML-Konfiguration in {target}: {exc}") from exc
 
     profile_blocks = raw.get("profiles")
     if not isinstance(profile_blocks, dict) or not profile_blocks:
@@ -276,6 +284,14 @@ def _prompt_templates(raw: object) -> dict[str, str]:
             raise ConfigError(f"Prompt-Template '{clean_name}' braucht Text.")
         templates[clean_name] = value.strip()
     return dict(sorted(templates.items()))
+
+
+def _recover_envfile_windows_paths(text: str) -> str:
+    return re.sub(
+        r'(=\s*")(envfile:[^"\n]*\\[^"\n]*)(")',
+        lambda match: match.group(1) + match.group(2).replace("\\", "\\\\") + match.group(3),
+        text,
+    )
 
 
 def _read_envfile_secret(spec: str) -> str:
