@@ -789,6 +789,21 @@ class TkTelachatApp:
         elif command == "/unpin":
             if self.active_session and self.active_session.pinned:
                 self.toggle_pin_active_session()
+        elif command in {"/edit-last", "/edit"}:
+            if not rest:
+                self.set_status("Nutzung: /edit-last TEXT")
+            elif self.active_session:
+                try:
+                    self.active_session, self.messages = self.controller.edit_last_user_message(
+                        self.active_session.id,
+                        rest,
+                    )
+                except (KeyError, ValueError) as exc:
+                    self.set_status(str(exc))
+                else:
+                    self.refresh_sessions()
+                    self.render_messages()
+                    self.set_status("Letzte Nutzernachricht aktualisiert. /regen erzeugt neu.")
         elif command in {"/regen", "/regenerate"}:
             self.regenerate_active_session()
         elif command == "/templates":

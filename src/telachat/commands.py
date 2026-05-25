@@ -22,6 +22,12 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/delete", "/delete", "Aktuellen Chat loeschen"),
     SlashCommand("/pin", "/pin", "Aktuellen Chat anheften"),
     SlashCommand("/unpin", "/unpin", "Aktuellen Chat loesen"),
+    SlashCommand(
+        "/edit-last",
+        "/edit-last TEXT",
+        "Letzte Nutzernachricht ersetzen",
+        aliases=("/edit",),
+    ),
     SlashCommand("/regen", "/regen", "Letzte KI-Antwort neu generieren", aliases=("/regenerate",)),
     SlashCommand("/templates", "/templates", "Prompt-Templates anzeigen"),
     SlashCommand("/template", "/template NAME TEXT", "Prompt-Template einsetzen"),

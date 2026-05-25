@@ -919,6 +919,21 @@ class GtkTelachatApp(Adw.Application):
         elif command == "/unpin":
             if self.active_session and self.active_session.pinned:
                 self.on_toggle_pin_active_session(self.send_button)
+        elif command in {"/edit-last", "/edit"}:
+            if not rest:
+                self.status.set_text("Nutzung: /edit-last TEXT")
+            elif self.active_session:
+                try:
+                    self.active_session, self.messages = self.controller.edit_last_user_message(
+                        self.active_session.id,
+                        rest,
+                    )
+                except (KeyError, ValueError) as exc:
+                    self.status.set_text(str(exc))
+                else:
+                    self.refresh_sessions()
+                    self.render_messages()
+                    self.status.set_text("Letzte Nutzernachricht aktualisiert. /regen erzeugt neu.")
         elif command in {"/regen", "/regenerate"}:
             self.on_regenerate_active_session(self.send_button)
         elif command == "/templates":

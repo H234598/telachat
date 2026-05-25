@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.13.0 - 2026-05-25
+
+- Add `/edit-last TEXT` with `/edit` alias for interactive CLI, GTK, and Tk.
+- Replace the latest user message in a session and remove later messages so
+  `/regen` can create a fresh answer from the corrected prompt.
+- Add Store, Controller, command catalog, and interactive CLI regression tests.
+
 ## 0.12.1 - 2026-05-25
 
 - Fix `telachat theme NAME` so it only updates top-level config keys and never

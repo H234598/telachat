@@ -826,6 +826,19 @@ def _handle_command(
     elif command == "/unpin":
         session = store.set_session_pinned(session.id, False)
         print("Session geloest.")
+    elif command == "/edit-last":
+        if not rest:
+            print("Nutzung: /edit-last TEXT")
+        else:
+            try:
+                store.edit_last_user_message(session.id, rest)
+                refreshed = store.get_session(session.id)
+                if refreshed is not None:
+                    session = refreshed
+            except (KeyError, ValueError) as exc:
+                print(f"Fehler: {exc}", file=sys.stderr)
+            else:
+                print("Letzte Nutzernachricht aktualisiert. /regen erzeugt eine neue Antwort.")
     elif command in {"/regen", "/regenerate"}:
         try:
             _regenerate_session(

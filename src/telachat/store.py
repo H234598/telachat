@@ -457,6 +457,48 @@ class ChatStore:
             self.db.commit()
             return message
 
+    def edit_last_user_message(self, session_id: str, content: str) -> Message:
+        with self._lock:
+            clean = content.strip()
+            if not clean:
+                raise ValueError("Nachricht fehlt.")
+            if self.get_session(session_id) is None:
+                raise KeyError(session_id)
+            row = self.db.execute(
+                """
+                SELECT * FROM messages
+                WHERE session_id = ? AND role = 'user'
+                ORDER BY created_at DESC, id DESC
+                LIMIT 1
+                """,
+                (session_id,),
+            ).fetchone()
+            if row is None:
+                raise ValueError("Keine Nutzernachricht zum Bearbeiten vorhanden.")
+            message = _message_from_row(row)
+            now = int(time.time())
+            self.db.execute(
+                """
+                DELETE FROM messages
+                WHERE session_id = ?
+                AND (
+                    created_at > ?
+                    OR (created_at = ? AND id > ?)
+                )
+                """,
+                (session_id, message.created_at, message.created_at, message.id),
+            )
+            self.db.execute(
+                "UPDATE messages SET content = ? WHERE id = ?",
+                (clean, message.id),
+            )
+            self.db.execute(
+                "UPDATE sessions SET updated_at = ? WHERE id = ?",
+                (now, session_id),
+            )
+            self.db.commit()
+            return Message(message.id, session_id, "user", clean, message.created_at)
+
     def import_history_database(
         self,
         source_path: Path,

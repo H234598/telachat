@@ -91,6 +91,9 @@ chat pinning, and a slash-command path through the same composer used for
 prompts. The GUI composers show slash-command suggestions while typing and Tab
 completes the current command. The left chat/provider pane and the right system
 pane are real resizable split panes rather than fixed sidebars.
+The shared command path includes `/edit-last TEXT`, which updates the latest
+user message and removes later messages before `/regen` creates a replacement
+answer.
 Saved sessions store both provider and model. Loading a session restores those
 selectors in GTK/Tk and `telachat chat --session` uses the saved model unless a
 CLI override is given.
@@ -170,6 +173,7 @@ GUI slash commands:
 /folder-system TEXT
 /rename-folder NAME
 /delete-folder
+/edit-last TEXT | /edit TEXT
 /move NAME | /ablegen NAME
 /unfile
 /sort newest|oldest|title|title-desc|provider
@@ -192,6 +196,7 @@ GUI slash commands:
 - SQLite session/message roundtrip, Markdown export, and selective folder export.
 - SQLite folder prompts, sorting and history-search behavior.
 - SQLite session model metadata, legacy migration, exports, and backend restore.
+- Latest user-message editing and post-edit answer removal.
 - Backup ZIP content, secret redaction, and safe backup restore/import.
 - CLI init/profile behavior with temporary XDG directories.
 - Shared slash-command catalog behavior.

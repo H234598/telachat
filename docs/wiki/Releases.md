@@ -1,5 +1,12 @@
 # Releases
 
+## 0.13.0 - 2026-05-25
+
+- Neuer Slash-Befehl `/edit-last TEXT` mit Alias `/edit`.
+- Ersetzt die letzte Nutzernachricht und entfernt danach liegende Antworten,
+  damit `/regen` eine neue Antwort aus dem korrigierten Prompt erzeugt.
+- Regressionstests fuer Store, Controller, Command-Katalog und interaktiven CLI.
+
 ## 0.12.1 - 2026-05-25
 
 - Patch-Fix: `telachat theme NAME` schreibt nur noch Top-Level-Config und

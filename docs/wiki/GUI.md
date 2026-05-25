@@ -19,6 +19,8 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - `Enter` fuegt einen Zeilenumbruch ein.
 - Slash-Befehle zeigen beim Tippen Vorschlaege.
 - `Tab` vervollstaendigt den aktuellen Slash-Befehl.
+- `/edit-last TEXT` ersetzt die letzte Nutzernachricht und entfernt die danach
+  liegende Antwort; `/regen` generiert danach neu.
 
 ## Chatverwaltung
 
@@ -38,6 +40,7 @@ Slash-Commands funktionieren ebenfalls:
 ```text
 /templates
 /template summarize Mein Text
+/edit-last Besser formulierter Prompt
 /folder-system Projektkontext
 /permissions
 ```

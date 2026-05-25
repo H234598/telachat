@@ -63,6 +63,8 @@ are not included. GUI smoke tests also cover construction of the slash-command
 autocomplete widgets.
 Restore tests verify dry-run counts, duplicate-safe imports, session ID
 rewrites, and folder-name reuse.
+Edit-last tests verify that the latest user message can be replaced and that
+later assistant answers are removed before regeneration.
 
 ## Expected default live configuration
 

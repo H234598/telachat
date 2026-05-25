@@ -63,6 +63,7 @@ Im interaktiven Chat funktionieren unter anderem:
 /delete
 /pin
 /unpin
+/edit-last TEXT
 /regen
 /folder NAME
 /move NAME
@@ -80,5 +81,7 @@ Im interaktiven Chat funktionieren unter anderem:
 Wenn `telachat chat` in einem echten Terminal laeuft, vervollstaendigt `Tab`
 Slash-Befehle und Kontextwerte wie Provider, Modelle, Templates, Ordner,
 Session-Referenzen und Sortiermodi.
+`/edit-last TEXT` ersetzt die letzte Nutzernachricht, entfernt danach liegende
+Antworten und laesst dich mit `/regen` neu generieren.
 Gespeicherte Chats merken sich Provider und Modell; `telachat chat --session`
 nutzt diese Werte, solange du sie nicht per CLI-Option ueberschreibst.

@@ -430,6 +430,88 @@ X-Test-Header = "yes"
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_chat_edit_last_command_replaces_user_message(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(main(["init"]), 0)
+                store = ChatStore()
+                try:
+                    session = store.create_session(
+                        title="Edit",
+                        profile="tki",
+                        system_prompt="System",
+                    )
+                    store.add_message(session.id, "user", "Alt")
+                    store.add_message(session.id, "assistant", "Antwort")
+                finally:
+                    store.close()
+
+                out = io.StringIO()
+                with redirect_stdout(out), mock.patch(
+                    "builtins.input",
+                    side_effect=["/edit Neu formuliert", "/exit"],
+                ):
+                    self.assertEqual(main(["chat", "--session", session.id, "--no-stream"]), 0)
+
+                self.assertIn("Letzte Nutzernachricht aktualisiert", out.getvalue())
+                store = ChatStore()
+                try:
+                    self.assertEqual(
+                        [(message.role, message.content) for message in store.messages(session.id)],
+                        [("user", "Neu formuliert")],
+                    )
+                finally:
+                    store.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
+    def test_chat_edit_last_then_regenerate_uses_updated_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(main(["init"]), 0)
+                store = ChatStore()
+                try:
+                    session = store.create_session(
+                        title="Edit Regen",
+                        profile="tki",
+                        system_prompt="System",
+                    )
+                    store.add_message(session.id, "user", "Alt")
+                    store.add_message(session.id, "assistant", "Antwort")
+                finally:
+                    store.close()
+
+                with redirect_stdout(io.StringIO()), mock.patch(
+                    "builtins.input",
+                    side_effect=["/edit Neu formuliert", "/regen", "/exit"],
+                ), mock.patch("telachat.cli._run_chat", return_value="Neue Antwort") as run_chat:
+                    self.assertEqual(main(["chat", "--session", session.id, "--no-stream"]), 0)
+
+                messages_for_chat = run_chat.call_args.args[1]
+                self.assertEqual(messages_for_chat[-1]["content"], "Neu formuliert")
+                store = ChatStore()
+                try:
+                    self.assertEqual(
+                        [(message.role, message.content) for message in store.messages(session.id)],
+                        [("user", "Neu formuliert"), ("assistant", "Neue Antwort")],
+                    )
+                finally:
+                    store.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_chat_command_completion_uses_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

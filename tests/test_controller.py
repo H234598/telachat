@@ -139,6 +139,32 @@ class ControllerTests(unittest.TestCase):
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_edit_last_user_message_refreshes_history(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                controller = TelachatController()
+                try:
+                    session, _messages = controller.new_session(title="Edit")
+                    controller.store.add_message(session.id, "user", "Alt")
+                    controller.store.add_message(session.id, "assistant", "Antwort")
+
+                    updated, messages = controller.edit_last_user_message(session.id, "Neu")
+
+                    self.assertEqual(updated.id, session.id)
+                    self.assertEqual(
+                        [(message.role, message.content) for message in messages],
+                        [("user", "Neu")],
+                    )
+                finally:
+                    controller.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_folder_system_prompt_is_used_for_new_session(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

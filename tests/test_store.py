@@ -48,6 +48,53 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(title_from_prompt(""), "Neue Unterhaltung")
         self.assertLessEqual(len(title_from_prompt("x" * 200)), 64)
 
+    def test_edit_last_user_message_removes_later_messages(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                session = store.create_session(
+                    title="Edit",
+                    profile="tki",
+                    model="Qwen/Qwen2.5-1.5B-Instruct",
+                    system_prompt="System",
+                )
+                store.add_message(session.id, "user", "Erste Frage")
+                store.add_message(session.id, "assistant", "Erste Antwort")
+                store.add_message(session.id, "user", "Zweite Frage")
+                store.add_message(session.id, "assistant", "Zweite Antwort")
+
+                edited = store.edit_last_user_message(session.id, "  Zweite Frage verbessert  ")
+
+                self.assertEqual(edited.content, "Zweite Frage verbessert")
+                self.assertEqual(
+                    [(message.role, message.content) for message in store.messages(session.id)],
+                    [
+                        ("user", "Erste Frage"),
+                        ("assistant", "Erste Antwort"),
+                        ("user", "Zweite Frage verbessert"),
+                    ],
+                )
+                with self.assertRaisesRegex(ValueError, "Nachricht fehlt"):
+                    store.edit_last_user_message(session.id, "  ")
+            finally:
+                store.close()
+
+    def test_edit_last_user_message_requires_user_message(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                session = store.create_session(
+                    title="Leer",
+                    profile="tki",
+                    system_prompt="System",
+                )
+                with self.assertRaisesRegex(ValueError, "Keine Nutzernachricht"):
+                    store.edit_last_user_message(session.id, "Hallo")
+                with self.assertRaises(KeyError):
+                    store.edit_last_user_message("fehlt", "Hallo")
+            finally:
+                store.close()
+
     def test_folders_sorting_and_search(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             store = ChatStore(Path(tmp) / "history.sqlite3")

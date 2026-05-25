@@ -223,6 +223,17 @@ class TelachatController:
             answer=answer,
         )
 
+    def edit_last_user_message(
+        self,
+        session_id: str,
+        content: str,
+    ) -> tuple[Session, list[Message]]:
+        self.store.edit_last_user_message(session_id, content)
+        session = self.store.get_session(session_id)
+        if session is None:
+            raise KeyError(session_id)
+        return session, self.store.messages(session.id)
+
     def doctor(self, profile_name: str | None = None, model: str | None = None) -> list[str]:
         profile = self.config.profile(profile_name).with_overrides(model=model)
         return OpenAICompatClient(profile, retries=1).list_models()
