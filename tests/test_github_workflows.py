@@ -41,6 +41,19 @@ def _release_upload_commands(lines: list[str]) -> list[tuple[int, str]]:
 
 
 class GitHubWorkflowTests(unittest.TestCase):
+    def test_linux_workflow_runs_unit_checks_and_zipapp_smoke(self) -> None:
+        workflow = WORKFLOW_DIR / "linux.yml"
+        text = workflow.read_text(encoding="utf-8")
+
+        self.assertIn("runs-on: ubuntu-24.04", text)
+        self.assertIn('          - "3.11"', text)
+        self.assertIn('          - "3.12"', text)
+        self.assertIn("make check PYTHON=python", text)
+        self.assertIn("make zipapp PYTHON=python", text)
+        self.assertIn("python dist/telachat.pyz --version", text)
+        self.assertIn("python dist/telachat.pyz profiles --json", text)
+        self.assertIn("python dist/telachat.pyz config-check --json", text)
+
     def test_windows_workflows_use_explicit_runner_images(self) -> None:
         failures: list[str] = []
         for workflow in _workflow_files():
