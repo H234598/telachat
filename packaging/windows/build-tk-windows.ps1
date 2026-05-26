@@ -132,12 +132,29 @@ Invoke-Native .\.venv-winbuild\Scripts\pyinstaller.exe `
     --name TelachatTk `
     --windowed `
     --paths src `
+    --collect-data telachat `
     --exclude-module gi `
     --exclude-module telachat.gtkgui `
     packaging\launchers\telachat_tk_launcher.py
 
 if (-not (Test-Path "dist\TelachatTk\TelachatTk.exe")) {
     throw "PyInstaller did not create dist\TelachatTk\TelachatTk.exe"
+}
+
+$IconAssetCandidates = @(
+    (Join-Path $Root "dist\TelachatTk\_internal\telachat\assets\icons-png"),
+    (Join-Path $Root "dist\TelachatTk\telachat\assets\icons-png")
+)
+$BundledIconDirs = @($IconAssetCandidates | Where-Object { Test-Path $_ })
+if ($BundledIconDirs.Count -eq 0) {
+    throw "PyInstaller did not bundle telachat icon PNG assets. Keep --collect-data telachat in the PyInstaller command."
+}
+$BundledIcons = @(
+    $BundledIconDirs |
+        ForEach-Object { Get-ChildItem -Path $_ -Filter "*.png" -File }
+)
+if ($BundledIcons.Count -eq 0) {
+    throw "PyInstaller bundled the icon asset directory without any PNG files."
 }
 
 $WarningFile = "build\TelachatTk\warn-TelachatTk.txt"
