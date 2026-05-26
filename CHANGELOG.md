@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.70.3 - 2026-05-26
+
+- Opts the Linux GitHub Actions workflow into Node 24 for JavaScript actions.
+- Keeps the snap package build ahead of the hosted-runner Node 20 deprecation.
+
 ## 0.70.2 - 2026-05-26
 
 - Normalizes legacy folder prompts that already contain the exact folder

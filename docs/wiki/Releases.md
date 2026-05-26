@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.70.3 - 2026-05-26
+
+- Aktiviert Node 24 fuer JavaScript-Actions im Linux-GitHub-Workflow.
+- Haelt den Snap-Paketbuild vor der Node-20-Abkuendigung der Hosted Runner
+  kompatibel.
+
 ## 0.70.2 - 2026-05-26
 
 - Normalisiert alte Ordnerprompts, die den exakten Ordner-Kontext bereits als
