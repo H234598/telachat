@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-26" "Telachat 0.53.1" "User Commands"
+.TH TELACHAT 1 "2026-05-26" "Telachat 0.54.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -116,6 +116,11 @@ Use \fB--dry-run\fR to validate and count without writing.
 Create a local ZIP backup containing a consistent SQLite history copy,
 \fIconfig.redacted.toml\fR, and \fImanifest.json\fR. Raw API keys and envfiles are
 not included.
+.TP
+.B packaging/linux/install-telachat.sh
+When run from a source checkout or release bundle, install the zipapp, launchers,
+manpages, Freedesktop desktop entry, icon, and optional desktop shortcut under a
+configurable Linux prefix.
 .TP
 .B restore, import-backup
 Import the history from a Telachat backup ZIP into the existing SQLite database.

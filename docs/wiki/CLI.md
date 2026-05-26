@@ -25,6 +25,9 @@ telachat ask "Deine Frage"
 telachat chat
 telachat backup -o ./backups
 telachat restore --dry-run ./backups/telachat-backup.zip
+packaging/linux/install-telachat.sh --prefix "$HOME/.local"
+make linux-installer
+make linux-rpm
 ```
 
 ## Provider und Template
@@ -47,6 +50,9 @@ Skill-Body. Tk und GTK starten denselben Watchdog nur mit
 `skill_watchdog_enabled = true` einmal direkt und danach stuendlich im
 Hintergrund; neue Konfigurationen bleiben aus.
 `TELACHAT_DISABLE_SKILL_WATCHDOG=1` deaktiviert ihn auch dann.
+`packaging/linux/install-telachat.sh` installiert Zipapp, Starter, Manpages,
+Desktopdatei, Icon und optionale Desktop-Verknuepfung unter einem waehlbaren
+Prefix.
 `telachat theme [NAME]` zeigt oder setzt das persistente GUI-Theme. Fuer
 temporäre Starts kann `TELACHAT_THEME=dark telachat-tk` genutzt werden. Bei
 `theme = "system"` kann `TELACHAT_SYSTEM_THEME=solarized-dark` nur die

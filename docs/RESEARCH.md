@@ -56,6 +56,18 @@ The XDG Base Directory Specification is the right storage convention for Linux:
 configuration under `$XDG_CONFIG_HOME`, portable app data under `$XDG_DATA_HOME`,
 and local state under `$XDG_STATE_HOME`.
 
+Freedesktop `.desktop` files are the common Linux desktop integration surface.
+Telachat's Linux installer writes a normal application entry plus an optional
+desktop shortcut instead of assuming one desktop environment.
+
+RPM remains the cleanest native artifact for Fedora/RHEL-style systems.
+Telachat packages the standard-library zipapp as a `noarch` RPM with thin
+launchers.
+
+Snapcraft can produce a cross-distro snap when the build host has Snapcraft
+available. Store upload needs configured credentials, so Telachat treats snap
+publication as best-effort and never as a blocking paid step.
+
 ## What is painful in common tools
 
 - Full web UIs are powerful but heavy for one local user: browser/server state,
@@ -144,3 +156,7 @@ and local state under `$XDG_STATE_HOME`.
 - OpenAI Responses API reasoning docs: https://platform.openai.com/docs/api-reference/responses/compact?lang=curl
 - OpenAI Responses API request fields: https://platform.openai.com/docs/api-reference/responses/create?api-mode=responses
 - XDG Base Directory Specification: https://specifications.freedesktop.org/basedir-spec/0.8/
+- Freedesktop Desktop Entry Specification: https://specifications.freedesktop.org/desktop-entry/latest-single
+- Fedora RPM packaging overview: https://developer.fedoraproject.org/deployment/rpm/about.html
+- rpm.org spec file manual: https://rpm.org/docs/4.20.x/manual/spec.html
+- Snapcraft documentation: https://snapcraft.io/docs/

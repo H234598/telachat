@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.5
+Name=Telachat
+Comment=Local configurable AI chat client
+Exec=@TELACHAT_EXEC@
+Icon=telachat
+Terminal=false
+Categories=Network;Chat;Utility;
+StartupNotify=true

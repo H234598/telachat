@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+set -eu
+
+TELACHAT_PYZ="${TELACHAT_PYZ:-@TELACHAT_PYZ@}"
+TELACHAT_PYTHON="${TELACHAT_PYTHON:-python3}"
+PYTHONPATH="$TELACHAT_PYZ${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH
+
+if "$TELACHAT_PYTHON" - <<'PY' >/dev/null 2>&1; then
+import gi
+gi.require_version("Gtk", "4.0")
+PY
+    exec "$TELACHAT_PYTHON" -m telachat.gtkgui "$@"
+fi
+
+exec "$TELACHAT_PYTHON" -m telachat.tkgui "$@"

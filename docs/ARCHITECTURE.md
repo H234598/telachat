@@ -136,6 +136,11 @@ branch while preserving provider, model, folder, system prompt, and messages.
 Saved sessions store both provider and model. Loading a session restores those
 selectors in GTK/Tk and `telachat chat --session` uses the saved model unless a
 CLI override is given.
+Linux installation is zipapp-first: the generic installer and RPM both place a
+single `telachat.pyz` under the install prefix plus tiny launcher scripts for
+CLI, Tk, GTK and GUI-auto mode. This keeps the app portable across distros while
+still using Freedesktop desktop entries, hicolor icons and manpages where those
+standards exist.
 Folders can store a default system prompt and an optional default backend
 (`default_profile`, `default_model`). New chats created inside such a folder
 inherit that prompt/backend unless the caller explicitly overrides the prompt,

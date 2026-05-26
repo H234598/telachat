@@ -11,6 +11,8 @@ MAJOR.MINOR.PATCH
 - Neues kompatibles Feature: `MINOR` erhoehen.
 - Bugfix ohne neue Oberflaeche: `PATCH` erhoehen.
 - Inkompatible Aenderung: `MAJOR` erhoehen.
+- RPM- und Snap-Artefakte werden auf dem geraden Minor-Cadence gebaut, wenn der
+  Release-Workflow sie ohne zusaetzliche bezahlte Dienste erzeugen kann.
 
 ## Release-Checkliste
 
@@ -20,6 +22,7 @@ Vor einem Release:
 make compile
 make test3
 make zipapp
+make linux-installer
 make install
 telachat --help
 python3 dist/telachat.pyz --help

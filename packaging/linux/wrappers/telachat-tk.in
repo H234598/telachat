@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+set -eu
+
+TELACHAT_PYZ="${TELACHAT_PYZ:-@TELACHAT_PYZ@}"
+TELACHAT_PYTHON="${TELACHAT_PYTHON:-python3}"
+PYTHONPATH="$TELACHAT_PYZ${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH
+exec "$TELACHAT_PYTHON" -m telachat.tkgui "$@"

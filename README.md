@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.53.1`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.54.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -25,7 +25,8 @@ stehen in `VERSIONING.md`.
 
 ```sh
 cd /home/teladi/telachat
-make install
+make zipapp
+packaging/linux/install-telachat.sh --prefix "$HOME/.local"
 telachat --version
 telachat init
 telachat models
@@ -38,9 +39,13 @@ telachat backup
 telachat doctor --json
 ```
 
-Der Wrapper wird nach `~/.local/bin/telachat` installiert, Manpages nach
-`~/.local/share/man/man1`. Falls der Befehl in einer Shell nicht gefunden wird,
-pruefe, ob `~/.local/bin` im `PATH` steht.
+Der Linux-Installer installiert das Zipapp nach `~/.local/lib/telachat`, die
+Starter nach `~/.local/bin`, Manpages nach `~/.local/share/man/man1`, einen
+Freedesktop-Menueintrag, das Icon und eine Desktop-Verknuepfung. Falls der
+Befehl in einer Shell nicht gefunden wird, pruefe, ob `~/.local/bin` im `PATH`
+steht. Fuer einfache Quellcheckout-Installationen funktioniert weiterhin
+`make install`; fuer Release-Artefakte sind `make linux-installer` und
+`make linux-rpm` vorgesehen.
 
 ## Schnellstart
 

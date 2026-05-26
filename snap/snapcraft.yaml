@@ -1,0 +1,68 @@
+name: telachat
+base: core24
+version: "0.54.0"
+summary: Local configurable AI chat client
+description: |
+  Telachat is a local CLI and native desktop chat client for configurable
+  OpenAI-compatible providers. It stores chat history locally in SQLite and
+  provides Tk and GTK frontends.
+grade: stable
+confinement: strict
+
+apps:
+  telachat:
+    command: bin/telachat
+    plugs:
+      - home
+      - network
+  telachat-tk:
+    command: bin/telachat-tk
+    plugs:
+      - desktop
+      - desktop-legacy
+      - gsettings
+      - home
+      - network
+      - wayland
+      - x11
+  telachat-gtk:
+    command: bin/telachat-gtk
+    plugs:
+      - desktop
+      - desktop-legacy
+      - gsettings
+      - home
+      - network
+      - wayland
+      - x11
+  telachat-gui:
+    command: bin/telachat-gui
+    plugs:
+      - desktop
+      - desktop-legacy
+      - gsettings
+      - home
+      - network
+      - wayland
+      - x11
+
+parts:
+  telachat:
+    plugin: dump
+    source: .
+    build-packages:
+      - python3
+    stage-packages:
+      - python3
+      - python3-tk
+      - python3-gi
+      - gir1.2-gtk-4.0
+    override-build: |
+      craftctl default
+      mkdir -p "$CRAFT_PART_INSTALL/lib/telachat" "$CRAFT_PART_INSTALL/bin"
+      python3 -m zipapp src -p "/usr/bin/env python3" -o "$CRAFT_PART_INSTALL/lib/telachat/telachat.pyz"
+      for wrapper in telachat telachat-tk telachat-gtk telachat-gui; do
+        sed "s|@TELACHAT_PYZ@|$SNAP/lib/telachat/telachat.pyz|g" \
+          "packaging/linux/wrappers/${wrapper}.in" > "$CRAFT_PART_INSTALL/bin/${wrapper}"
+        chmod 0755 "$CRAFT_PART_INSTALL/bin/${wrapper}"
+      done

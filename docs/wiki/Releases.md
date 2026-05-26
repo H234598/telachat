@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.54.0 - 2026-05-26
+
+- Ergaenzt einen Linux-Installer, der Zipapp, Starter, Manpages,
+  Freedesktop-Desktopdatei, Icon und optionale Desktop-Verknuepfung unter einem
+  waehlbaren Prefix installiert.
+- Ergaenzt RPM-Paketbau und einen periodischen Linux-Release-Packaging-Workflow.
+- Ergaenzt eine Snapcraft-Datei fuer optionale Snap-Builds, falls Snapcraft im
+  Build-Umfeld verfuegbar ist.
+
 ## 0.53.1 - 2026-05-26
 
 - Stellt den sicheren Opt-in-Default fuer den Skill-Watchdog nach der

@@ -1,8 +1,9 @@
-.PHONY: all check test test3 compile zipapp install clean doctor
+.PHONY: all check test test3 compile zipapp linux-installer linux-rpm install clean doctor
 
 PYTHON ?= python3
 PREFIX ?= $(HOME)/.local
 APP := telachat
+VERSION := $(shell $(PYTHON) -c 'import pathlib,tomllib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"])')
 
 all: compile test zipapp
 
@@ -23,6 +24,13 @@ test3:
 zipapp:
 	mkdir -p dist
 	$(PYTHON) -m zipapp src -p "/usr/bin/env python3" -o dist/$(APP).pyz
+
+linux-installer: zipapp
+	mkdir -p dist
+	install -m 0755 packaging/linux/install-telachat.sh dist/$(APP)-install-$(VERSION).sh
+
+linux-rpm:
+	packaging/linux/build-rpm.sh
 
 install:
 	mkdir -p "$(PREFIX)/bin"

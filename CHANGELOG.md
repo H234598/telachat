@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.54.0 - 2026-05-26
+
+- Add a distro-tolerant Linux installer that installs the zipapp, launchers,
+  manpages, a Freedesktop desktop entry, an icon, and an optional desktop
+  shortcut under a configurable prefix.
+- Add RPM packaging and a periodic Linux release packaging workflow.
+- Add a Snapcraft recipe for optional snap builds when Snapcraft is available.
+
 ## 0.53.1 - 2026-05-26
 
 - Restore the Skill watchdog's safe opt-in default after the 0.53.0 release regression.
