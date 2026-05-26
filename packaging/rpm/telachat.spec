@@ -1,5 +1,5 @@
 %global appname telachat
-%global appversion %{?_version}%{!?_version:0.70.1}
+%global appversion %{?_version}%{!?_version:0.70.2}
 
 Name:           %{appname}
 Version:        %{appversion}
@@ -57,6 +57,9 @@ sed "s|@TELACHAT_EXEC@|telachat-gui|g" packaging/linux/telachat.desktop.in \
 %{_mandir}/man1/telachat-gtk.1*
 
 %changelog
+* Tue May 26 2026 Teladi <teladi@example.invalid> - 0.70.2-1
+- Normalize legacy folder prompts that already contain folder context.
+
 * Tue May 26 2026 Teladi <teladi@example.invalid> - 0.70.1-1
 - Keep folder context notes out of editable GUI folder prompts.
 

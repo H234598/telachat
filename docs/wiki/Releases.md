@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.70.2 - 2026-05-26
+
+- Normalisiert alte Ordnerprompts, die den exakten Ordner-Kontext bereits als
+  Suffix enthalten.
+- Haelt GUI-Editfelder beim Basis-Prompt und verhindert doppelten Kontext in
+  neuen Chats.
+
 ## 0.70.1 - 2026-05-26
 
 - Haelt Ordner-Kontextnotizen aus den editierbaren Tk/GTK-Ordnerpromptfeldern

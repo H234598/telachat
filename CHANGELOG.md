@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.70.2 - 2026-05-26
+
+- Normalizes legacy folder prompts that already contain the exact folder
+  context suffix.
+- Keeps GUI edit fields on the base prompt and prevents duplicate context in
+  new sessions.
+
 ## 0.70.1 - 2026-05-26
 
 - Keeps per-folder context notes out of the editable Tk/GTK folder prompt
