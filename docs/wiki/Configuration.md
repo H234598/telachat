@@ -29,8 +29,8 @@ max_history_messages = 24
 Setze den Wert auf `false`, wenn ein absichtlich ungewoehnlicher Provider
 Headernamen erwartet, die nicht durch die strikte Standard-HTTP-Pruefung
 passen. Steuerzeichen in Headerwerten und parser-gefaehrliche Headernamen
-werden weiter abgelehnt. In Tk und GTK ist dieselbe Option im rechten
-Einstellungsbereich verfuegbar.
+werden ebenso wie nicht-portable Headernamen weiter abgelehnt. In Tk und GTK
+ist dieselbe Option im rechten Einstellungsbereich verfuegbar.
 
 Beispiele fuer Provider:
 

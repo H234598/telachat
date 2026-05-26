@@ -25,7 +25,7 @@ class ConfigError(RuntimeError):
 
 
 _HEADER_NAME_RE = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
-_HEADER_NAME_SAFETY_RE = re.compile(r"^[^:\s\x00-\x1f\x7f]+$")
+_HEADER_NAME_SAFETY_RE = re.compile(r"^[!-9;-~]+$")
 
 
 @dataclass(frozen=True)

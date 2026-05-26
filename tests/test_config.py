@@ -237,6 +237,7 @@ model = "demo"
             disabled_validation_cases = [
                 ('[profiles.local.headers]\n"Bad Header" = "x"\n', "Header-Namen"),
                 ('[profiles.local.headers]\n"Bad:Header" = "x"\n', "Header-Namen"),
+                ('[profiles.local.headers]\n"Bad\\u00dcHeader" = "x"\n', "Header-Namen"),
                 ('[profiles.local.headers]\nX-Test = "line\\nbreak"\n', "Header-Wert"),
             ]
             for suffix, pattern in disabled_validation_cases:

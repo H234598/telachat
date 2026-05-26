@@ -378,7 +378,7 @@ Telachat prueft Headernamen und Headerwerte standardmaessig vor dem Senden.
 Fuer absichtlich ungewoehnliche Provider kann die strikte Standard-HTTP-
 Pruefung global in `config.toml` oder in den GUI-Einstellungen abgeschaltet
 werden. Grundlegende Sicherheitschecks gegen Steuerzeichen in Headerwerten
-und parser-gefaehrliche Headernamen bleiben aktiv:
+und nicht-portable oder parser-gefaehrliche Headernamen bleiben aktiv:
 
 ```toml
 validate_profile_headers = false
