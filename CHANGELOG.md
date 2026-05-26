@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.54.1 - 2026-05-26
+
+- Make RPM builds portable across non-RPM CI builders by letting the build
+  script skip RPM database dependency checks while keeping spec metadata.
+- Improve the Linux packaging regression test so remote RPM build failures show
+  captured stdout and stderr.
+
 ## 0.54.0 - 2026-05-26
 
 - Add a distro-tolerant Linux installer that installs the zipapp, launchers,

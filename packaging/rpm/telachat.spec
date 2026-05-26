@@ -1,5 +1,5 @@
 %global appname telachat
-%global appversion %{?_version}%{!?_version:0.54.0}
+%global appversion %{?_version}%{!?_version:0.54.1}
 
 Name:           %{appname}
 Version:        %{appversion}
@@ -57,5 +57,8 @@ sed "s|@TELACHAT_EXEC@|telachat-gui|g" packaging/linux/telachat.desktop.in \
 %{_mandir}/man1/telachat-gtk.1*
 
 %changelog
+* Tue May 26 2026 Teladi <teladi@example.invalid> - 0.54.1-1
+- Make RPM builds portable across non-RPM CI hosts.
+
 * Tue May 26 2026 Teladi <teladi@example.invalid> - 0.54.0-1
 - Add Linux installer, desktop entry, and RPM packaging.

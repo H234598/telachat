@@ -20,6 +20,7 @@ PY
 
 TOPDIR="$ROOT/dist/rpm"
 NAME="telachat"
+rm -rf "$TOPDIR"
 mkdir -p "$TOPDIR"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 
 tar \
@@ -32,6 +33,7 @@ tar \
     .
 
 rpmbuild \
+    --nodeps \
     --define "_topdir $TOPDIR" \
     --define "_version $VERSION" \
     -ba packaging/rpm/telachat.spec

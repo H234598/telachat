@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.54.1 - 2026-05-26
+
+- Macht RPM-Builds auf Nicht-RPM-CI-Hosts robuster, indem das Build-Script
+  RPM-Datenbank-Abhaengigkeitspruefungen ueberspringt, die Spec-Metadaten aber
+  beibehaelt.
+- Verbessert den Linux-Packaging-Test, damit entfernte RPM-Buildfehler stdout
+  und stderr anzeigen.
+
 ## 0.54.0 - 2026-05-26
 
 - Ergaenzt einen Linux-Installer, der Zipapp, Starter, Manpages,

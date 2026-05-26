@@ -72,7 +72,7 @@ class LinuxPackagingTests(unittest.TestCase):
                 stdout=subprocess.PIPE,
                 text=True,
             ).stdout
-            self.assertIn("telachat 0.54.0", version)
+            self.assertIn("telachat 0.54.1", version)
             launcher = (prefix / "bin/telachat-tk").read_text(encoding="utf-8")
             self.assertIn(str(prefix / "lib/telachat/telachat.pyz"), launcher)
             desktop_text = (desktop / "Telachat.desktop").read_text(encoding="utf-8")
@@ -86,16 +86,20 @@ class LinuxPackagingTests(unittest.TestCase):
         self.assertTrue((ROOT / "packaging/linux/build-rpm.sh").is_file())
         if shutil.which("rpmbuild") is None:
             self.skipTest("rpmbuild is not installed")
-        subprocess.run(
+        result = subprocess.run(
             ["packaging/linux/build-rpm.sh"],
             cwd=ROOT,
-            check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
         )
+        if result.returncode != 0:
+            self.fail(
+                "RPM build failed\n\nSTDOUT:\n"
+                f"{result.stdout}\n\nSTDERR:\n{result.stderr}"
+            )
         rpm_root = ROOT / "dist/rpm/RPMS"
-        self.assertTrue(any(rpm_root.rglob("telachat-0.54.0-*.noarch.rpm")))
+        self.assertTrue(any(rpm_root.rglob("telachat-0.54.1-*.noarch.rpm")))
 
 
 if __name__ == "__main__":
