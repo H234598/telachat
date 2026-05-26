@@ -101,6 +101,28 @@ def _run_blocks(lines: list[str]) -> list[tuple[int, str]]:
     return blocks
 
 
+def _checkout_steps(lines: list[str]) -> list[tuple[int, str]]:
+    steps: list[tuple[int, str]] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if not re.match(r"^\s*uses:\s*actions/checkout@v5\s*$", line):
+            index += 1
+            continue
+
+        step_indent = max(0, len(line) - len(line.lstrip(" ")) - 2)
+        next_step = " " * step_indent + "- "
+        line_no = index + 1
+        block_lines = [line]
+        index += 1
+        while index < len(lines) and not lines[index].startswith(next_step):
+            block_lines.append(lines[index])
+            index += 1
+        steps.append((line_no, "\n".join(block_lines)))
+
+    return steps
+
+
 class GitHubWorkflowTests(unittest.TestCase):
     def test_linux_workflow_runs_unit_checks_and_zipapp_smoke(self) -> None:
         workflow = WORKFLOW_DIR / "linux.yml"
@@ -159,6 +181,19 @@ class GitHubWorkflowTests(unittest.TestCase):
                 if "\n    timeout-minutes:" not in f"\n{body}":
                     failures.append(
                         f"{workflow.relative_to(ROOT)} job {job} has no timeout-minutes."
+                    )
+
+        self.assertEqual([], failures)
+
+    def test_checkout_steps_do_not_persist_credentials(self) -> None:
+        failures: list[str] = []
+        for workflow in _workflow_files():
+            lines = workflow.read_text(encoding="utf-8").splitlines()
+            for line_no, block in _checkout_steps(lines):
+                if "persist-credentials: false" not in block:
+                    failures.append(
+                        f"{workflow.relative_to(ROOT)}:{line_no} leaves checkout "
+                        "credentials persisted for later steps."
                     )
 
         self.assertEqual([], failures)
