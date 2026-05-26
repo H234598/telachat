@@ -61,6 +61,7 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
         "Ordnerprompt setzen",
         aliases=("/folder-system",),
     ),
+    SlashCommand("/folder-context", "/folder-context TEXT", "Ordner-Kontextnotiz setzen"),
     SlashCommand("/rename-folder", "/rename-folder NAME", "Gewaehlten Ordner umbenennen"),
     SlashCommand("/delete-folder", "/delete-folder", "Gewaehlten Ordner loeschen"),
     SlashCommand("/move", "/move NAME", "Chat in Ordner ablegen", aliases=("/ablegen",)),

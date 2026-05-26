@@ -1839,6 +1839,18 @@ class TkTelachatApp:
             else:
                 self.set_system_prompt_text(self.controller.folder_system_prompt_for_edit(folder_id))
                 self.set_status("Ordnerprompt geladen.")
+        elif command == "/folder-context":
+            folder_id = self.selected_real_folder_id()
+            if not folder_id:
+                self.set_status("Ordner waehlen.")
+            elif rest:
+                folder = self.controller.set_folder_context(folder_id, rest)
+                self.set_system_prompt_text(self.controller.folder_system_prompt(folder_id))
+                self.set_status(f"Ordner-Kontext gespeichert: {folder.name}")
+            else:
+                self.input_text.delete("1.0", tk.END)
+                self.input_text.insert("1.0", self.controller.folder_context_for_edit(folder_id))
+                self.set_status("Ordner-Kontext geladen.")
         elif command == "/folder":
             if rest:
                 folder = self.controller.create_folder(rest)

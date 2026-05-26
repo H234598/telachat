@@ -665,6 +665,33 @@ class GuiImportTests(unittest.TestCase):
         self.assertTrue(calls[0][1]["from_effective_prompt"])
         self.assertEqual(app.status.get_text(), "Ordnerprompt gespeichert: Projekt")
 
+    def test_gtk_folder_context_command_updates_context(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        contexts: list[tuple[str, str]] = []
+        app = SimpleNamespace(
+            selected_real_folder_id=lambda: "folder1",
+            controller=SimpleNamespace(
+                set_folder_context=lambda folder_id, context: contexts.append((folder_id, context))
+                or SimpleNamespace(name="Projekt"),
+                folder_system_prompt=lambda _folder_id: "Prompt\n\nOrdner-Kontext:\nWissen",
+            ),
+            set_system_prompt=lambda text: setattr(app, "prompt", text),
+            status=_FakeText(""),
+        )
+
+        module.GtkTelachatApp.handle_command(app, "/folder-context Wissen")
+
+        self.assertEqual(contexts, [("folder1", "Wissen")])
+        self.assertEqual(app.prompt, "Prompt\n\nOrdner-Kontext:\nWissen")
+        self.assertEqual(app.status.get_text(), "Ordner-Kontext gespeichert: Projekt")
+
     def test_tk_refresh_tag_filter_preserves_selected_tag_value(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         controller = _FakeController(tags=[("projekt", 2), ("review", 1)])
@@ -766,6 +793,28 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(calls[0][0], ("folder1", "Prompt\n\nOrdner-Kontext:\nWissen"))
         self.assertTrue(calls[0][1]["from_effective_prompt"])
         self.assertEqual(statuses, ["Ordnerprompt gespeichert: Projekt"])
+
+    def test_tk_folder_context_command_updates_context(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        contexts: list[tuple[str, str]] = []
+        prompts: list[str] = []
+        statuses: list[str] = []
+        app = SimpleNamespace(
+            selected_real_folder_id=lambda: "folder1",
+            controller=SimpleNamespace(
+                set_folder_context=lambda folder_id, context: contexts.append((folder_id, context))
+                or SimpleNamespace(name="Projekt"),
+                folder_system_prompt=lambda _folder_id: "Prompt\n\nOrdner-Kontext:\nWissen",
+            ),
+            set_system_prompt_text=lambda text: prompts.append(text),
+            set_status=lambda text: statuses.append(text),
+        )
+
+        module.TkTelachatApp.handle_command(app, "/folder-context Wissen")
+
+        self.assertEqual(contexts, [("folder1", "Wissen")])
+        self.assertEqual(prompts, ["Prompt\n\nOrdner-Kontext:\nWissen"])
+        self.assertEqual(statuses, ["Ordner-Kontext gespeichert: Projekt"])
 
     def test_tk_generation_inputs_normalize_to_supported_ranges(self) -> None:
         module = importlib.import_module("telachat.tkgui")

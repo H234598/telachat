@@ -227,6 +227,12 @@ class TelachatController:
     def set_folder_context(self, folder_id: str, context: str) -> Folder:
         return self.store.update_folder_context(folder_id, context)
 
+    def folder_context_for_edit(self, folder_id: str | None) -> str:
+        if not folder_id:
+            return ""
+        folder = self.store.get_folder(folder_id)
+        return folder.context if folder else ""
+
     def folder_backend(self, folder_id: str | None) -> tuple[str, str]:
         if not folder_id:
             return "", ""

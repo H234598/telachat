@@ -20,7 +20,7 @@ make zipapp
 make linux-installer
 make linux-installer-smoke
 packaging/linux/install-telachat.sh --prefix /tmp/telachat-prefix --desktop-dir /tmp/telachat-desktop --zipapp dist/telachat.pyz
-python packaging/linux/package-cadence.py v0.71.0
+python packaging/linux/package-cadence.py v0.72.0
 man ./docs/man/telachat.1
 ```
 

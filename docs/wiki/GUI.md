@@ -124,6 +124,7 @@ Tags, Sortierungen und History-Groessen.
 /doctor
 /q
 /folder-prompt Projektkontext
+/folder-context Aktueller Stand
 /permissions
 ```
 
@@ -131,3 +132,5 @@ Der Button `Prompt speichern` speichert den aktuell sichtbaren Systemprompt als
 Ordnerprompt fuer den gewaehlten Ordner.
 Der Slash-Befehl `/folder-system` bleibt als Alias fuer `/folder-prompt`
 erhalten.
+`/folder-context TEXT` speichert eine Kontextnotiz, die neuen Chats im Ordner
+unter dem Ordnerprompt angehaengt wird.

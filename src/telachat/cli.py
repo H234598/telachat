@@ -2299,13 +2299,26 @@ def _handle_command(
             print("Aktuelle Session liegt in keinem Ordner.")
         elif rest:
             folder = store.update_folder_system_prompt(folder_id, rest)
-            print(f"Ordner-Systemprompt gesetzt: {folder.name}")
+            print(f"Ordnerprompt gesetzt: {folder.name}")
         else:
             folder = store.get_folder(folder_id)
             if folder is None:
                 print("Ordner nicht gefunden.")
             else:
                 print(folder.system_prompt or "<leer>")
+    elif command == "/folder-context":
+        folder_id = getattr(session, "folder_id", None)
+        if not folder_id:
+            print("Aktuelle Session liegt in keinem Ordner.")
+        elif rest:
+            folder = store.update_folder_context(folder_id, rest)
+            print(f"Ordner-Kontext gespeichert: {folder.name}")
+        else:
+            folder = store.get_folder(folder_id)
+            if folder is None:
+                print("Ordner nicht gefunden.")
+            else:
+                print(folder.context or "<leer>")
     elif command == "/folder":
         if not rest:
             folder = store.get_folder(session.folder_id) if session.folder_id else None

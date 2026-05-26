@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.72.0 - 2026-05-26
+
+- Adds `/folder-context TEXT` to manage folder context notes directly from the
+  CLI and native GUI prompt command paths.
+
 ## 0.71.0 - 2026-05-26
 
 - Adds `/folder-prompt TEXT` as the clearer slash command for saving a folder

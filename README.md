@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.71.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.72.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -137,6 +137,7 @@ dass Varianten ausprobiert werden koennen, ohne den Originalverlauf zu aendern.
 /template NAME TEXT
 /folder NAME
 /folder-prompt TEXT
+/folder-context TEXT
 /rename-folder NAME
 /delete-folder
 /move NAME
@@ -176,6 +177,7 @@ Nuetzliche Chat-Befehle:
 /templates
 /template NAME TEXT
 /folder-prompt TEXT
+/folder-context TEXT
 /profile [name]
 /permissions
 /system [prompt]
@@ -188,7 +190,8 @@ Im interaktiven Terminal-Chat nutzt Telachat Readline-Completion: `Tab`
 vervollstaendigt Slash-Befehle und passende Kontextwerte wie Profile, Modelle,
 Templates, Ordner, Session-IDs, Session-Titel und Sortiermodi.
 `/folder-prompt TEXT` speichert einen Prompt fuer den aktuellen Ordner; der
-aeltere Alias `/folder-system TEXT` bleibt gueltig.
+aeltere Alias `/folder-system TEXT` bleibt gueltig. `/folder-context TEXT`
+speichert die Kontextnotiz fuer den aktuellen Ordner.
 `/context` zeigt content-frei, wie gross der aktuell geladene Chat fuer den
 naechsten Request grob wird: gespeicherte/gesendete Nachrichten, Zeichenumfang
 und eine einfache Tokenschaetzung.

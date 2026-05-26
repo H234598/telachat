@@ -1817,6 +1817,17 @@ class GtkTelachatApp(Adw.Application):
             else:
                 self.set_system_prompt(self.controller.folder_system_prompt_for_edit(folder_id))
                 self.status.set_text("Ordnerprompt geladen.")
+        elif command == "/folder-context":
+            folder_id = self.selected_real_folder_id()
+            if not folder_id:
+                self.status.set_text("Ordner waehlen.")
+            elif rest:
+                folder = self.controller.set_folder_context(folder_id, rest)
+                self.set_system_prompt(self.controller.folder_system_prompt(folder_id))
+                self.status.set_text(f"Ordner-Kontext gespeichert: {folder.name}")
+            else:
+                self.set_input_prompt(self.controller.folder_context_for_edit(folder_id))
+                self.status.set_text("Ordner-Kontext geladen.")
         elif command == "/folder":
             if rest:
                 folder = self.controller.create_folder(rest)

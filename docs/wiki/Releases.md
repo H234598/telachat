@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.72.0 - 2026-05-26
+
+- Fuegt `/folder-context TEXT` hinzu, um Ordner-Kontextnotizen direkt aus CLI
+  und nativen GUI-Prompts zu setzen oder zu laden.
+
 ## 0.71.0 - 2026-05-26
 
 - Fuegt `/folder-prompt TEXT` als klareren Slash-Befehl zum Speichern eines

@@ -57,6 +57,9 @@ sed "s|@TELACHAT_EXEC@|telachat-gui|g" packaging/linux/telachat.desktop.in \
 %{_mandir}/man1/telachat-gtk.1*
 
 %changelog
+* Tue May 26 2026 Teladi <teladi@example.invalid> - 0.72.0-1
+- Add folder-context slash command for folder context notes.
+
 * Tue May 26 2026 Teladi <teladi@example.invalid> - 0.71.0-1
 - Add folder-prompt slash command alias for folder prompts.
 

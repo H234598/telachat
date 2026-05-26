@@ -41,6 +41,7 @@ class CommandCatalogTests(unittest.TestCase):
     def test_slash_command_help_contains_gui_and_cli_commands(self) -> None:
         help_text = slash_command_help()
         self.assertIn("/folder-prompt TEXT", help_text)
+        self.assertIn("/folder-context TEXT", help_text)
         self.assertIn("/edit-last TEXT", help_text)
         self.assertIn("/fork [TITLE]", help_text)
         self.assertIn("/export [datei.md]", help_text)
@@ -67,6 +68,7 @@ class CommandCatalogTests(unittest.TestCase):
         self.assertIn("/models", slash_command_name_suggestions("/mod"))
         self.assertIn("/doctor", slash_command_name_suggestions("/doc"))
         self.assertIn("/edit", slash_command_name_suggestions("/ed"))
+        self.assertIn("/folder-context", slash_command_name_suggestions("/folder-c"))
         self.assertIn("/folder-prompt", slash_command_name_suggestions("/folder-p"))
         self.assertIn("/folder-system", slash_command_name_suggestions("/folder-s"))
         self.assertIn("/quit", slash_command_name_suggestions("/qu"))
