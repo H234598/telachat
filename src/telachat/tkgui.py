@@ -1078,13 +1078,31 @@ class TkTelachatApp:
     def show_template_context_menu(self, event: object) -> str:
         menu = tk.Menu(self.root, tearoff=False)
         menu.add_command(label="Aus Eingabe speichern", command=self.save_input_as_template)
+        menu.add_command(label="Vorschau", command=self.show_selected_template_preview)
         menu.add_command(label="Umbenennen", command=self.rename_selected_template)
         menu.add_command(label="Loeschen", command=self.delete_selected_template)
         if not self.template_var.get():
             menu.entryconfigure(1, state="disabled")
             menu.entryconfigure(2, state="disabled")
+            menu.entryconfigure(3, state="disabled")
         menu.tk_popup(int(getattr(event, "x_root", 0)), int(getattr(event, "y_root", 0)))
         return "break"
+
+    def show_selected_template_preview(self) -> None:
+        name = self.template_var.get()
+        if not name:
+            self.set_status("Keine Vorlage gewaehlt.")
+            return
+        template = self.controller.prompt_templates().get(name)
+        if template is None:
+            self.set_status(f"Vorlage nicht gefunden: {name}")
+            self.refresh_template_choices()
+            return
+        self.show_text_window(
+            f"Vorlage: {name}",
+            template,
+            status_text=f"Vorlage angezeigt: {name}",
+        )
 
     def save_input_as_template(self) -> None:
         template = self.input_text.get("1.0", tk.END).strip()
@@ -1846,9 +1864,13 @@ class TkTelachatApp:
 
     def show_error(self, text: str) -> None:
         first_line = text.splitlines()[0] if text.splitlines() else "Unbekannter Fehler"
-        self.set_status("Fehler: " + first_line)
+        self.show_text_window("Telachat Fehler", text, status_text="Fehler: " + first_line)
+
+    def show_text_window(self, title: str, text: str, status_text: str | None = None) -> None:
+        if status_text:
+            self.set_status(status_text)
         dialog = tk.Toplevel(self.root)
-        dialog.title("Telachat Fehler")
+        dialog.title(title)
         dialog.transient(self.root)
         dialog.minsize(520, 300)
         dialog.columnconfigure(0, weight=1)

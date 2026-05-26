@@ -1,5 +1,5 @@
 %global appname telachat
-%global appversion %{?_version}%{!?_version:0.59.0}
+%global appversion %{?_version}%{!?_version:0.60.0}
 
 Name:           %{appname}
 Version:        %{appversion}
@@ -57,6 +57,9 @@ sed "s|@TELACHAT_EXEC@|telachat-gui|g" packaging/linux/telachat.desktop.in \
 %{_mandir}/man1/telachat-gtk.1*
 
 %changelog
+* Tue May 26 2026 Teladi <teladi@example.invalid> - 0.60.0-1
+- Add copyable prompt-template preview windows for Tk and GTK.
+
 * Tue May 26 2026 Teladi <teladi@example.invalid> - 0.59.0-1
 - Add GUI save-as-prompt-template actions for Tk and GTK.
 

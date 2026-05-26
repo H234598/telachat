@@ -269,6 +269,25 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(template_var.get(), "brief")
         self.assertEqual(statuses, ["Vorlage gespeichert: brief"])
 
+    def test_tk_preview_selected_template_opens_copyable_text_window(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        shown: list[tuple[str, str, str | None]] = []
+        statuses: list[str] = []
+        app = SimpleNamespace(
+            controller=_FakeController(templates={"brief": "Kurz: {input}"}),
+            template_var=_FakeText("brief"),
+            refresh_template_choices=lambda selected=None: None,
+            set_status=lambda text: statuses.append(text),
+            show_text_window=lambda title, text, status_text=None: shown.append(
+                (title, text, status_text)
+            ),
+        )
+
+        module.TkTelachatApp.show_selected_template_preview(app)
+
+        self.assertEqual(shown, [("Vorlage: brief", "Kurz: {input}", "Vorlage angezeigt: brief")])
+        self.assertEqual(statuses, [])
+
     def test_gtk_gui_imports(self) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -350,6 +369,32 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(controller.templates["brief"], "Neuer Prompt {input}")
         self.assertEqual(dropdown.selected, 1)
         self.assertEqual(status.get_text(), "Vorlage gespeichert: brief")
+
+    def test_gtk_preview_selected_template_opens_copyable_text_window(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        status = _FakeText("")
+        shown: list[tuple[str, str, str | None]] = []
+        app = SimpleNamespace(
+            controller=_FakeController(templates={"brief": "Kurz: {input}"}),
+            selected_template_name=lambda: "brief",
+            refresh_template_choices=lambda selected=None: None,
+            status=status,
+            show_text_window=lambda title, text, status_text=None: shown.append(
+                (title, text, status_text)
+            ),
+        )
+
+        module.GtkTelachatApp.on_preview_selected_template(app, object())
+
+        self.assertEqual(shown, [("Vorlage: brief", "Kurz: {input}", "Vorlage angezeigt: brief")])
+        self.assertEqual(status.get_text(), "")
 
     def test_tk_refresh_sessions_uses_selected_sidebar_filters(self) -> None:
         module = importlib.import_module("telachat.tkgui")

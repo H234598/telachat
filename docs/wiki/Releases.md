@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.60.0 - 2026-05-26
+
+- Ergaenzt kopierbare Prompt-Template-Vorschaufenster fuer Tk und GTK, bevor
+  Templates in den Composer eingesetzt werden.
+- Tk bietet die Vorschau im Kontextmenue der Vorlagen-Auswahl; GTK zeigt
+  `Vorschau` neben `Einsetzen`.
+
 ## 0.59.0 - 2026-05-26
 
 - Ergaenzt GUI-Aktionen, um den aktuellen Composer-Text direkt als

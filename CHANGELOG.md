@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.60.0 - 2026-05-26
+
+- Adds copyable prompt-template preview windows for Tk and GTK before inserting
+  templates into the composer.
+- Tk exposes preview from the template dropdown context menu; GTK exposes it as
+  a `Vorschau` button next to `Einsetzen`.
+
 ## 0.59.0 - 2026-05-26
 
 - Adds GUI save-as-template actions so the current composer text can become a

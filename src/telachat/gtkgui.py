@@ -202,6 +202,9 @@ class GtkTelachatApp(Adw.Application):
         insert_template_button = Gtk.Button(label="Einsetzen")
         insert_template_button.connect("clicked", self.on_insert_template)
         template_row.append(insert_template_button)
+        preview_template_button = Gtk.Button(label="Vorschau")
+        preview_template_button.connect("clicked", self.on_preview_selected_template)
+        template_row.append(preview_template_button)
         template_manage_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.sidebar.append(template_manage_row)
         save_template_button = Gtk.Button(label="Speichern")
@@ -905,6 +908,22 @@ class GtkTelachatApp(Adw.Application):
             return
         self.set_input_prompt(prompt)
         self.status.set_text(f"Vorlage eingesetzt: {name}")
+
+    def on_preview_selected_template(self, _button: Gtk.Button) -> None:
+        name = self.selected_template_name()
+        if not name:
+            self.status.set_text("Keine Vorlage gewaehlt.")
+            return
+        template = self.controller.prompt_templates().get(name)
+        if template is None:
+            self.status.set_text(f"Vorlage nicht gefunden: {name}")
+            self.refresh_template_choices()
+            return
+        self.show_text_window(
+            f"Vorlage: {name}",
+            template,
+            status_text=f"Vorlage angezeigt: {name}",
+        )
 
     def on_save_input_as_template(self, _button: Gtk.Button) -> None:
         template = self.input_prompt()
@@ -1849,8 +1868,12 @@ class GtkTelachatApp(Adw.Application):
 
     def show_error(self, text: str) -> None:
         first_line = text.splitlines()[0] if text.splitlines() else "Unbekannter Fehler"
-        self.status.set_text("Fehler: " + first_line)
-        window = Gtk.Window(title="Telachat Fehler")
+        self.show_text_window("Telachat Fehler", text, status_text="Fehler: " + first_line)
+
+    def show_text_window(self, title: str, text: str, status_text: str | None = None) -> None:
+        if status_text:
+            self.status.set_text(status_text)
+        window = Gtk.Window(title=title)
         window.set_transient_for(self.window)
         window.set_modal(True)
         window.set_default_size(560, 340)

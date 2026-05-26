@@ -92,6 +92,9 @@ dafuer eigene Buttons unter der Vorlagen-Auswahl.
 Ab Version `0.59.0` kann der aktuelle Composer-Text direkt als neues oder
 aktualisiertes Template gespeichert werden: in Tk ueber `Aus Eingabe speichern`
 im Kontextmenue, in GTK ueber `Speichern`.
+Ab Version `0.60.0` koennen beide GUIs Templates vor dem Einsetzen in einem
+kopierbaren Vorschaufenster anzeigen: Tk ueber das Kontextmenue, GTK ueber
+`Vorschau`.
 
 Slash-Commands funktionieren ebenfalls:
 
