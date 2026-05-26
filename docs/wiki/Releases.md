@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Stellt den Opt-in-Gate fuer den Tk/GTK-Skill-Watchdog wieder her:
+  Hintergrundlauf nur mit `TELACHAT_ENABLE_SKILL_WATCHDOG=1`.
+
 ## 0.51.1 - 2026-05-26
 
 - Korrigiert die Skill-Watchdog-Dokumentation, damit sie zum implementierten

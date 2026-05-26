@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Restore the Tk/GTK Skill watchdog opt-in gate so GUI startup only launches the background loop with `TELACHAT_ENABLE_SKILL_WATCHDOG=1`.
+
 ## 0.51.1 - 2026-05-26
 
 - Correct Skill watchdog documentation to match the implemented default-on Tk/GTK startup behavior.

@@ -291,9 +291,10 @@ Secret-Werte werden nicht ausgegeben; `--strict` gibt einen Fehlercode zurueck,
 wenn eine nicht-lokale Secret-Quelle fehlt.
 `skill-watchdog` kuerzt ueberlange Codex-Skill-Frontmatter-`description`-
 Felder auf Loader-kompatible Laenge, legt Backups als
-`SKILL.md.telachat-watchdog.bak` an und laeuft beim Start der Tk/GTK-App sowie
-danach stuendlich im Hintergrund. `TELACHAT_DISABLE_SKILL_WATCHDOG=1`
-deaktiviert ihn. Der Skill-Body bleibt erhalten.
+`SKILL.md.telachat-watchdog.bak` an und laesst den Skill-Body erhalten.
+Tk/GTK starten den stuendlichen Hintergrundlauf nur mit
+`TELACHAT_ENABLE_SKILL_WATCHDOG=1`; `TELACHAT_DISABLE_SKILL_WATCHDOG=1`
+deaktiviert ihn auch dann.
 
 Manpages:
 
