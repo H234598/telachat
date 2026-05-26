@@ -64,7 +64,8 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - `TELACHAT_THEME` uebersteuert das gespeicherte Theme fuer einen Prozess.
 - `TELACHAT_SYSTEM_THEME` fixiert nur die System-Erkennung fuer einen Prozess.
 - Verfuegbare Paletten: `light`, `dark`, `high-contrast`, `solarized-light`,
-  `solarized-dark`, `nord`, `dracula`, `gruvbox`, `ocean`, `forest`, `rose`.
+  `solarized-dark`, `nord`, `dracula`, `gruvbox`, `ocean`, `forest`, `rose`,
+  `graphite-glass`, `liquid-chrome`, `black-ice`, `brushed-steel`.
 - Der Prompt-Befehl `/theme dracula` nutzt denselben gespeicherten Wert wie der
   Theme-Waehler im Systembereich.
 

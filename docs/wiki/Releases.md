@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.51.0 - 2026-05-26
+
+- Erweitert den GUI-Theme-Katalog um metallisch/glaeserne Paletten:
+  `graphite-glass`, `liquid-chrome`, `black-ice` und `brushed-steel`.
+- Macht den Tk/GTK-Hintergrundlauf des Skill-Watchdogs per
+  `TELACHAT_ENABLE_SKILL_WATCHDOG=1` explizit opt-in.
+
 ## 0.50.0 - 2026-05-26
 
 - Ergaenzt `telachat skill-watchdog` plus Tk/GTK-Startwatchdog, der

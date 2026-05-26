@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.51.0 - 2026-05-26
+
+- Add metallic/glass-inspired GUI themes: `graphite-glass`, `liquid-chrome`, `black-ice`, and `brushed-steel`.
+- Make the Tk/GTK Skill watchdog background loop opt-in via `TELACHAT_ENABLE_SKILL_WATCHDOG=1`.
+
 ## 0.50.0 - 2026-05-26
 
 - Add a Codex Skill watchdog command and Tk/GTK startup watcher that compacts oversized Skill frontmatter descriptions while preserving the Skill body.
