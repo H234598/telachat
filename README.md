@@ -436,3 +436,6 @@ Weitere Dokumentation:
 - `doctor --chat` sendet eine echte Testnachricht an das konfigurierte Profil.
 - Streaming wird unterstuetzt. Wenn ein Backend nur einen kompletten Chunk
   liefert, zeigt Telachat trotzdem korrekt die Antwort an.
+
+
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/H234598/telachat?utm_source=oss&utm_medium=github&utm_campaign=H234598%2Ftelachat&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
