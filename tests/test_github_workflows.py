@@ -50,6 +50,8 @@ class GitHubWorkflowTests(unittest.TestCase):
         self.assertIn('          - "3.12"', text)
         self.assertIn("make check PYTHON=python", text)
         self.assertIn("make zipapp PYTHON=python", text)
+        self.assertNotIn("${{ runner.", text)
+        self.assertIn('export XDG_CONFIG_HOME="$RUNNER_TEMP/xdg-config"', text)
         self.assertIn("python dist/telachat.pyz --version", text)
         self.assertIn("python dist/telachat.pyz profiles --json", text)
         self.assertIn("python dist/telachat.pyz config-check --json", text)

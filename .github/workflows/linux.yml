@@ -42,8 +42,6 @@ jobs:
     name: Zipapp smoke
     runs-on: ubuntu-24.04
     needs: test
-    env:
-      XDG_CONFIG_HOME: ${{ runner.temp }}/xdg-config
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -58,6 +56,8 @@ jobs:
 
       - name: Smoke test zipapp
         run: |
+          export XDG_CONFIG_HOME="$RUNNER_TEMP/xdg-config"
+          mkdir -p "$XDG_CONFIG_HOME"
           python dist/telachat.pyz --version
           python dist/telachat.pyz profiles --json > "$RUNNER_TEMP/profiles.json"
           python dist/telachat.pyz config-check --json > "$RUNNER_TEMP/config-check.json"
