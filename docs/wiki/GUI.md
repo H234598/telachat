@@ -127,5 +127,5 @@ Tags, Sortierungen und History-Groessen.
 /permissions
 ```
 
-Der Button `Ordner-Prompt` speichert den aktuell sichtbaren Systemprompt fuer
-den gewaehlten Ordner.
+Der Button `Prompt speichern` speichert den aktuell sichtbaren Systemprompt als
+Ordnerprompt fuer den gewaehlten Ordner.

@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.70.4`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.70.5`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -99,7 +99,8 @@ stoppen. Bei abgebrochenen Send-Anfragen wird der abgeschickte Prompt wieder in
 den Composer gesetzt, solange dort noch nichts Neues steht.
 Ordner koennen einen eigenen Default-Systemprompt, eine Kontextnotiz und ein
 Default-Backend aus Provider/Modell tragen, damit sie als kleine
-Projektkontexte funktionieren.
+Projektkontexte funktionieren. Der GUI-Button `Prompt speichern` legt den
+aktuell sichtbaren Systemprompt als Ordnerprompt ab.
 
 Im Texteingabefeld funktioniert auch eine kleine Kommandozeile:
 `Shift+Enter` schickt die Nachricht ab, normales `Enter` bleibt fuer

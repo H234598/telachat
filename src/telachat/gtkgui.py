@@ -262,7 +262,7 @@ class GtkTelachatApp(Adw.Application):
 
         folder_prompt_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.sidebar.append(folder_prompt_row)
-        folder_prompt_button = Gtk.Button(label="Ordner-Prompt")
+        folder_prompt_button = Gtk.Button(label="Prompt speichern")
         folder_prompt_button.connect("clicked", self.on_save_selected_folder_prompt)
         folder_prompt_row.append(folder_prompt_button)
 
@@ -885,7 +885,7 @@ class GtkTelachatApp(Adw.Application):
             self.system_prompt(),
             from_effective_prompt=True,
         )
-        self.status.set_text(f"Ordner-Prompt gespeichert: {folder.name}")
+        self.status.set_text(f"Ordnerprompt gespeichert: {folder.name}")
 
     def input_prompt(self) -> str:
         buffer = self.input_view.get_buffer()
@@ -1813,10 +1813,10 @@ class GtkTelachatApp(Adw.Application):
             elif rest:
                 folder = self.controller.set_folder_system_prompt(folder_id, rest)
                 self.set_system_prompt(folder.system_prompt)
-                self.status.set_text(f"Ordner-Prompt gespeichert: {folder.name}")
+                self.status.set_text(f"Ordnerprompt gespeichert: {folder.name}")
             else:
                 self.set_system_prompt(self.controller.folder_system_prompt_for_edit(folder_id))
-                self.status.set_text("Ordner-Prompt geladen.")
+                self.status.set_text("Ordnerprompt geladen.")
         elif command == "/folder":
             if rest:
                 folder = self.controller.create_folder(rest)

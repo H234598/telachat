@@ -1,5 +1,5 @@
 %global appname telachat
-%global appversion %{?_version}%{!?_version:0.70.4}
+%global appversion %{?_version}%{!?_version:0.70.5}
 
 Name:           %{appname}
 Version:        %{appversion}
@@ -57,6 +57,9 @@ sed "s|@TELACHAT_EXEC@|telachat-gui|g" packaging/linux/telachat.desktop.in \
 %{_mandir}/man1/telachat-gtk.1*
 
 %changelog
+* Tue May 26 2026 Teladi <teladi@example.invalid> - 0.70.5-1
+- Clarify Tk and GTK folder prompt action wording.
+
 * Tue May 26 2026 Teladi <teladi@example.invalid> - 0.70.4-1
 - Opt every GitHub Actions workflow with JavaScript actions into Node 24.
 

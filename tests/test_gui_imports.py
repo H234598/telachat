@@ -663,7 +663,7 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(calls[0][0], ("folder1", "Prompt\n\nOrdner-Kontext:\nWissen"))
         self.assertTrue(calls[0][1]["from_effective_prompt"])
-        self.assertEqual(app.status.get_text(), "Ordner-Prompt gespeichert: Projekt")
+        self.assertEqual(app.status.get_text(), "Ordnerprompt gespeichert: Projekt")
 
     def test_tk_refresh_tag_filter_preserves_selected_tag_value(self) -> None:
         module = importlib.import_module("telachat.tkgui")
@@ -765,7 +765,7 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(calls[0][0], ("folder1", "Prompt\n\nOrdner-Kontext:\nWissen"))
         self.assertTrue(calls[0][1]["from_effective_prompt"])
-        self.assertEqual(statuses, ["Ordner-Prompt gespeichert: Projekt"])
+        self.assertEqual(statuses, ["Ordnerprompt gespeichert: Projekt"])
 
     def test_tk_generation_inputs_normalize_to_supported_ranges(self) -> None:
         module = importlib.import_module("telachat.tkgui")

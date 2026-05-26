@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.70.5 - 2026-05-26
+
+- Renames the Tk/GTK folder prompt action to `Prompt speichern` and clarifies
+  its status text.
+
 ## 0.70.4 - 2026-05-26
 
 - Extends the GitHub Actions Node 24 opt-in to every workflow that uses

@@ -262,7 +262,7 @@ class TkTelachatApp:
         ttk.Button(self.sidebar, text="Ordner -", command=self.delete_selected_folder).grid(
             row=SIDEBAR_FOLDER_MANAGE_ROW, column=1, sticky="ew", pady=(8, 0)
         )
-        ttk.Button(self.sidebar, text="Ordner-Prompt", command=self.save_selected_folder_prompt).grid(
+        ttk.Button(self.sidebar, text="Prompt speichern", command=self.save_selected_folder_prompt).grid(
             row=SIDEBAR_FOLDER_PROMPT_ROW, column=0, columnspan=2, sticky="ew", pady=(8, 0)
         )
 
@@ -1358,7 +1358,7 @@ class TkTelachatApp:
                     command=lambda: self.new_session(folder_id=folder_id),
                 )
                 menu.add_command(
-                    label="Ordner-Prompt",
+                    label="Prompt speichern",
                     command=lambda: self.with_folder_selection(
                         folder_id,
                         self.save_selected_folder_prompt,
@@ -1532,7 +1532,7 @@ class TkTelachatApp:
             prompt,
             from_effective_prompt=True,
         )
-        self.set_status(f"Ordner-Prompt gespeichert: {folder.name}")
+        self.set_status(f"Ordnerprompt gespeichert: {folder.name}")
 
     def create_folder_dialog(self) -> None:
         name = simpledialog.askstring("Telachat", "Ordnername:")
@@ -1835,10 +1835,10 @@ class TkTelachatApp:
             elif rest:
                 folder = self.controller.set_folder_system_prompt(folder_id, rest)
                 self.set_system_prompt_text(folder.system_prompt)
-                self.set_status(f"Ordner-Prompt gespeichert: {folder.name}")
+                self.set_status(f"Ordnerprompt gespeichert: {folder.name}")
             else:
                 self.set_system_prompt_text(self.controller.folder_system_prompt_for_edit(folder_id))
-                self.set_status("Ordner-Prompt geladen.")
+                self.set_status("Ordnerprompt geladen.")
         elif command == "/folder":
             if rest:
                 folder = self.controller.create_folder(rest)

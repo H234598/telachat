@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.70.5 - 2026-05-26
+
+- Benennt die Tk/GTK-Ordnerprompt-Aktion in `Prompt speichern` um und macht
+  den Statustext klarer.
+
 ## 0.70.4 - 2026-05-26
 
 - Erweitert den GitHub-Actions-Node-24-Opt-in auf alle Workflows mit
