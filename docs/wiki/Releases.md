@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.70.1 - 2026-05-26
+
+- Haelt Ordner-Kontextnotizen aus den editierbaren Tk/GTK-Ordnerpromptfeldern
+  heraus.
+- Wendet den Kontext weiter an, wenn ein neuer Chat den Basis-Systemprompt des
+  gewaehlten Ordners nutzt.
+- Entfernt beim Speichern eines GUI-Ordnerprompts einen exakt angehaengten
+  Kontext-Suffix.
+
 ## 0.70.0 - 2026-05-26
 
 - Ergaenzt Ordner-Kontextnotizen, die beim Start neuer Chats in diesem Ordner
