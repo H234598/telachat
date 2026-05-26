@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.67.1 - 2026-05-26
+
+- Makes `config-check --profile NAME --show-redacted` limit the redacted TOML
+  output to the selected profile section.
+
 ## 0.67.0 - 2026-05-26
 
 - Adds `telachat config-check --show-redacted`, which prints a redacted TOML

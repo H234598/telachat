@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.67.1 - 2026-05-26
+
+- Sorgt dafuer, dass `config-check --profile NAME --show-redacted` die
+  redaktierte TOML-Ausgabe auf das gewaehlte Profil begrenzt.
+
 ## 0.67.0 - 2026-05-26
 
 - Ergaenzt `telachat config-check --show-redacted`, das die aktive
