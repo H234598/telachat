@@ -53,7 +53,10 @@ from .store import (
     title_from_prompt,
 )
 from .templates import (
+    SUPPORTED_TEMPLATE_VARIABLES,
+    custom_template_variables,
     format_prompt_template_preview,
+    is_template_variable_name,
     render_prompt_template,
     template_variables,
 )
@@ -220,6 +223,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_ask.add_argument("--stdin", action="store_true", help="Prompt aus stdin lesen")
     p_ask.add_argument("--save", action="store_true", help="Frage und Antwort speichern")
     p_ask.add_argument("--template", "-t", help="Prompt-Template auf den Prompt anwenden")
+    p_ask.add_argument(
+        "--template-var",
+        action="append",
+        default=[],
+        metavar="NAME=VALUE",
+        help="Custom-Variable fuer Prompt-Template setzen; mehrfach moeglich",
+    )
     p_ask.add_argument("--json", action="store_true", help="Antwort maschinenlesbar ausgeben")
     p_ask.set_defaults(func=cmd_ask)
 
@@ -791,7 +801,12 @@ def cmd_ask(args: argparse.Namespace) -> int:
     if not prompt:
         raise ConfigError("Kein Prompt angegeben.")
     if args.template:
-        prompt = _apply_prompt_template(cfg, args.template, prompt)
+        prompt = _apply_prompt_template(
+            cfg,
+            args.template,
+            prompt,
+            values=_parse_template_values(args.template_var),
+        )
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt},
@@ -1226,6 +1241,7 @@ def _template_record(name: str, template: str) -> dict[str, object]:
         "characters": len(template),
         "has_input_placeholder": "input" in template_variables(template),
         "variables": list(template_variables(template)),
+        "custom_variables": list(custom_template_variables(template)),
     }
 
 
@@ -2375,7 +2391,28 @@ def _regenerate_session(
     store.add_message(session.id, "assistant", answer)
 
 
-def _apply_prompt_template(cfg: object, name: str, text: str = "") -> str:
+def _parse_template_values(raw_values: list[str]) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for raw_value in raw_values:
+        name, separator, value = raw_value.partition("=")
+        clean_name = name.strip()
+        if not separator or not clean_name:
+            raise ConfigError("Template-Variable muss NAME=VALUE verwenden.")
+        if not is_template_variable_name(clean_name):
+            raise ConfigError(f"Ungueltiger Template-Variablenname: {clean_name}")
+        if clean_name in SUPPORTED_TEMPLATE_VARIABLES:
+            raise ConfigError(f"Template-Variable ist eingebaut: {clean_name}")
+        values[clean_name] = value
+    return values
+
+
+def _apply_prompt_template(
+    cfg: object,
+    name: str,
+    text: str = "",
+    *,
+    values: dict[str, str] | None = None,
+) -> str:
     try:
         template = cfg.prompt_templates[name]
     except KeyError as exc:
@@ -2383,7 +2420,7 @@ def _apply_prompt_template(cfg: object, name: str, text: str = "") -> str:
         raise ConfigError(
             f"Prompt-Template '{name}' existiert nicht. Verfuegbar: {available}"
         ) from exc
-    return render_prompt_template(template, text)
+    return render_prompt_template(template, text, values=values)
 
 
 def _folder_export_title(store: ChatStore, folder: str, folder_id: str | None) -> str:

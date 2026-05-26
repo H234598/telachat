@@ -114,11 +114,16 @@ publication as best-effort and never as a blocking paid step.
 - Local desktop/server presets are included for LM Studio, Ollama and Jan, but
   they are not the default profile. The user still has to start the local
   server and choose a model installed in that tool.
+- Prompt templates stay plain TOML strings, but previews expose both built-in
+  and custom variables. The CLI can fill custom variables with
+  `ask --template-var NAME=VALUE`, following the useful part of Open WebUI's
+  form-variable workflow without introducing a web form layer.
 
 ## Feature ideas kept for later
 
 - Config editor with validation and secret redaction.
 - Markdown rendering with copy buttons.
+- GUI form controls for custom prompt-template variables.
 - Per-folder defaults for system prompt, model and attached knowledge/context.
 - Import bundles for a folder of chats without including API keys.
 - Tool/function-call viewer once a backend returns structured tool calls.

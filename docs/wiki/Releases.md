@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.63.0 - 2026-05-26
+
+- Ergaenzt Custom-Variablen wie `{topic}` und `{audience}` in
+  Prompt-Template-Metadaten und Vorschauen.
+- Ergaenzt `telachat ask --template-var NAME=VALUE`, damit CLI-Template-Prompts
+  Custom-Variablen befuellen koennen; eingebaute Variablen bleiben reserviert.
+
 ## 0.62.0 - 2026-05-26
 
 - Ergaenzt `telachat templates --show NAME` fuer eine CLI-Vorschau mit Name,

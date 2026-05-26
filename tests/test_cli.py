@@ -399,6 +399,7 @@ class CliTests(unittest.TestCase):
                 daily = next(item for item in payload["templates"] if item["name"] == "daily")
                 self.assertTrue(daily["has_input_placeholder"])
                 self.assertEqual(daily["variables"], ["input", "date", "time"])
+                self.assertEqual(daily["custom_variables"], [])
 
                 out = io.StringIO()
                 with redirect_stdout(out):
@@ -415,6 +416,45 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(payload["template"]["name"], "daily")
                 self.assertEqual(payload["template"]["variables"], ["input", "date", "time"])
 
+                config_text = config_path.read_text(encoding="utf-8")
+                config_path.write_text(
+                    config_text.replace(
+                        "\n[profiles.",
+                        '\ntriage = "Pruefe {topic} fuer {audience}: {input}"\n\n[profiles.',
+                        1,
+                    ),
+                    encoding="utf-8",
+                )
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["templates", "--show", "triage", "--json"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["template"]["custom_variables"], ["audience", "topic"])
+
+                out = io.StringIO()
+                with redirect_stdout(out), mock.patch(
+                    "telachat.cli._run_chat",
+                    return_value="OK",
+                ) as run_chat:
+                    self.assertEqual(
+                        main(
+                            [
+                                "ask",
+                                "--template",
+                                "triage",
+                                "--template-var",
+                                "topic=Login",
+                                "--template-var",
+                                "audience=Support",
+                                "--no-stream",
+                                "Projektstand",
+                            ]
+                        ),
+                        0,
+                    )
+                messages = run_chat.call_args.args[1]
+                self.assertIn("Pruefe Login fuer Support: Projektstand", messages[-1]["content"])
+
                 out = io.StringIO()
                 with redirect_stdout(out):
                     self.assertEqual(
@@ -424,6 +464,7 @@ class CliTests(unittest.TestCase):
                 payload = json.loads(out.getvalue())
                 self.assertEqual(payload["template"]["name"], "brief")
                 self.assertEqual(payload["template"]["variables"], ["input"])
+                self.assertEqual(payload["template"]["custom_variables"], [])
 
                 out = io.StringIO()
                 with redirect_stdout(out):

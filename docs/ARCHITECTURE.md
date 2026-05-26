@@ -255,10 +255,13 @@ message lengths, reporting character counts and a coarse token estimate.
 
 `templates --json` returns a compact inventory of configured prompt templates:
 name, first-line preview, size metadata, whether `{input}` is used, and the
-supported variables referenced by the template.
+supported and custom variables referenced by the template.
 `templates --show NAME` prints the full prompt-template preview with name,
 character count, variable metadata, and body text; with `--json` it emits the
 same single-template record shape used by scripts.
+`ask --template NAME --template-var KEY=VALUE` fills custom variables while
+leaving built-in variables such as `{date}` and `{input}` controlled by the
+renderer.
 `templates --set`, `--rename`, and `--delete` update only the
 `[prompt_templates]` table and then reload the same config parser used by chat
 and GUI flows.

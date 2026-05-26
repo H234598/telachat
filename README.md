@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.62.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.63.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -281,7 +281,9 @@ telachat folders --json --show-system
 
 Prompt-Templates kommen aus `[prompt_templates]` in `config.toml` und koennen
 per CLI oder GUI eingesetzt und verwaltet werden. Unterstuetzte Platzhalter
-sind `{input}`, `{date}`, `{time}` und `{datetime}`:
+sind `{input}`, `{date}`, `{time}` und `{datetime}`. Weitere Platzhalter wie
+`{topic}` werden als Custom-Variablen erkannt und koennen in der CLI mit
+`--template-var NAME=VALUE` gefuellt werden:
 In der GUI kann der aktuelle Composer-Text direkt als Template gespeichert
 werden; Tk nutzt dafuer das Kontextmenue der Vorlagen-Auswahl, GTK den
 `Speichern`-Button unter der Vorlagen-Auswahl. Beide GUIs koennen Templates
@@ -292,6 +294,7 @@ erkannten Variablen anzeigen.
 telachat templates
 telachat templates --json
 telachat templates --show brief
+telachat ask --template brief --template-var topic=Login "Fehlertext"
 telachat templates --set brief "Kurz antworten: {input}"
 telachat templates --rename brief kurz
 telachat templates --delete kurz

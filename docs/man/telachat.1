@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-26" "Telachat 0.62.0" "User Commands"
+.TH TELACHAT 1 "2026-05-26" "Telachat 0.63.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -52,6 +52,10 @@ structured template inventory with preview, size, and variable metadata. Use
 \fB--show NAME\fR to print a full template preview with metadata. Use
 \fB--set NAME TEXT\fR, \fB--rename OLD NEW\fR, and \fB--delete NAME\fR to manage
 templates in \fBconfig.toml\fR.
+.TP
+.B ask --template NAME --template-var NAME=VALUE
+Apply a prompt template and fill custom template variables such as
+\fB{topic}\fR. Built-in variables are reserved and cannot be overridden.
 .TP
 .B folders
 List or manage chat folders, folder-level system prompts, and optional

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.63.0 - 2026-05-26
+
+- Adds custom prompt-template variables such as `{topic}` and `{audience}` to
+  template metadata and preview output.
+- Adds `telachat ask --template-var NAME=VALUE` so CLI template prompts can
+  fill custom variables while keeping built-in variables protected.
+
 ## 0.62.0 - 2026-05-26
 
 - Adds `telachat templates --show NAME` for a copyable CLI preview with the

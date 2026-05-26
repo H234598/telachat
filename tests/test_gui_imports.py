@@ -290,7 +290,10 @@ class GuiImportTests(unittest.TestCase):
             [
                 (
                     "Vorlage: brief",
-                    "Name: brief\nZeichen: 13\nVariablen: {input}\n\nKurz: {input}",
+                    (
+                        "Name: brief\nZeichen: 13\nVariablen: {input}\n"
+                        "Custom-Variablen: keine\n\nKurz: {input}"
+                    ),
                     "Vorlage angezeigt: brief",
                 )
             ],
@@ -407,7 +410,10 @@ class GuiImportTests(unittest.TestCase):
             [
                 (
                     "Vorlage: brief",
-                    "Name: brief\nZeichen: 13\nVariablen: {input}\n\nKurz: {input}",
+                    (
+                        "Name: brief\nZeichen: 13\nVariablen: {input}\n"
+                        "Custom-Variablen: keine\n\nKurz: {input}"
+                    ),
                     "Vorlage angezeigt: brief",
                 )
             ],

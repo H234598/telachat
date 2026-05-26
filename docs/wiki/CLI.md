@@ -158,6 +158,7 @@ Prompt-Templates lassen sich direkt verwalten:
 
 ```sh
 telachat templates --show brief
+telachat ask --template brief --template-var topic=Login "Fehlertext"
 telachat templates --set brief "Kurz antworten: {input}"
 telachat templates --rename brief kurz
 telachat templates --delete kurz

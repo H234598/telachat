@@ -4,7 +4,9 @@ import unittest
 from datetime import datetime, timedelta, timezone
 
 from telachat.templates import (
+    custom_template_variables,
     format_prompt_template_preview,
+    is_template_variable_name,
     render_prompt_template,
     template_variables,
 )
@@ -29,11 +31,32 @@ class PromptTemplateTests(unittest.TestCase):
             "Pruefe das knapp am 2026-05-25.\n\nInhalt",
         )
 
+    def test_render_custom_variables_from_values(self) -> None:
+        self.assertEqual(
+            render_prompt_template(
+                "Pruefe {topic}: {input} ({audience})",
+                "  Inhalt  ",
+                values={"topic": "Login", "audience": "Support"},
+            ),
+            "Pruefe Login: Inhalt (Support)",
+        )
+
     def test_template_variables_only_reports_supported_names(self) -> None:
         self.assertEqual(
             template_variables("{date} {unknown} {input} {datetime}"),
             ("input", "date", "datetime"),
         )
+
+    def test_custom_template_variables_reports_unsupported_names(self) -> None:
+        self.assertEqual(
+            custom_template_variables("{date} {unknown} {input} {topic} {topic}"),
+            ("topic", "unknown"),
+        )
+
+    def test_is_template_variable_name_validates_placeholder_names(self) -> None:
+        self.assertTrue(is_template_variable_name("topic_2"))
+        self.assertFalse(is_template_variable_name("2topic"))
+        self.assertFalse(is_template_variable_name("topic-name"))
 
     def test_format_prompt_template_preview_includes_metadata_and_text(self) -> None:
         self.assertEqual(
@@ -43,6 +66,7 @@ class PromptTemplateTests(unittest.TestCase):
                     "Name: brief",
                     "Zeichen: 22",
                     "Variablen: {input}, {date}",
+                    "Custom-Variablen: keine",
                     "",
                     "Kurz {input} am {date}",
                 ]
