@@ -434,6 +434,14 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(app.session_title.get_text(), "Projekt Alpha")
 
+    def test_tk_sidebar_quick_actions_keep_new_entry_point(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+
+        self.assertEqual(
+            module.sidebar_quick_action_labels(),
+            ("Neu", "Regenerieren", "Check"),
+        )
+
     def test_tk_title_double_click_starts_rename(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         calls: list[str] = []
@@ -767,6 +775,21 @@ class GuiImportTests(unittest.TestCase):
         module.GtkTelachatApp.update_active_title(app)
 
         self.assertEqual(app.title_label.get_text(), "Projekt Alpha")
+
+    def test_gtk_sidebar_quick_actions_keep_new_entry_point(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+
+        self.assertEqual(
+            module.sidebar_quick_action_labels(),
+            ("Neu", "Regenerieren", "Check"),
+        )
 
     def test_gtk_title_double_click_starts_rename(self) -> None:
         with warnings.catch_warnings():

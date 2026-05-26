@@ -30,6 +30,10 @@ from .skill_watchdog import set_runtime_skill_watchdog_enabled
 from .store import Message, Session
 
 
+def sidebar_quick_action_labels() -> tuple[str, ...]:
+    return ("Neu", "Regenerieren", "Check")
+
+
 class TkTelachatApp:
     def __init__(self) -> None:
         self.controller = TelachatController()
@@ -210,26 +214,33 @@ class TkTelachatApp:
         if self.controller.prompt_templates():
             self.template_var.set(next(iter(self.controller.prompt_templates())))
 
-        ttk.Button(self.sidebar, text="Regenerieren", command=self.regenerate_active_session).grid(
-            row=18, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
-        )
-        ttk.Button(self.sidebar, text="Check", command=self.doctor).grid(
-            row=18, column=1, sticky="ew", pady=(8, 0)
-        )
+        quick_action_handlers = (self.new_session, self.regenerate_active_session, self.doctor)
+        for index, (label, command) in enumerate(
+            zip(sidebar_quick_action_labels(), quick_action_handlers, strict=True)
+        ):
+            column = index % 2
+            ttk.Button(self.sidebar, text=label, command=command).grid(
+                row=18 + index // 2,
+                column=column,
+                sticky="ew",
+                padx=(0, 6) if column == 0 else 0,
+                pady=(8, 0),
+            )
+
         ttk.Button(self.sidebar, text="Ordner +", command=self.create_folder_dialog).grid(
-            row=19, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
-        )
-        ttk.Button(self.sidebar, text="Ablegen", command=self.move_active_to_folder).grid(
-            row=19, column=1, sticky="ew", pady=(8, 0)
-        )
-        ttk.Button(self.sidebar, text="Ordner um", command=self.rename_selected_folder).grid(
             row=20, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
         )
-        ttk.Button(self.sidebar, text="Ordner -", command=self.delete_selected_folder).grid(
+        ttk.Button(self.sidebar, text="Ablegen", command=self.move_active_to_folder).grid(
             row=20, column=1, sticky="ew", pady=(8, 0)
         )
+        ttk.Button(self.sidebar, text="Ordner um", command=self.rename_selected_folder).grid(
+            row=21, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
+        )
+        ttk.Button(self.sidebar, text="Ordner -", command=self.delete_selected_folder).grid(
+            row=21, column=1, sticky="ew", pady=(8, 0)
+        )
         ttk.Button(self.sidebar, text="Ordner-Prompt", command=self.save_selected_folder_prompt).grid(
-            row=21, column=0, columnspan=2, sticky="ew", pady=(8, 0)
+            row=22, column=0, columnspan=2, sticky="ew", pady=(8, 0)
         )
 
         self.session_list = tk.Listbox(
@@ -244,7 +255,7 @@ class TkTelachatApp:
             selectbackground=palette.selection,
             selectforeground=palette.selection_fg,
         )
-        self.session_list.grid(row=22, column=0, columnspan=2, sticky="nsew", pady=(14, 0))
+        self.session_list.grid(row=23, column=0, columnspan=2, sticky="nsew", pady=(14, 0))
         self.session_list.bind("<<ListboxSelect>>", self._on_session_select)
         self.session_list.bind("<Double-Button-1>", self.on_session_row_double_click)
         self.session_list.bind("<Button-3>", self.show_session_context_menu)
