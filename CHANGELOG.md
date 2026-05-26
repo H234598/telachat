@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.62.0 - 2026-05-26
+
+- Adds `telachat templates --show NAME` for a copyable CLI preview with the
+  same template name, character count, variable metadata, and full text used by
+  the GUI preview windows.
+- Supports `telachat templates --show NAME --json` for scripts.
+
 ## 0.61.0 - 2026-05-26
 
 - Adds prompt-template preview metadata for Tk and GTK: template name,

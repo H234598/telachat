@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.62.0 - 2026-05-26
+
+- Ergaenzt `telachat templates --show NAME` fuer eine CLI-Vorschau mit Name,
+  Zeichenanzahl, Variablen und vollstaendigem Template-Text.
+- Unterstuetzt `telachat templates --show NAME --json` fuer Skripte.
+
 ## 0.61.0 - 2026-05-26
 
 - Ergaenzt Metadaten in der Prompt-Template-Vorschau: Name, Zeichenanzahl und

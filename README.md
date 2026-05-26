@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.61.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.62.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -291,6 +291,7 @@ erkannten Variablen anzeigen.
 ```sh
 telachat templates
 telachat templates --json
+telachat templates --show brief
 telachat templates --set brief "Kurz antworten: {input}"
 telachat templates --rename brief kurz
 telachat templates --delete kurz

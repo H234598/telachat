@@ -402,6 +402,21 @@ class CliTests(unittest.TestCase):
 
                 out = io.StringIO()
                 with redirect_stdout(out):
+                    self.assertEqual(main(["templates", "--show", "daily"]), 0)
+                preview = out.getvalue()
+                self.assertIn("Name: daily", preview)
+                self.assertIn("Variablen: {input}, {date}, {time}", preview)
+                self.assertIn("Heute {date} um {time}: {input}", preview)
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["templates", "--show", "daily", "--json"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["template"]["name"], "daily")
+                self.assertEqual(payload["template"]["variables"], ["input", "date", "time"])
+
+                out = io.StringIO()
+                with redirect_stdout(out):
                     self.assertEqual(
                         main(["templates", "--set", "brief", "Kurz: {input}", "--json"]),
                         0,

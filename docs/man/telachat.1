@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-26" "Telachat 0.61.0" "User Commands"
+.TH TELACHAT 1 "2026-05-26" "Telachat 0.62.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -49,8 +49,9 @@ The same setting can be changed inside interactive chat with \fB/theme NAME\fR.
 List configured prompt templates. Templates support \fB{input}\fR,
 \fB{date}\fR, \fB{time}\fR, and \fB{datetime}\fR. Use \fB--json\fR for a
 structured template inventory with preview, size, and variable metadata. Use
-\fB--set NAME TEXT\fR, \fB--rename OLD NEW\fR, and \fB--delete NAME\fR to
-manage templates in \fBconfig.toml\fR.
+\fB--show NAME\fR to print a full template preview with metadata. Use
+\fB--set NAME TEXT\fR, \fB--rename OLD NEW\fR, and \fB--delete NAME\fR to manage
+templates in \fBconfig.toml\fR.
 .TP
 .B folders
 List or manage chat folders, folder-level system prompts, and optional

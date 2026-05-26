@@ -157,6 +157,7 @@ Session-Referenzen und Sortiermodi.
 Prompt-Templates lassen sich direkt verwalten:
 
 ```sh
+telachat templates --show brief
 telachat templates --set brief "Kurz antworten: {input}"
 telachat templates --rename brief kurz
 telachat templates --delete kurz

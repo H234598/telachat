@@ -52,7 +52,11 @@ from .store import (
     normalize_tag,
     title_from_prompt,
 )
-from .templates import render_prompt_template, template_variables
+from .templates import (
+    format_prompt_template_preview,
+    render_prompt_template,
+    template_variables,
+)
 from .themes import theme_labels
 
 
@@ -172,6 +176,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Prompt-Template umbenennen",
     )
     p_templates.add_argument("--delete", metavar="NAME", help="Prompt-Template loeschen")
+    p_templates.add_argument(
+        "--show",
+        metavar="NAME",
+        help="Prompt-Template mit Metadaten anzeigen",
+    )
     p_templates.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_templates.set_defaults(func=cmd_templates)
 
@@ -610,6 +619,7 @@ def cmd_templates(args: argparse.Namespace) -> int:
         bool(args.set),
         bool(args.rename),
         bool(args.delete),
+        bool(args.show),
     ]
     if sum(mutations) > 1:
         raise ConfigError("Nur eine Template-Aktion pro Aufruf angeben.")
@@ -654,6 +664,26 @@ def cmd_templates(args: argparse.Namespace) -> int:
         return 0
 
     cfg = load_config(args.config)
+    if args.show:
+        name = args.show.strip()
+        try:
+            template = cfg.prompt_templates[name]
+        except KeyError as exc:
+            available = ", ".join(sorted(cfg.prompt_templates)) or "<keine>"
+            raise ConfigError(
+                f"Unbekanntes Prompt-Template: {name}. Verfuegbar: {available}"
+            ) from exc
+        if args.json:
+            print(
+                json.dumps(
+                    {"template": _template_record(name, template)},
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+        else:
+            print(format_prompt_template_preview(name, template))
+        return 0
     if args.json:
         print(
             json.dumps(
