@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.54.3 - 2026-05-26
+
+- Skip the Linux shell launcher execution check on Windows CI while retaining
+  the installer coverage on POSIX hosts.
+- Preserve the runtime `$SNAP` mount variable in generated snap wrappers and
+  add a regression test for it.
+
 ## 0.54.2 - 2026-05-26
 
 - Make the RPM build directory setup POSIX-sh compatible so Ubuntu/dash CI

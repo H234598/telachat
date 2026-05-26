@@ -1,6 +1,6 @@
 name: telachat
 base: core24
-version: "0.54.2"
+version: "0.54.3"
 summary: Local configurable AI chat client
 description: |
   Telachat is a local CLI and native desktop chat client for configurable
@@ -62,7 +62,7 @@ parts:
       mkdir -p "$CRAFT_PART_INSTALL/lib/telachat" "$CRAFT_PART_INSTALL/bin"
       python3 -m zipapp src -p "/usr/bin/env python3" -o "$CRAFT_PART_INSTALL/lib/telachat/telachat.pyz"
       for wrapper in telachat telachat-tk telachat-gtk telachat-gui; do
-        sed "s|@TELACHAT_PYZ@|$SNAP/lib/telachat/telachat.pyz|g" \
+        sed "s|@TELACHAT_PYZ@|\$SNAP/lib/telachat/telachat.pyz|g" \
           "packaging/linux/wrappers/${wrapper}.in" > "$CRAFT_PART_INSTALL/bin/${wrapper}"
         chmod 0755 "$CRAFT_PART_INSTALL/bin/${wrapper}"
       done

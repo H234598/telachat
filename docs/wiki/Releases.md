@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.54.3 - 2026-05-26
+
+- Ueberspringt die Linux-Shell-Starter-Ausfuehrung auf Windows-CI, behaelt die
+  Installer-Abdeckung aber auf POSIX-Hosts bei.
+- Erhaelt die runtime-seitige `$SNAP`-Mountvariable in generierten
+  Snap-Startern und ergaenzt einen Regressionstest dafuer.
+
 ## 0.54.2 - 2026-05-26
 
 - Macht die RPM-Build-Verzeichnisanlage POSIX-sh-kompatibel, damit

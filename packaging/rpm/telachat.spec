@@ -1,5 +1,5 @@
 %global appname telachat
-%global appversion %{?_version}%{!?_version:0.54.2}
+%global appversion %{?_version}%{!?_version:0.54.3}
 
 Name:           %{appname}
 Version:        %{appversion}
@@ -57,6 +57,9 @@ sed "s|@TELACHAT_EXEC@|telachat-gui|g" packaging/linux/telachat.desktop.in \
 %{_mandir}/man1/telachat-gtk.1*
 
 %changelog
+* Tue May 26 2026 Teladi <teladi@example.invalid> - 0.54.3-1
+- Skip Linux shell launcher execution on Windows CI and preserve Snap runtime mount paths.
+
 * Tue May 26 2026 Teladi <teladi@example.invalid> - 0.54.2-1
 - Make RPM build directory setup POSIX-sh compatible.
 
