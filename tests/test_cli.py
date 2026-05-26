@@ -456,6 +456,27 @@ class CliTests(unittest.TestCase):
                 self.assertIn("Pruefe Login fuer Support: Projektstand", messages[-1]["content"])
 
                 out = io.StringIO()
+                err = io.StringIO()
+                with redirect_stdout(out), redirect_stderr(err), mock.patch(
+                    "telachat.cli._run_chat",
+                    return_value="OK",
+                ) as run_chat:
+                    self.assertEqual(
+                        main(
+                            [
+                                "ask",
+                                "--template-var",
+                                "topic=Login",
+                                "--no-stream",
+                                "Projektstand",
+                            ]
+                        ),
+                        1,
+                    )
+                run_chat.assert_not_called()
+                self.assertIn("--template-var braucht --template", err.getvalue())
+
+                out = io.StringIO()
                 with redirect_stdout(out):
                     self.assertEqual(
                         main(["templates", "--set", "brief", "Kurz: {input}", "--json"]),
