@@ -2,10 +2,14 @@
 
 ## Unreleased
 
+## 0.51.1 - 2026-05-26
+
+- Correct Skill watchdog documentation to match the implemented default-on Tk/GTK startup behavior.
+
 ## 0.51.0 - 2026-05-26
 
 - Add metallic/glass-inspired GUI themes: `graphite-glass`, `liquid-chrome`, `black-ice`, and `brushed-steel`.
-- Make the Tk/GTK Skill watchdog background loop opt-in via `TELACHAT_ENABLE_SKILL_WATCHDOG=1`.
+- Start the Tk/GTK Skill watchdog by default, while keeping `TELACHAT_DISABLE_SKILL_WATCHDOG=1` as the opt-out.
 
 ## 0.50.0 - 2026-05-26
 

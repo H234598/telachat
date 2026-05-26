@@ -44,10 +44,9 @@ Der eigentliche Skill-Body bleibt erhalten. Manuell laeuft er mit:
 telachat skill-watchdog --json
 ```
 
-Tk und GTK starten den stuendlichen Hintergrundlauf nur mit
-`TELACHAT_ENABLE_SKILL_WATCHDOG=1`. `TELACHAT_DISABLE_SKILL_WATCHDOG=1`
-deaktiviert ihn auch dann. `TELACHAT_SKILL_WATCHDOG_ROOTS` kann eine mit `:`
-getrennte Root-Liste setzen.
+Tk und GTK starten denselben Lauf beim App-Start und danach stuendlich im
+Hintergrund. `TELACHAT_DISABLE_SKILL_WATCHDOG=1` deaktiviert ihn.
+`TELACHAT_SKILL_WATCHDOG_ROOTS` kann eine mit `:` getrennte Root-Liste setzen.
 
 Beispiele fuer Provider:
 

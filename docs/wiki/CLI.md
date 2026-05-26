@@ -43,9 +43,8 @@ Fehlercode, wenn eine nicht-lokale Secret-Quelle fehlt.
 Die Ausgabe zeigt auch, ob die globale Profil-Header-Pruefung aktiv ist.
 `telachat skill-watchdog` kuerzt ueberlange Codex-Skill-Frontmatter-
 `description`-Felder, legt `SKILL.md.telachat-watchdog.bak` an und bewahrt den
-Skill-Body. Tk und GTK starten denselben Watchdog nur mit
-`TELACHAT_ENABLE_SKILL_WATCHDOG=1` einmal direkt und danach stuendlich im
-Hintergrund.
+Skill-Body. Tk und GTK starten denselben Watchdog einmal direkt und danach
+stuendlich im Hintergrund; `TELACHAT_DISABLE_SKILL_WATCHDOG=1` deaktiviert ihn.
 `telachat theme [NAME]` zeigt oder setzt das persistente GUI-Theme. Fuer
 temporäre Starts kann `TELACHAT_THEME=dark telachat-tk` genutzt werden. Bei
 `theme = "system"` kann `TELACHAT_SYSTEM_THEME=solarized-dark` nur die

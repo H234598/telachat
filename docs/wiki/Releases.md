@@ -2,12 +2,17 @@
 
 ## Unreleased
 
+## 0.51.1 - 2026-05-26
+
+- Korrigiert die Skill-Watchdog-Dokumentation, damit sie zum implementierten
+  Default-Start in Tk/GTK passt.
+
 ## 0.51.0 - 2026-05-26
 
 - Erweitert den GUI-Theme-Katalog um metallisch/glaeserne Paletten:
   `graphite-glass`, `liquid-chrome`, `black-ice` und `brushed-steel`.
-- Macht den Tk/GTK-Hintergrundlauf des Skill-Watchdogs per
-  `TELACHAT_ENABLE_SKILL_WATCHDOG=1` explizit opt-in.
+- Startet den Tk/GTK-Skill-Watchdog standardmaessig; abschaltbar bleibt er mit
+  `TELACHAT_DISABLE_SKILL_WATCHDOG=1`.
 
 ## 0.50.0 - 2026-05-26
 
