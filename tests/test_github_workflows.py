@@ -12,6 +12,9 @@ USES_RE = re.compile(
     re.MULTILINE,
 )
 WINDOWS_LATEST_RE = re.compile(r"^\s*runs-on:\s*windows-latest\s*$", re.MULTILINE)
+UNTRUSTED_RUN_CONTEXT_RE = re.compile(
+    r"\$\{\{\s*(github\.event|github\.head_ref|github\.base_ref)\b"
+)
 NODE24_MINIMUMS = {
     "actions/checkout": 5,
     "actions/setup-python": 6,
@@ -63,6 +66,39 @@ def _release_upload_commands(lines: list[str]) -> list[tuple[int, str]]:
         commands.append((line_no, command))
         index += 1
     return commands
+
+
+def _run_blocks(lines: list[str]) -> list[tuple[int, str]]:
+    blocks: list[tuple[int, str]] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        run_match = re.match(r"^(\s*)run:\s*(.*)$", line)
+        if not run_match:
+            index += 1
+            continue
+
+        indent = len(run_match.group(1))
+        value = run_match.group(2).strip()
+        line_no = index + 1
+        if value not in {"|", ">"}:
+            blocks.append((line_no, value))
+            index += 1
+            continue
+
+        index += 1
+        block_lines: list[str] = []
+        while index < len(lines):
+            child = lines[index]
+            if child.strip():
+                child_indent = len(child) - len(child.lstrip(" "))
+                if child_indent <= indent:
+                    break
+            block_lines.append(child)
+            index += 1
+        blocks.append((line_no, "\n".join(block_lines)))
+
+    return blocks
 
 
 class GitHubWorkflowTests(unittest.TestCase):
@@ -123,6 +159,25 @@ class GitHubWorkflowTests(unittest.TestCase):
                 if "\n    timeout-minutes:" not in f"\n{body}":
                     failures.append(
                         f"{workflow.relative_to(ROOT)} job {job} has no timeout-minutes."
+                    )
+
+        self.assertEqual([], failures)
+
+    def test_workflows_avoid_untrusted_trigger_contexts_in_scripts(self) -> None:
+        failures: list[str] = []
+        for workflow in _workflow_files():
+            text = workflow.read_text(encoding="utf-8")
+            if re.search(r"^\s*pull_request_target\s*:", text, re.MULTILINE):
+                failures.append(
+                    f"{workflow.relative_to(ROOT)} uses pull_request_target; prefer "
+                    "pull_request with read-only permissions for untrusted changes."
+                )
+            for line_no, script in _run_blocks(text.splitlines()):
+                match = UNTRUSTED_RUN_CONTEXT_RE.search(script)
+                if match:
+                    failures.append(
+                        f"{workflow.relative_to(ROOT)}:{line_no} interpolates "
+                        f"{match.group(1)} directly into a run script."
                     )
 
         self.assertEqual([], failures)
