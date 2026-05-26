@@ -256,6 +256,9 @@ message lengths, reporting character counts and a coarse token estimate.
 `templates --json` returns a compact inventory of configured prompt templates:
 name, first-line preview, size metadata, whether `{input}` is used, and the
 supported variables referenced by the template.
+`templates --set`, `--rename`, and `--delete` update only the
+`[prompt_templates]` table and then reload the same config parser used by chat
+and GUI flows.
 
 Sessions can also carry normalized tags in the `session_tags` table. Tags are
 many-to-one labels independent of folders; session search can match tags,

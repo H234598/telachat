@@ -7,12 +7,15 @@ from pathlib import Path
 
 from telachat.config import (
     ConfigError,
+    delete_config_prompt_template,
     ensure_default_config,
     load_config,
     redact_secret,
+    rename_config_prompt_template,
     set_config_app_icon,
     set_config_chat_background_image,
     set_config_header_validation,
+    set_config_prompt_template,
     set_config_skill_watchdog_enabled,
     set_config_theme,
 )
@@ -197,6 +200,34 @@ ticket = "Schreibe ein Ticket:\\n\\n{input}"
             )
             cfg = load_config(path)
             self.assertEqual(cfg.prompt_templates, {"ticket": "Schreibe ein Ticket:\n\n{input}"})
+
+    def test_prompt_template_set_rename_and_delete_update_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            ensure_default_config(path)
+
+            self.assertEqual(
+                set_config_prompt_template("daily note", "Heute {date}: {input}", path),
+                "Heute {date}: {input}",
+            )
+            cfg = load_config(path)
+            self.assertEqual(cfg.prompt_templates["daily note"], "Heute {date}: {input}")
+            self.assertIn('"daily note" = "Heute {date}: {input}"', path.read_text(encoding="utf-8"))
+
+            self.assertEqual(rename_config_prompt_template("daily note", "daily", path), "daily")
+            cfg = load_config(path)
+            self.assertIn("daily", cfg.prompt_templates)
+            self.assertNotIn("daily note", cfg.prompt_templates)
+
+            self.assertEqual(delete_config_prompt_template("daily", path), "daily")
+            self.assertNotIn("daily", load_config(path).prompt_templates)
+
+            with self.assertRaises(ConfigError):
+                rename_config_prompt_template("fehlt", "neu", path)
+            with self.assertRaises(ConfigError):
+                set_config_prompt_template("", "Text", path)
+            with self.assertRaises(ConfigError):
+                set_config_prompt_template("leer", "  ", path)
 
     def test_profile_model_aliases_and_generation_parameter_flags_load(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

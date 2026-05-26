@@ -100,6 +100,9 @@ Verwendung:
 
 ```sh
 telachat templates
+telachat templates --set brief "Kurz antworten: {input}"
+telachat templates --rename brief kurz
+telachat templates --delete kurz
 telachat ask --template summarize "Langer Text"
 ```
 

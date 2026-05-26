@@ -215,15 +215,16 @@ class TkTelachatApp:
             self.sidebar,
             textvariable=self.template_var,
             state="readonly",
-            values=list(self.controller.prompt_templates()),
+            values=[],
             width=24,
         )
         self.template_combo.grid(row=17, column=0, sticky="ew", pady=(4, 0), padx=(0, 6))
+        self.template_combo.bind("<Button-3>", self.show_template_context_menu)
+        self.template_combo.bind("<Button-2>", self.show_template_context_menu)
         ttk.Button(self.sidebar, text="Einsetzen", command=self.insert_template).grid(
             row=17, column=1, sticky="ew", pady=(4, 0)
         )
-        if self.controller.prompt_templates():
-            self.template_var.set(next(iter(self.controller.prompt_templates())))
+        self.refresh_template_choices()
 
         quick_actions = tuple(
             (label, getattr(self, method_name))
@@ -1065,6 +1066,61 @@ class TkTelachatApp:
         self.input_text.delete("1.0", tk.END)
         self.input_text.insert("1.0", prompt)
         self.set_status(f"Vorlage eingesetzt: {name}")
+
+    def refresh_template_choices(self, selected: str | None = None) -> None:
+        names = list(self.controller.prompt_templates())
+        self.template_combo.configure(values=names)
+        if not names:
+            self.template_var.set("")
+            return
+        self.template_var.set(selected if selected in names else names[0])
+
+    def show_template_context_menu(self, event: object) -> str:
+        menu = tk.Menu(self.root, tearoff=False)
+        menu.add_command(label="Umbenennen", command=self.rename_selected_template)
+        menu.add_command(label="Loeschen", command=self.delete_selected_template)
+        if not self.template_var.get():
+            menu.entryconfigure(0, state="disabled")
+            menu.entryconfigure(1, state="disabled")
+        menu.tk_popup(int(getattr(event, "x_root", 0)), int(getattr(event, "y_root", 0)))
+        return "break"
+
+    def rename_selected_template(self) -> None:
+        name = self.template_var.get()
+        if not name:
+            self.set_status("Keine Vorlage gewaehlt.")
+            return
+        new_name = simpledialog.askstring(
+            "Vorlage umbenennen",
+            "Neuer Vorlagenname",
+            initialvalue=name,
+            parent=self.root,
+        )
+        if not new_name:
+            return
+        try:
+            self.controller.rename_prompt_template(name, new_name)
+        except ConfigError as exc:
+            self.show_error(str(exc))
+            return
+        clean_name = new_name.strip()
+        self.refresh_template_choices(clean_name)
+        self.set_status(f"Vorlage umbenannt: {name} -> {clean_name}")
+
+    def delete_selected_template(self) -> None:
+        name = self.template_var.get()
+        if not name:
+            self.set_status("Keine Vorlage gewaehlt.")
+            return
+        if not messagebox.askyesno("Vorlage loeschen", f"Vorlage '{name}' loeschen?"):
+            return
+        try:
+            self.controller.delete_prompt_template(name)
+        except ConfigError as exc:
+            self.show_error(str(exc))
+            return
+        self.refresh_template_choices()
+        self.set_status(f"Vorlage geloescht: {name}")
 
     def render_messages(self) -> None:
         self.chat_text.configure(state="normal")

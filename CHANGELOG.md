@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.58.0 - 2026-05-26
+
+- Adds prompt-template management through `telachat templates --set`,
+  `--rename`, and `--delete`.
+- Adds GUI template management: Tk exposes rename/delete from the template
+  dropdown context menu; GTK exposes rename/delete buttons below the template
+  dropdown.
+
 ## 0.57.1 - 2026-05-26
 
 - Restores the visible `Neu` sidebar action in Tk and GTK while keeping

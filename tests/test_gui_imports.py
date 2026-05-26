@@ -12,9 +12,14 @@ from telachat.config import ConfigError
 
 
 class _FakeController:
-    def __init__(self, tags: list[tuple[str, int]] | None = None) -> None:
+    def __init__(
+        self,
+        tags: list[tuple[str, int]] | None = None,
+        templates: dict[str, str] | None = None,
+    ) -> None:
         self.calls: list[dict[str, object]] = []
         self.tags = tags or []
+        self.templates = templates or {}
 
     def list_sessions(self, limit: int, **kwargs: object) -> list[object]:
         self.calls.append({"limit": limit, **kwargs})
@@ -28,6 +33,9 @@ class _FakeController:
 
     def stats(self) -> object:
         return _fake_stats()
+
+    def prompt_templates(self) -> dict[str, str]:
+        return self.templates
 
 
 class _FakeList:
@@ -95,9 +103,13 @@ class _FakeBoolVar:
 class _FakeDropdown:
     def __init__(self) -> None:
         self.selected = -1
+        self.model = None
 
     def set_selected(self, value: int) -> None:
         self.selected = value
+
+    def set_model(self, value: object) -> None:
+        self.model = value
 
 
 class _FakeSpin:
@@ -210,6 +222,21 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(module.SIDEBAR_FOLDER_ACTION_ROW, module.SIDEBAR_QUICK_ACTION_ROW + 2)
         self.assertEqual(module.SIDEBAR_SESSION_LIST_ROW, module.SIDEBAR_FOLDER_PROMPT_ROW + 1)
 
+    def test_tk_refresh_template_choices_preserves_selected_template(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        combo = _FakeCombo()
+        template_var = _FakeText("")
+        app = SimpleNamespace(
+            controller=_FakeController(templates={"summarize": "S", "brief": "B"}),
+            template_combo=combo,
+            template_var=template_var,
+        )
+
+        module.TkTelachatApp.refresh_template_choices(app, "brief")
+
+        self.assertEqual(combo.cget("values"), ("summarize", "brief"))
+        self.assertEqual(template_var.get(), "brief")
+
     def test_gtk_gui_imports(self) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -238,6 +265,27 @@ class GuiImportTests(unittest.TestCase):
         )
         for method_name in module.sidebar_quick_action_method_names():
             self.assertTrue(hasattr(module.GtkTelachatApp, method_name))
+
+    def test_gtk_refresh_template_choices_preserves_selected_template(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        dropdown = _FakeDropdown()
+        app = SimpleNamespace(
+            controller=_FakeController(templates={"summarize": "S", "brief": "B"}),
+            template_dropdown=dropdown,
+            template_names=[],
+        )
+
+        module.GtkTelachatApp.refresh_template_choices(app, "brief")
+
+        self.assertEqual(app.template_names, ["summarize", "brief"])
+        self.assertEqual(dropdown.selected, 1)
 
     def test_tk_refresh_sessions_uses_selected_sidebar_filters(self) -> None:
         module = importlib.import_module("telachat.tkgui")

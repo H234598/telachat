@@ -86,6 +86,9 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 
 Ab Version `0.3.0` enthalten beide GUIs einen Template-Waehler. Ein Template
 wird in den Composer eingefuegt und kann vor dem Senden angepasst werden.
+Ab Version `0.58.0` koennen Templates direkt verwaltet werden: Tk bietet
+Umbenennen und Loeschen per Rechtsklick auf die Vorlagen-Auswahl, GTK zeigt
+dafuer eigene Buttons unter der Vorlagen-Auswahl.
 
 Slash-Commands funktionieren ebenfalls:
 

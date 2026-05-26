@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.58.0 - 2026-05-26
+
+- Ergaenzt Prompt-Template-Verwaltung ueber `telachat templates --set`,
+  `--rename` und `--delete`.
+- Ergaenzt GUI-Verwaltung fuer Templates: Tk nutzt das Kontextmenue der
+  Vorlagen-Auswahl; GTK zeigt Umbenennen/Loeschen unter der Vorlagen-Auswahl.
+
 ## 0.57.1 - 2026-05-26
 
 - Stellt die sichtbare Seitenleistenaktion `Neu` in Tk und GTK wieder her,

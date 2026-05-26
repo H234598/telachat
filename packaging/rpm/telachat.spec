@@ -1,5 +1,5 @@
 %global appname telachat
-%global appversion %{?_version}%{!?_version:0.57.1}
+%global appversion %{?_version}%{!?_version:0.58.0}
 
 Name:           %{appname}
 Version:        %{appversion}
@@ -57,6 +57,9 @@ sed "s|@TELACHAT_EXEC@|telachat-gui|g" packaging/linux/telachat.desktop.in \
 %{_mandir}/man1/telachat-gtk.1*
 
 %changelog
+* Tue May 26 2026 Teladi <teladi@example.invalid> - 0.58.0-1
+- Add prompt-template create, rename, and delete management.
+
 * Tue May 26 2026 Teladi <teladi@example.invalid> - 0.57.1-1
 - Restore visible new-chat sidebar action and keep Tk session list row sizing aligned.
 

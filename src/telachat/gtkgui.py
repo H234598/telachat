@@ -192,15 +192,24 @@ class GtkTelachatApp(Adw.Application):
         self.search_entry.connect("search-changed", self.on_filter_changed)
         self.sidebar.append(self.search_entry)
 
-        self.template_names = list(self.controller.prompt_templates())
+        self.template_names: list[str] = []
         self.sidebar.append(Gtk.Label(label="Vorlage", xalign=0))
-        self.template_dropdown = Gtk.DropDown.new(Gtk.StringList.new(self.template_names), None)
+        self.template_dropdown = Gtk.DropDown()
         self.sidebar.append(self.template_dropdown)
+        self.refresh_template_choices()
         template_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.sidebar.append(template_row)
         insert_template_button = Gtk.Button(label="Einsetzen")
         insert_template_button.connect("clicked", self.on_insert_template)
         template_row.append(insert_template_button)
+        template_manage_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.sidebar.append(template_manage_row)
+        rename_template_button = Gtk.Button(label="Umbenennen")
+        rename_template_button.connect("clicked", self.on_rename_selected_template)
+        template_manage_row.append(rename_template_button)
+        delete_template_button = Gtk.Button(label="Loeschen")
+        delete_template_button.connect("clicked", self.on_delete_selected_template)
+        template_manage_row.append(delete_template_button)
 
         for index, (label, method_name) in enumerate(
             zip(
@@ -870,6 +879,17 @@ class GtkTelachatApp(Adw.Application):
             return self.template_names[selected]
         return None
 
+    def refresh_template_choices(self, selected: str | None = None) -> None:
+        self.template_names = list(self.controller.prompt_templates())
+        self.template_dropdown.set_model(Gtk.StringList.new(self.template_names))
+        if not self.template_names:
+            return
+        try:
+            selected_index = self.template_names.index(selected or self.template_names[0])
+        except ValueError:
+            selected_index = 0
+        self.template_dropdown.set_selected(selected_index)
+
     def on_insert_template(self, _button: Gtk.Button) -> None:
         name = self.selected_template_name()
         if not name:
@@ -882,6 +902,53 @@ class GtkTelachatApp(Adw.Application):
             return
         self.set_input_prompt(prompt)
         self.status.set_text(f"Vorlage eingesetzt: {name}")
+
+    def on_rename_selected_template(self, _button: Gtk.Button) -> None:
+        name = self.selected_template_name()
+        if not name:
+            self.status.set_text("Keine Vorlage gewaehlt.")
+            return
+
+        def rename(new_name: str) -> None:
+            try:
+                self.controller.rename_prompt_template(name, new_name)
+            except ConfigError as exc:
+                self.show_error(str(exc))
+                return
+            clean_name = new_name.strip()
+            self.refresh_template_choices(clean_name)
+            self.status.set_text(f"Vorlage umbenannt: {name} -> {clean_name}")
+
+        self._entry_dialog(
+            title="Vorlage umbenennen",
+            label="Neuer Vorlagenname",
+            initial=name,
+            callback=rename,
+        )
+
+    def on_delete_selected_template(self, _button: Gtk.Button) -> None:
+        name = self.selected_template_name()
+        if not name:
+            self.status.set_text("Keine Vorlage gewaehlt.")
+            return
+        dialog = Adw.MessageDialog.new(self.window, "Telachat", f"Vorlage '{name}' loeschen?")
+        dialog.add_response("cancel", "Abbrechen")
+        dialog.add_response("delete", "Loeschen")
+        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+
+        def on_response(_dialog: Adw.MessageDialog, response: str) -> None:
+            if response != "delete":
+                return
+            try:
+                self.controller.delete_prompt_template(name)
+            except ConfigError as exc:
+                self.show_error(str(exc))
+                return
+            self.refresh_template_choices()
+            self.status.set_text(f"Vorlage geloescht: {name}")
+
+        dialog.connect("response", on_response)
+        dialog.present()
 
     def set_busy(self, busy: bool, text: str) -> None:
         self.status.set_text(text)

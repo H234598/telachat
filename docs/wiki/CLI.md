@@ -153,6 +153,15 @@ Im interaktiven Chat funktionieren unter anderem:
 Wenn `telachat chat` in einem echten Terminal laeuft, vervollstaendigt `Tab`
 Slash-Befehle und Kontextwerte wie Provider, Modelle, Templates, Ordner,
 Session-Referenzen und Sortiermodi.
+
+Prompt-Templates lassen sich direkt verwalten:
+
+```sh
+telachat templates --set brief "Kurz antworten: {input}"
+telachat templates --rename brief kurz
+telachat templates --delete kurz
+```
+
 `/shortcuts` zeigt die wichtigsten Tastaturbefehle.
 `/edit-last TEXT` ersetzt die letzte Nutzernachricht, entfernt danach liegende
 Antworten und laesst dich mit `/regen` neu generieren.

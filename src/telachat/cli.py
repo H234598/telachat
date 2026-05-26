@@ -31,9 +31,12 @@ from .config import (
     AppConfig,
     ConfigError,
     Profile,
+    delete_config_prompt_template,
     ensure_default_config,
     load_config,
     redact_secret,
+    rename_config_prompt_template,
+    set_config_prompt_template,
     set_config_theme,
 )
 from .defaults import APP_TITLE
@@ -156,6 +159,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_skill_watchdog.set_defaults(func=cmd_skill_watchdog)
 
     p_templates = sub.add_parser("templates", help="Prompt-Templates anzeigen")
+    p_templates.add_argument(
+        "--set",
+        nargs=2,
+        metavar=("NAME", "TEXT"),
+        help="Prompt-Template anlegen oder aktualisieren",
+    )
+    p_templates.add_argument(
+        "--rename",
+        nargs=2,
+        metavar=("OLD", "NEW"),
+        help="Prompt-Template umbenennen",
+    )
+    p_templates.add_argument("--delete", metavar="NAME", help="Prompt-Template loeschen")
     p_templates.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_templates.set_defaults(func=cmd_templates)
 
@@ -590,6 +606,53 @@ def cmd_skill_watchdog(args: argparse.Namespace) -> int:
 
 
 def cmd_templates(args: argparse.Namespace) -> int:
+    mutations = [
+        bool(args.set),
+        bool(args.rename),
+        bool(args.delete),
+    ]
+    if sum(mutations) > 1:
+        raise ConfigError("Nur eine Template-Aktion pro Aufruf angeben.")
+    if args.set:
+        name, template = args.set
+        saved = set_config_prompt_template(name, template, args.config)
+        if args.json:
+            print(
+                json.dumps(
+                    {"template": _template_record(name.strip(), saved)},
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+        else:
+            print(f"Prompt-Template gespeichert: {name.strip()}")
+        return 0
+    if args.rename:
+        old_name, new_name = args.rename
+        renamed = rename_config_prompt_template(old_name, new_name, args.config)
+        if args.json:
+            cfg = load_config(args.config)
+            print(
+                json.dumps(
+                    {
+                        "renamed": {"from": old_name.strip(), "to": renamed},
+                        "template": _template_record(renamed, cfg.prompt_templates[renamed]),
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+        else:
+            print(f"Prompt-Template umbenannt: {old_name.strip()} -> {renamed}")
+        return 0
+    if args.delete:
+        deleted = delete_config_prompt_template(args.delete, args.config)
+        if args.json:
+            print(json.dumps({"deleted": deleted}, indent=2, sort_keys=True))
+        else:
+            print(f"Prompt-Template geloescht: {deleted}")
+        return 0
+
     cfg = load_config(args.config)
     if args.json:
         print(

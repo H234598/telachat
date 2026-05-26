@@ -8,10 +8,13 @@ from .config import (
     AppConfig,
     ConfigError,
     Profile,
+    delete_config_prompt_template,
     load_config,
+    rename_config_prompt_template,
     set_config_app_icon,
     set_config_chat_background_image,
     set_config_header_validation,
+    set_config_prompt_template,
     set_config_skill_watchdog_enabled,
     set_config_theme,
 )
@@ -95,6 +98,21 @@ class TelachatController:
         return self.config.skill_watchdog_enabled
 
     def prompt_templates(self) -> dict[str, str]:
+        return self.config.prompt_templates
+
+    def set_prompt_template(self, name: str, template: str) -> dict[str, str]:
+        set_config_prompt_template(name, template, self.config.path)
+        self.config = load_config(self.config.path)
+        return self.config.prompt_templates
+
+    def rename_prompt_template(self, old_name: str, new_name: str) -> dict[str, str]:
+        rename_config_prompt_template(old_name, new_name, self.config.path)
+        self.config = load_config(self.config.path)
+        return self.config.prompt_templates
+
+    def delete_prompt_template(self, name: str) -> dict[str, str]:
+        delete_config_prompt_template(name, self.config.path)
+        self.config = load_config(self.config.path)
         return self.config.prompt_templates
 
     def apply_prompt_template(self, name: str, text: str = "") -> str:

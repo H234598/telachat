@@ -73,7 +73,7 @@ class LinuxPackagingTests(unittest.TestCase):
                 stdout=subprocess.PIPE,
                 text=True,
             ).stdout
-            self.assertIn("telachat 0.57.1", version)
+            self.assertIn("telachat 0.58.0", version)
             launcher = (prefix / "bin/telachat-tk").read_text(encoding="utf-8")
             self.assertIn(str(prefix / "lib/telachat/telachat.pyz"), launcher)
             desktop_text = (desktop / "Telachat.desktop").read_text(encoding="utf-8")
@@ -100,7 +100,7 @@ class LinuxPackagingTests(unittest.TestCase):
                 f"{result.stdout}\n\nSTDERR:\n{result.stderr}"
             )
         rpm_root = ROOT / "dist/rpm/RPMS"
-        self.assertTrue(any(rpm_root.rglob("telachat-0.57.1-*.noarch.rpm")))
+        self.assertTrue(any(rpm_root.rglob("telachat-0.58.0-*.noarch.rpm")))
 
     def test_snapcraft_wrappers_keep_runtime_snap_mount_variable(self) -> None:
         snapcraft = (ROOT / "snap/snapcraft.yaml").read_text(encoding="utf-8")

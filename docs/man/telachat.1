@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-26" "Telachat 0.57.1" "User Commands"
+.TH TELACHAT 1 "2026-05-26" "Telachat 0.58.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -48,7 +48,9 @@ The same setting can be changed inside interactive chat with \fB/theme NAME\fR.
 .B templates
 List configured prompt templates. Templates support \fB{input}\fR,
 \fB{date}\fR, \fB{time}\fR, and \fB{datetime}\fR. Use \fB--json\fR for a
-structured template inventory with preview, size, and variable metadata.
+structured template inventory with preview, size, and variable metadata. Use
+\fB--set NAME TEXT\fR, \fB--rename OLD NEW\fR, and \fB--delete NAME\fR to
+manage templates in \fBconfig.toml\fR.
 .TP
 .B folders
 List or manage chat folders, folder-level system prompts, and optional
@@ -160,6 +162,9 @@ telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
 telachat ask --json "Hallo"
 telachat templates
 telachat templates --json
+telachat templates --set brief "Kurz: {input}"
+telachat templates --rename brief kurz
+telachat templates --delete kurz
 telachat ask --template summarize "Langer Text"
 telachat folders --create Arbeit --system "Antworte projektbezogen."
 telachat folders --set-backend Arbeit huggingface TKI

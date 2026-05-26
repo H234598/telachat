@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 import os
 import re
@@ -291,6 +292,40 @@ def set_config_skill_watchdog_enabled(enabled: bool, path: Path | None = None) -
     return bool(enabled)
 
 
+def set_config_prompt_template(name: str, template: str, path: Path | None = None) -> str:
+    clean_name, clean_template = _clean_prompt_template(name, template)
+    target = ensure_default_config(path)
+    templates = dict(load_config(target).prompt_templates)
+    templates[clean_name] = clean_template
+    _write_prompt_templates(target, templates)
+    return clean_template
+
+
+def rename_config_prompt_template(old_name: str, new_name: str, path: Path | None = None) -> str:
+    old_clean = _clean_prompt_template_name(old_name)
+    new_clean = _clean_prompt_template_name(new_name)
+    target = ensure_default_config(path)
+    templates = dict(load_config(target).prompt_templates)
+    if old_clean not in templates:
+        raise ConfigError(f"Prompt-Template '{old_clean}' fehlt.")
+    if new_clean != old_clean and new_clean in templates:
+        raise ConfigError(f"Prompt-Template '{new_clean}' existiert bereits.")
+    templates[new_clean] = templates.pop(old_clean)
+    _write_prompt_templates(target, templates)
+    return new_clean
+
+
+def delete_config_prompt_template(name: str, path: Path | None = None) -> str:
+    clean_name = _clean_prompt_template_name(name)
+    target = ensure_default_config(path)
+    templates = dict(load_config(target).prompt_templates)
+    if clean_name not in templates:
+        raise ConfigError(f"Prompt-Template '{clean_name}' fehlt.")
+    del templates[clean_name]
+    _write_prompt_templates(target, templates)
+    return clean_name
+
+
 def _set_top_level_assignment(
     target: Path,
     key: str,
@@ -322,6 +357,58 @@ def _set_top_level_assignment(
     insert_index = after_index + 1 if after_index is not None else first_table_index
     lines.insert(insert_index, replacement)
     target.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+
+
+def _write_prompt_templates(target: Path, templates: dict[str, str]) -> None:
+    text = target.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    start, end = _table_bounds(lines, "prompt_templates")
+    block = _prompt_template_block(templates)
+    if start is not None:
+        replacement = block if block else []
+        lines[start:end] = replacement
+    elif block:
+        insert_index = _first_table_index(lines)
+        prefix = [""] if insert_index > 0 and lines[insert_index - 1].strip() else []
+        suffix = [""] if insert_index < len(lines) and lines[insert_index].strip() else []
+        lines[insert_index:insert_index] = prefix + block + suffix
+    target.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+
+
+def _table_bounds(lines: list[str], table: str) -> tuple[int | None, int]:
+    header = f"[{table}]"
+    start: int | None = None
+    for index, line in enumerate(lines):
+        if line.strip() == header:
+            start = index
+            break
+    if start is None:
+        return None, len(lines)
+    end = len(lines)
+    for index in range(start + 1, len(lines)):
+        if lines[index].strip().startswith("["):
+            end = index
+            break
+    return start, end
+
+
+def _first_table_index(lines: list[str]) -> int:
+    for index, line in enumerate(lines):
+        if line.strip().startswith("["):
+            return index
+    return len(lines)
+
+
+def _prompt_template_block(templates: dict[str, str]) -> list[str]:
+    if not templates:
+        return []
+    lines = [
+        "[prompt_templates]",
+        "# Supported variables: {input}, {date}, {time}, {datetime}.",
+    ]
+    for name, template in sorted(templates.items()):
+        lines.append(f"{_toml_key(name)} = {_toml_string(template)}")
+    return lines
 
 
 def redact_secret(value: str) -> str:
@@ -515,6 +602,30 @@ def _optional_string(value: object, key: str) -> str:
 
 def _toml_basic_string(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _toml_string(value: str) -> str:
+    return json.dumps(value, ensure_ascii=False)
+
+
+def _toml_key(value: str) -> str:
+    if re.fullmatch(r"[A-Za-z0-9_-]+", value):
+        return value
+    return _toml_string(value)
+
+
+def _clean_prompt_template(name: str, template: str) -> tuple[str, str]:
+    clean_name = _clean_prompt_template_name(name)
+    if not isinstance(template, str) or not template.strip():
+        raise ConfigError(f"Prompt-Template '{clean_name}' braucht Text.")
+    return clean_name, template.strip()
+
+
+def _clean_prompt_template_name(name: str) -> str:
+    clean_name = str(name).strip()
+    if not clean_name:
+        raise ConfigError("Prompt-Template mit leerem Namen.")
+    return clean_name
 
 
 def _prompt_templates(raw: object) -> dict[str, str]:

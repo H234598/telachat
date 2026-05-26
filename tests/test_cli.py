@@ -401,6 +401,31 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(daily["variables"], ["input", "date", "time"])
 
                 out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["templates", "--set", "brief", "Kurz: {input}", "--json"]),
+                        0,
+                    )
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["template"]["name"], "brief")
+                self.assertEqual(payload["template"]["variables"], ["input"])
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["templates", "--rename", "brief", "briefing", "--json"]),
+                        0,
+                    )
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["renamed"], {"from": "brief", "to": "briefing"})
+                self.assertEqual(payload["template"]["name"], "briefing")
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["templates", "--delete", "briefing", "--json"]), 0)
+                self.assertEqual(json.loads(out.getvalue()), {"deleted": "briefing"})
+
+                out = io.StringIO()
                 with redirect_stdout(out), mock.patch(
                     "telachat.cli._run_chat",
                     return_value="OK",
