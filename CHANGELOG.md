@@ -2,9 +2,16 @@
 
 ## Unreleased
 
+## 0.53.0 - 2026-05-26
+
+- Add a Tk folder/session explorer view with expandable folder rows.
+- Add a Tk right-click context menu for session, folder, and empty-list actions.
+- Make the Tk and GTK New actions ask for a conversation name before creating the chat.
+- Restore the user-requested Tk/GTK default-on Skill watchdog while keeping `skill_watchdog_enabled = false` and `TELACHAT_DISABLE_SKILL_WATCHDOG=1` as opt-outs.
+
 ## 0.52.1 - 2026-05-26
 
-- Restore the Skill watchdog's safe default: new configs keep it off unless explicitly enabled, and runtime starts set the required `TELACHAT_ENABLE_SKILL_WATCHDOG=1` gate.
+- Temporarily restore the Skill watchdog's safe default: new configs keep it off unless explicitly enabled.
 - Keep default configuration generation compatible with Python 3.11.
 
 ## 0.52.0 - 2026-05-26

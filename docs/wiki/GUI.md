@@ -49,6 +49,10 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 ## Chatverwaltung
 
 - Chats koennen in Ordner verschoben werden.
+- In Tk erscheinen Ordner als aufklappbare Zeilen in der Chatliste.
+  Doppelklick klappt Ordner auf oder zu; Rechtsklick oeffnet Aktionen fuer
+  Chat, Ordner oder freien Listenraum.
+- `Neu` fragt vor dem Anlegen nach dem Namen der Unterhaltung.
 - Chats koennen Tags tragen; die Tags erscheinen in der Chatliste und sind
   direkt ueber den Tagfilter auswaehlbar.
 - Chats koennen archiviert werden; der sichtbare Archivfilter wechselt

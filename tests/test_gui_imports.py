@@ -23,12 +23,18 @@ class _FakeController:
     def list_tags(self) -> list[tuple[str, int]]:
         return self.tags
 
+    def list_folders(self) -> list[object]:
+        return []
+
     def stats(self) -> object:
         return _fake_stats()
 
 
 class _FakeList:
     def delete(self, *_args: object) -> None:
+        return None
+
+    def insert(self, *_args: object) -> None:
         return None
 
     def get_row_at_index(self, _index: int) -> object | None:
@@ -191,6 +197,8 @@ class GuiImportTests(unittest.TestCase):
             selected_folder_id=lambda: "__all__",
             selected_archive_filter=lambda: "archived",
             selected_tag_filter=lambda: "projekt",
+            session_rows=[],
+            _insert_grouped_session_rows=lambda: None,
         )
 
         module.TkTelachatApp.refresh_sessions(app)

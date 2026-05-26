@@ -4,6 +4,7 @@ import argparse
 import queue
 import threading
 import tkinter as tk
+from collections.abc import Callable
 from importlib.resources import as_file
 from pathlib import Path
 from tkinter import filedialog, messagebox, simpledialog, ttk
@@ -45,6 +46,8 @@ class TkTelachatApp:
         self.icon_rotation_job: str | None = None
         self.chat_background_image: tk.PhotoImage | None = None
         self.folder_display_to_id: dict[str, str | None] = {}
+        self.expanded_folder_ids: set[str] = set()
+        self.session_rows: list[tuple[str, str | None]] = []
         self.tag_display_to_value: dict[str, str | None] = {"Alle Tags": None}
         self.sidebar_visible = True
         self.settings_visible = True
@@ -242,6 +245,9 @@ class TkTelachatApp:
         )
         self.session_list.grid(row=22, column=0, columnspan=2, sticky="nsew", pady=(14, 0))
         self.session_list.bind("<<ListboxSelect>>", self._on_session_select)
+        self.session_list.bind("<Double-Button-1>", self.on_session_row_double_click)
+        self.session_list.bind("<Button-3>", self.show_session_context_menu)
+        self.session_list.bind("<Button-2>", self.show_session_context_menu)
 
         self.main = ttk.Frame(self.paned, padding=16)
         self.main.columnconfigure(0, weight=1)
@@ -737,17 +743,65 @@ class TkTelachatApp:
             self.model_var.set(model)
 
     def refresh_sessions(self) -> None:
+        folder_filter = self.selected_folder_id()
         self.sessions = self.controller.list_sessions(
             80,
-            folder_id=self.selected_folder_id(),
+            folder_id=folder_filter,
             sort=self.sort_keys.get(self.sort_var.get(), "updated_desc"),
             query=self.search_var.get(),
             archive=self.selected_archive_filter(),
             tag=self.selected_tag_filter(),
         )
         self.session_list.delete(0, tk.END)
+        self.session_rows = []
+        if folder_filter in {"__all__", None}:
+            self._insert_grouped_session_rows()
+        elif folder_filter == "__none__":
+            for session in self.sessions:
+                self._insert_session_row(session)
+        else:
+            folder_name = self._folder_name(folder_filter) or "Ordner"
+            self.expanded_folder_ids.add(folder_filter)
+            self._insert_folder_row(folder_filter, folder_name)
+            if folder_filter in self.expanded_folder_ids:
+                for session in self.sessions:
+                    self._insert_session_row(session, indent=True)
+
+    def _insert_grouped_session_rows(self) -> None:
+        folders = self.controller.list_folders()
+        sessions_by_folder: dict[str | None, list[Session]] = {}
         for session in self.sessions:
-            self.session_list.insert(tk.END, self._session_label(session))
+            sessions_by_folder.setdefault(session.folder_id, []).append(session)
+        for folder in folders:
+            self._insert_folder_row(folder.id, folder.name)
+            if folder.id in self.expanded_folder_ids:
+                for session in sessions_by_folder.get(folder.id, []):
+                    self._insert_session_row(session, indent=True)
+        unfiled = sessions_by_folder.get(None, [])
+        if unfiled:
+            virtual_id = "__none__"
+            self._insert_folder_row(virtual_id, "Ohne Ordner")
+            if virtual_id in self.expanded_folder_ids:
+                for session in unfiled:
+                    self._insert_session_row(session, indent=True)
+
+    def _insert_folder_row(self, folder_id: str, name: str) -> None:
+        marker = "▾" if folder_id in self.expanded_folder_ids else "▸"
+        self.session_rows.append(("folder", folder_id))
+        self.session_list.insert(tk.END, f"{marker} {name}")
+
+    def _insert_session_row(self, session: Session, *, indent: bool = False) -> None:
+        self.session_rows.append(("session", session.id))
+        prefix = "  " if indent else ""
+        self.session_list.insert(tk.END, f"{prefix}{self._session_label(session)}")
+
+    def _folder_name(self, folder_id: str | None) -> str | None:
+        if folder_id == "__none__":
+            return "Ohne Ordner"
+        for folder in self.controller.list_folders():
+            if folder.id == folder_id:
+                return folder.name
+        return None
 
     def load_session(self, session_id: str) -> None:
         self.active_session, self.messages = self.controller.get_session(session_id)
@@ -756,12 +810,22 @@ class TkTelachatApp:
         self.update_active_title()
         self.render_messages()
 
-    def new_session(self) -> None:
+    def new_session(self, *, folder_id: str | None = None) -> None:
+        title = simpledialog.askstring(
+            "Telachat",
+            "Name der Unterhaltung:",
+            initialvalue="Neue Unterhaltung",
+        )
+        if title is None:
+            return
+        title = title.strip() or "Neue Unterhaltung"
+        target_folder_id = self.selected_folder_id(for_new=True) if folder_id is None else folder_id
         self.active_session, self.messages = self.controller.new_session(
             profile_name=self.selected_profile(),
             model=self.model_var.get(),
             system_prompt=self.system_text.get("1.0", tk.END).strip(),
-            folder_id=self.selected_folder_id(for_new=True),
+            title=title,
+            folder_id=target_folder_id,
         )
         self.update_active_title()
         self.refresh_sessions()
@@ -1000,8 +1064,122 @@ class TkTelachatApp:
 
     def _on_session_select(self, _event: object) -> None:
         selected = self.session_list.curselection()
-        if selected:
-            self.load_session(self.sessions[selected[0]].id)
+        if not selected:
+            return
+        row = self._session_row_at(selected[0])
+        if row and row[0] == "session" and row[1]:
+            self.load_session(row[1])
+
+    def on_session_row_double_click(self, event: object) -> str | None:
+        index = self._listbox_event_index(event)
+        row = self._session_row_at(index)
+        if not row:
+            return None
+        kind, item_id = row
+        if kind == "folder" and item_id:
+            if item_id in self.expanded_folder_ids:
+                self.expanded_folder_ids.remove(item_id)
+            else:
+                self.expanded_folder_ids.add(item_id)
+            self.refresh_sessions()
+            return "break"
+        if kind == "session" and item_id:
+            self.load_session(item_id)
+            return "break"
+        return None
+
+    def show_session_context_menu(self, event: object) -> str:
+        index = self._listbox_event_index(event)
+        row = self._session_row_at(index)
+        menu = tk.Menu(self.root, tearoff=False)
+        if row and row[0] == "session" and row[1]:
+            self.session_list.selection_clear(0, tk.END)
+            self.session_list.selection_set(index)
+            self.load_session(row[1])
+            menu.add_command(label="Regenerieren", command=self.regenerate_active_session)
+            menu.add_command(label="Umbenennen", command=self.rename_active_session)
+            menu.add_command(label="Anpinnen", command=self.toggle_pin_active_session)
+            menu.add_command(label="Archiv", command=self.toggle_archive_active_session)
+            menu.add_separator()
+            menu.add_command(label="Ablegen", command=self.move_active_to_folder)
+            menu.add_command(label="Export", command=self.export_session)
+            menu.add_command(label="Loeschen", command=self.delete_active_session)
+        elif row and row[0] == "folder" and row[1]:
+            folder_id = row[1]
+            label = "Zuklappen" if folder_id in self.expanded_folder_ids else "Aufklappen"
+            menu.add_command(label=label, command=lambda: self.toggle_folder_row(folder_id))
+            if folder_id != "__none__":
+                menu.add_command(
+                    label="Neue Unterhaltung hier",
+                    command=lambda: self.new_session(folder_id=folder_id),
+                )
+                menu.add_command(
+                    label="Ordner-Prompt",
+                    command=lambda: self.with_folder_selection(
+                        folder_id,
+                        self.save_selected_folder_prompt,
+                    ),
+                )
+                menu.add_command(
+                    label="Ordner umbenennen",
+                    command=lambda: self.with_folder_selection(
+                        folder_id,
+                        self.rename_selected_folder,
+                    ),
+                )
+                menu.add_command(
+                    label="Ordner loeschen",
+                    command=lambda: self.with_folder_selection(
+                        folder_id,
+                        self.delete_selected_folder,
+                    ),
+                )
+        else:
+            menu.add_command(label="Neu", command=self.new_session)
+            menu.add_command(label="Ordner anlegen", command=self.create_folder_dialog)
+            menu.add_command(label="Check", command=self.doctor)
+        try:
+            menu.tk_popup(getattr(event, "x_root", 0), getattr(event, "y_root", 0))
+        finally:
+            menu.grab_release()
+        return "break"
+
+    def toggle_folder_row(self, folder_id: str) -> None:
+        if folder_id in self.expanded_folder_ids:
+            self.expanded_folder_ids.remove(folder_id)
+        else:
+            self.expanded_folder_ids.add(folder_id)
+        self.refresh_sessions()
+
+    def select_folder_filter(self, folder_id: str | None) -> None:
+        wanted = "__none__" if folder_id is None else folder_id
+        for label, value in self.folder_display_to_id.items():
+            if value == wanted:
+                self.folder_var.set(label)
+                return
+
+    def with_folder_selection(self, folder_id: str | None, action: Callable[[], None]) -> None:
+        self.select_folder_filter(folder_id)
+        action()
+
+    def _session_row_at(self, index: int | None) -> tuple[str, str | None] | None:
+        if index is None or index < 0 or index >= len(self.session_rows):
+            return None
+        return self.session_rows[index]
+
+    def _listbox_event_index(self, event: object) -> int | None:
+        y = getattr(event, "y", None)
+        if y is None:
+            return None
+        index = self.session_list.nearest(y)
+        bbox = self.session_list.bbox(index)
+        if not bbox:
+            return None
+        top = bbox[1]
+        bottom = top + bbox[3]
+        if y < top or y > bottom:
+            return None
+        return index
 
     def _on_profile_changed(self, _event: object) -> None:
         self.refresh_models()

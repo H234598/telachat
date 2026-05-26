@@ -9,7 +9,7 @@ DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
 DEFAULT_THEME = "system"
 DEFAULT_APP_ICON = "system"
 DEFAULT_CHAT_BACKGROUND_IMAGE = ""
-DEFAULT_SKILL_WATCHDOG_ENABLED = False
+DEFAULT_SKILL_WATCHDOG_ENABLED = True
 DEFAULT_SYSTEM_PROMPT = (
     "Du bist Telachat, ein direkter, praktischer KI-Assistent. "
     "Antworte in der Sprache des Nutzers, rechne sorgfaeltig und erfinde "
@@ -51,7 +51,7 @@ theme = "{DEFAULT_THEME}"
 app_icon = "{DEFAULT_APP_ICON}"
 chat_background_image = "{DEFAULT_CHAT_BACKGROUND_IMAGE}"
 validate_profile_headers = true
-skill_watchdog_enabled = false
+skill_watchdog_enabled = true
 default_system_prompt = "{DEFAULT_SYSTEM_PROMPT}"
 max_history_messages = 24
 

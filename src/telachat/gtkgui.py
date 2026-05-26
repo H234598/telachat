@@ -949,10 +949,19 @@ class GtkTelachatApp(Adw.Application):
             self.load_session(row.session_id)
 
     def on_new(self, _button: Gtk.Button) -> None:
+        self._entry_dialog(
+            title="Neue Unterhaltung",
+            label="Name der Unterhaltung",
+            initial="Neue Unterhaltung",
+            callback=self.create_new_session_from_title,
+        )
+
+    def create_new_session_from_title(self, title: str) -> None:
         self.active_session, self.messages = self.controller.new_session(
             profile_name=self.selected_profile(),
             model=self.selected_model(),
             system_prompt=self.system_prompt(),
+            title=title.strip() or "Neue Unterhaltung",
             folder_id=self.selected_folder_id(for_new=True),
         )
         self.update_active_title()

@@ -55,7 +55,7 @@ class ConfigTests(unittest.TestCase):
             self.assertEqual(cfg.app_icon, "system")
             self.assertEqual(cfg.chat_background_image, "")
             self.assertTrue(cfg.validate_profile_headers)
-            self.assertFalse(cfg.skill_watchdog_enabled)
+            self.assertTrue(cfg.skill_watchdog_enabled)
             self.assertIn("summarize", cfg.prompt_templates)
             self.assertIn("{input}", cfg.prompt_templates["summarize"])
 

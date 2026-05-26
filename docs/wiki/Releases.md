@@ -2,10 +2,20 @@
 
 ## Unreleased
 
+## 0.53.0 - 2026-05-26
+
+- Ergaenzt in Tk eine Ordner-/Chat-Exploreransicht mit aufklappbaren
+  Ordnerzeilen.
+- Fuegt ein Tk-Rechtsklickmenue fuer Chat-, Ordner- und Leerraumaktionen hinzu.
+- Laesst Tk und GTK beim Neu-Anlegen zuerst den Unterhaltungsnamen abfragen.
+- Stellt die vom Nutzer gewuenschte Tk/GTK-Default-Ausfuehrung des
+  Skill-Watchdogs wieder her; abschaltbar bleibt sie ueber
+  `skill_watchdog_enabled = false` oder `TELACHAT_DISABLE_SKILL_WATCHDOG=1`.
+
 ## 0.52.1 - 2026-05-26
 
-- Stellt den sicheren Skill-Watchdog-Default wieder her: neue Konfigurationen
-  bleiben aus, bis `skill_watchdog_enabled = true` gesetzt wird.
+- Stellt temporaer den sicheren Skill-Watchdog-Default wieder her: neue
+  Konfigurationen bleiben aus, bis `skill_watchdog_enabled = true` gesetzt wird.
 - Macht die Default-Konfiguration wieder mit Python 3.11 kompatibel.
 
 ## 0.52.0 - 2026-05-26

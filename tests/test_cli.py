@@ -512,7 +512,7 @@ model = "demo"
                 payload = json.loads(out.getvalue())
                 self.assertEqual(payload["app_icon"], "system")
                 self.assertEqual(payload["chat_background_image"], "")
-                self.assertFalse(payload["skill_watchdog_enabled"])
+                self.assertTrue(payload["skill_watchdog_enabled"])
                 self.assertEqual(payload["missing_secrets"], 1)
                 profiles = {profile["name"]: profile for profile in payload["profiles"]}
                 self.assertEqual(profiles["missing"]["api_key"], "env:TELACHAT_MISSING_TEST_KEY")
@@ -1221,12 +1221,12 @@ X-Test-Header = "yes"
                 self.assertEqual(manifest["app_icon"], "system")
                 self.assertEqual(manifest["chat_background_image"], "")
                 self.assertTrue(manifest["validate_profile_headers"])
-                self.assertFalse(manifest["skill_watchdog_enabled"])
+                self.assertTrue(manifest["skill_watchdog_enabled"])
                 self.assertEqual(parsed["theme"], "system")
                 self.assertEqual(parsed["app_icon"], "system")
                 self.assertEqual(parsed["chat_background_image"], "")
                 self.assertTrue(parsed["validate_profile_headers"])
-                self.assertFalse(parsed["skill_watchdog_enabled"])
+                self.assertTrue(parsed["skill_watchdog_enabled"])
 
                 restore_data = Path(tmp) / "restore-data"
                 os.environ["XDG_DATA_HOME"] = str(restore_data)
