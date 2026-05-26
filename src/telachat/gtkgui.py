@@ -1828,6 +1828,20 @@ class GtkTelachatApp(Adw.Application):
             else:
                 self.set_input_prompt(self.controller.folder_context_for_edit(folder_id))
                 self.status.set_text("Ordner-Kontext geladen.")
+        elif command == "/folder-backend":
+            folder_id = self.selected_real_folder_id()
+            if not folder_id:
+                self.status.set_text("Ordner waehlen.")
+            else:
+                parts = rest.split(maxsplit=1)
+                profile_name = parts[0] if parts else self.selected_profile()
+                model = parts[1] if len(parts) > 1 else self.selected_model()
+                try:
+                    folder = self.controller.set_folder_backend(folder_id, profile_name, model)
+                except ConfigError as exc:
+                    self.status.set_text(str(exc))
+                else:
+                    self.status.set_text(f"Ordner-Backend gespeichert: {folder.name}")
         elif command == "/folder":
             if rest:
                 folder = self.controller.create_folder(rest)

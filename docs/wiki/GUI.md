@@ -125,6 +125,7 @@ Tags, Sortierungen und History-Groessen.
 /q
 /folder-prompt Projektkontext
 /folder-context Aktueller Stand
+/folder-backend openai gpt-5.5
 /permissions
 ```
 
@@ -134,3 +135,5 @@ Der Slash-Befehl `/folder-system` bleibt als Alias fuer `/folder-prompt`
 erhalten.
 `/folder-context TEXT` speichert eine Kontextnotiz, die neuen Chats im Ordner
 unter dem Ordnerprompt angehaengt wird.
+`/folder-backend [PROFILE MODEL]` speichert die aktuelle oder angegebene
+Provider/Modell-Auswahl als Default des gewaehlten Ordners.

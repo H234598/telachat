@@ -62,6 +62,11 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
         aliases=("/folder-system",),
     ),
     SlashCommand("/folder-context", "/folder-context TEXT", "Ordner-Kontextnotiz setzen"),
+    SlashCommand(
+        "/folder-backend",
+        "/folder-backend [PROFILE MODEL]",
+        "Ordner-Backend setzen",
+    ),
     SlashCommand("/rename-folder", "/rename-folder NAME", "Gewaehlten Ordner umbenennen"),
     SlashCommand("/delete-folder", "/delete-folder", "Gewaehlten Ordner loeschen"),
     SlashCommand("/move", "/move NAME", "Chat in Ordner ablegen", aliases=("/ablegen",)),
@@ -275,7 +280,7 @@ def slash_completion_candidates(
 
     command = canonical_slash_command(command_token)
     prefix = rest.rsplit(maxsplit=1)[-1] if rest and not rest.endswith(" ") else ""
-    if command in {"/profile", "/provider"}:
+    if command in {"/profile", "/provider", "/folder-backend"}:
         return _completion_matches(sorted(getattr(cfg, "profiles", {})), prefix, limit=limit)
     if command == "/model":
         return _completion_matches(_configured_models(cfg), prefix, limit=limit)

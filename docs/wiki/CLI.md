@@ -156,6 +156,7 @@ Im interaktiven Chat funktionieren unter anderem:
 /template NAME TEXT
 /folder-prompt TEXT
 /folder-context TEXT
+/folder-backend [PROFILE MODEL]
 ```
 
 Wenn `telachat chat` in einem echten Terminal laeuft, vervollstaendigt `Tab`
@@ -163,6 +164,8 @@ Slash-Befehle und Kontextwerte wie Provider, Modelle, Templates, Ordner,
 Session-Referenzen und Sortiermodi.
 `/folder-system TEXT` bleibt als Alias fuer `/folder-prompt TEXT` gueltig.
 `/folder-context TEXT` speichert die Kontextnotiz des aktuellen Ordners.
+`/folder-backend [PROFILE MODEL]` speichert das aktuelle oder angegebene
+Backend als Ordnerdefault.
 
 Prompt-Templates lassen sich direkt verwalten:
 

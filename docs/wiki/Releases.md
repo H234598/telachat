@@ -2,8 +2,12 @@
 
 ## Unreleased
 
-- Haelt Aenderungen durch CLI `/folder-prompt` und `/folder-context` direkt
-  fuer den aktuellen interaktiven Chat wirksam, analog zur GUI-Aktualisierung.
+## 0.73.0 - 2026-05-26
+
+- Fuegt `/folder-backend [PROFILE MODEL]` hinzu, um das aktuelle oder angegebene
+  Provider/Modell-Paar als Backend-Default des gewaehlten Ordners zu speichern.
+- Haelt CLI-Aenderungen durch `/folder-prompt` und `/folder-context` direkt fuer
+  den naechsten Request im aktiven Chat wirksam.
 
 ## 0.72.0 - 2026-05-26
 

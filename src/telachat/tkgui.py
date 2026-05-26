@@ -1851,6 +1851,20 @@ class TkTelachatApp:
                 self.input_text.delete("1.0", tk.END)
                 self.input_text.insert("1.0", self.controller.folder_context_for_edit(folder_id))
                 self.set_status("Ordner-Kontext geladen.")
+        elif command == "/folder-backend":
+            folder_id = self.selected_real_folder_id()
+            if not folder_id:
+                self.set_status("Ordner waehlen.")
+            else:
+                parts = rest.split(maxsplit=1)
+                profile_name = parts[0] if parts else self.selected_profile()
+                model = parts[1] if len(parts) > 1 else self.model_var.get()
+                try:
+                    folder = self.controller.set_folder_backend(folder_id, profile_name, model)
+                except ConfigError as exc:
+                    self.set_status(str(exc))
+                else:
+                    self.set_status(f"Ordner-Backend gespeichert: {folder.name}")
         elif command == "/folder":
             if rest:
                 folder = self.controller.create_folder(rest)

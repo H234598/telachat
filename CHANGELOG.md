@@ -2,8 +2,12 @@
 
 ## Unreleased
 
+## 0.73.0 - 2026-05-26
+
+- Adds `/folder-backend [PROFILE MODEL]` to save the current or specified
+  provider/model as the selected folder's default backend.
 - Keeps CLI `/folder-prompt` and `/folder-context` changes effective for the
-  current interactive chat request, matching the GUI prompt refresh behavior.
+  next request in the active interactive chat.
 
 ## 0.72.0 - 2026-05-26
 

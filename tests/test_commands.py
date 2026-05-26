@@ -42,6 +42,7 @@ class CommandCatalogTests(unittest.TestCase):
         help_text = slash_command_help()
         self.assertIn("/folder-prompt TEXT", help_text)
         self.assertIn("/folder-context TEXT", help_text)
+        self.assertIn("/folder-backend [PROFILE MODEL]", help_text)
         self.assertIn("/edit-last TEXT", help_text)
         self.assertIn("/fork [TITLE]", help_text)
         self.assertIn("/export [datei.md]", help_text)
@@ -69,6 +70,7 @@ class CommandCatalogTests(unittest.TestCase):
         self.assertIn("/doctor", slash_command_name_suggestions("/doc"))
         self.assertIn("/edit", slash_command_name_suggestions("/ed"))
         self.assertIn("/folder-context", slash_command_name_suggestions("/folder-c"))
+        self.assertIn("/folder-backend", slash_command_name_suggestions("/folder-b"))
         self.assertIn("/folder-prompt", slash_command_name_suggestions("/folder-p"))
         self.assertIn("/folder-system", slash_command_name_suggestions("/folder-s"))
         self.assertIn("/quit", slash_command_name_suggestions("/qu"))
@@ -100,6 +102,10 @@ class CommandCatalogTests(unittest.TestCase):
 
         self.assertIn("/permissions ", slash_completion_candidates("/per", cfg, store, **kwargs))
         self.assertIn("openai ", slash_completion_candidates("/provider op", cfg, store, **kwargs))
+        self.assertIn(
+            "openai ",
+            slash_completion_candidates("/folder-backend op", cfg, store, **kwargs),
+        )
         self.assertIn("gpt-5.5 ", slash_completion_candidates("/model gpt", cfg, store, **kwargs))
         self.assertIn("summarize ", slash_completion_candidates("/template su", cfg, store, **kwargs))
         self.assertIn("brushed-steel ", slash_completion_candidates("/theme br", cfg, store, **kwargs))

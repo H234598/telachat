@@ -336,6 +336,7 @@ GUI slash commands:
 /folder NAME | /ordner NAME
 /folder-prompt TEXT
 /folder-context TEXT
+/folder-backend [PROFILE MODEL]
 /rename-folder NAME
 /delete-folder
 /edit-last TEXT | /edit TEXT
@@ -355,6 +356,8 @@ GUI slash commands:
 `/folder-system TEXT` bleibt als kompatibler Alias fuer `/folder-prompt TEXT`
 erhalten.
 `/folder-context TEXT` verwaltet die Kontextnotiz des aktuellen Ordners.
+`/folder-backend [PROFILE MODEL]` verwaltet den Backend-Default des aktuellen
+Ordners.
 
 GUI request cancellation:
 

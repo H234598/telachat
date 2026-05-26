@@ -2327,6 +2327,30 @@ def _handle_command(
                 print("Ordner nicht gefunden.")
             else:
                 print(folder.context or "<leer>")
+    elif command == "/folder-backend":
+        folder_id = getattr(session, "folder_id", None)
+        if not folder_id:
+            print("Aktuelle Session liegt in keinem Ordner.")
+        elif rest.strip().lower() in {"show", "?"}:
+            folder = store.get_folder(folder_id)
+            if folder is None:
+                print("Ordner nicht gefunden.")
+            else:
+                backend = f"{folder.default_profile}/{folder.default_model}".strip("/")
+                print(f"Ordner-Backend: {backend or '<leer>'}")
+        else:
+            parts = rest.split(maxsplit=1)
+            target_profile_name = parts[0] if parts else profile.name
+            try:
+                target_profile = cfg.profile(target_profile_name)
+            except ConfigError as exc:
+                print(f"Fehler: {exc}", file=sys.stderr)
+            else:
+                target_model = parts[1] if len(parts) > 1 else (
+                    profile.model if not parts else target_profile.model
+                )
+                folder = store.update_folder_backend(folder_id, target_profile.name, target_model)
+                print(f"Ordner-Backend gespeichert: {folder.name}")
     elif command == "/folder":
         if not rest:
             folder = store.get_folder(session.folder_id) if session.folder_id else None

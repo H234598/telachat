@@ -692,6 +692,34 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(app.prompt, "Prompt\n\nOrdner-Kontext:\nWissen")
         self.assertEqual(app.status.get_text(), "Ordner-Kontext gespeichert: Projekt")
 
+    def test_gtk_folder_backend_command_updates_default(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        calls: list[tuple[str, str, str]] = []
+        app = SimpleNamespace(
+            selected_real_folder_id=lambda: "folder1",
+            selected_profile=lambda: "openai",
+            selected_model=lambda: "gpt-5.5",
+            controller=SimpleNamespace(
+                set_folder_backend=lambda folder_id, profile, model: calls.append(
+                    (folder_id, profile, model)
+                )
+                or SimpleNamespace(name="Projekt")
+            ),
+            status=_FakeText(""),
+        )
+
+        module.GtkTelachatApp.handle_command(app, "/folder-backend")
+
+        self.assertEqual(calls, [("folder1", "openai", "gpt-5.5")])
+        self.assertEqual(app.status.get_text(), "Ordner-Backend gespeichert: Projekt")
+
     def test_tk_refresh_tag_filter_preserves_selected_tag_value(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         controller = _FakeController(tags=[("projekt", 2), ("review", 1)])
@@ -815,6 +843,28 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(contexts, [("folder1", "Wissen")])
         self.assertEqual(prompts, ["Prompt\n\nOrdner-Kontext:\nWissen"])
         self.assertEqual(statuses, ["Ordner-Kontext gespeichert: Projekt"])
+
+    def test_tk_folder_backend_command_updates_default(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        calls: list[tuple[str, str, str]] = []
+        statuses: list[str] = []
+        app = SimpleNamespace(
+            selected_real_folder_id=lambda: "folder1",
+            selected_profile=lambda: "openai",
+            model_var=_FakeText("gpt-5.5"),
+            controller=SimpleNamespace(
+                set_folder_backend=lambda folder_id, profile, model: calls.append(
+                    (folder_id, profile, model)
+                )
+                or SimpleNamespace(name="Projekt")
+            ),
+            set_status=lambda text: statuses.append(text),
+        )
+
+        module.TkTelachatApp.handle_command(app, "/folder-backend")
+
+        self.assertEqual(calls, [("folder1", "openai", "gpt-5.5")])
+        self.assertEqual(statuses, ["Ordner-Backend gespeichert: Projekt"])
 
     def test_tk_generation_inputs_normalize_to_supported_ranges(self) -> None:
         module = importlib.import_module("telachat.tkgui")

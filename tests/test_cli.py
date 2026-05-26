@@ -1759,6 +1759,7 @@ X-Test-Header = "yes"
                         "/untag Review",
                         "/folder-prompt Ordnerkontext",
                         "/folder-context Projektwissen",
+                        "/folder-backend",
                         "/unfile",
                         "/sort title",
                         "/search Testtitel",
@@ -1787,6 +1788,7 @@ X-Test-Header = "yes"
                 self.assertIn("Tags: #projekt", text)
                 self.assertIn("Ordnerprompt gesetzt: Arbeit", text)
                 self.assertIn("Ordner-Kontext gespeichert: Arbeit", text)
+                self.assertIn("Ordner-Backend gespeichert: Arbeit", text)
                 self.assertIn("Session geloescht:", text)
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
