@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Extends the GitHub Actions Node 24 opt-in to every workflow that uses
+  JavaScript actions, including Windows packaging jobs.
+
 ## 0.70.3 - 2026-05-26
 
 - Opts the Linux GitHub Actions workflow into Node 24 for JavaScript actions.
