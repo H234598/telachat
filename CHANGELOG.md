@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Harden Windows packaging around unusable Microsoft Store Python aliases and add a reusable Windows test script.
+- Add versioned Windows portable ZIP and NSIS installer outputs with SHA256 sidecar files.
+- Add Windows CI packaging coverage and release upload validation without raw wildcard uploads.
+- Keep Windows escape-like path tests inside temporary directories.
+
 ## 0.48.1 - 2026-05-25
 
 - Add direct GUI regression coverage for `/models` and `/models live` in both Tk and GTK frontends.
