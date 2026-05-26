@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import unittest
 from pathlib import Path
 
@@ -22,6 +23,15 @@ class WindowsPackagingDocsTests(unittest.TestCase):
                 failures.append(f"{checksum_file.name} is not '<sha256>  <filename>'")
                 continue
             expected, file_name = parts
+            if not re.fullmatch(r"[0-9a-f]{64}", expected):
+                failures.append(f"{checksum_file.name} has a non-canonical SHA-256")
+                continue
+            expected_file_name = checksum_file.name.removesuffix(".sha256")
+            if file_name != expected_file_name:
+                failures.append(
+                    f"{checksum_file.name} points to {file_name}, expected {expected_file_name}"
+                )
+                continue
             artifact = release_dir / file_name
             if not artifact.is_file():
                 failures.append(f"{checksum_file.name} points to missing {file_name}")
