@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.69.1 - 2026-05-26
+
+- Wandelt nicht-UTF-8-kodierte `import-session`- und `import-folder`-Eingaben
+  in klare Fehlermeldungen um, statt einen Traceback zu zeigen.
+- Deckt auch Ordner-ZIP-Bundles ab, deren `folder.json` nicht UTF-8-kodiert
+  ist.
+
 ## 0.69.0 - 2026-05-26
 
 - Ergaenzt `telachat export-folder --bundle`, das einen Ordnerexport als ZIP

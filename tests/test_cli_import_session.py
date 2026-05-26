@@ -20,6 +20,17 @@ def _restore_env(name: str, value: str | None) -> None:
 
 
 class CliImportSessionTests(unittest.TestCase):
+    def test_import_session_rejects_non_utf8_json_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            import_path = Path(tmp) / "invalid-session.json"
+            import_path.write_bytes(b"\xff")
+
+            err = io.StringIO()
+            with redirect_stderr(err):
+                self.assertEqual(main(["import-session", str(import_path)]), 1)
+            self.assertIn("nicht UTF-8-kodiert", err.getvalue())
+            self.assertNotIn("Traceback", err.getvalue())
+
     def test_import_session_dry_run_validates_without_writing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")
