@@ -136,6 +136,17 @@ class CliImportFolderTests(unittest.TestCase):
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_import_folder_rejects_non_utf8_bundle_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            import_path = Path(tmp) / "invalid-folder.zip"
+            with zipfile.ZipFile(import_path, "w") as archive:
+                archive.writestr("folder.json", b"\xff")
+
+            err = io.StringIO()
+            with redirect_stderr(err):
+                self.assertEqual(main(["import-folder", str(import_path)]), 1)
+            self.assertIn("nicht UTF-8-kodiert", err.getvalue())
+
     def test_import_folder_dry_run_validates_without_writing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

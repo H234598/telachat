@@ -1653,6 +1653,8 @@ def cmd_import_session(args: argparse.Namespace) -> int:
         payload = json.loads(args.session_json.read_text(encoding="utf-8"))
     except OSError as exc:
         raise ConfigError(f"Importdatei kann nicht gelesen werden: {args.session_json}") from exc
+    except UnicodeDecodeError as exc:
+        raise ConfigError("Importdatei ist nicht UTF-8-kodiert.") from exc
     except json.JSONDecodeError as exc:
         raise ConfigError(f"Ungueltige JSON-Importdatei: {exc}") from exc
     if not isinstance(payload, dict) or payload.get("format") != "telachat.session.v1":
@@ -1722,6 +1724,8 @@ def cmd_import_folder(args: argparse.Namespace) -> int:
         payload = _read_folder_export_payload(args.folder_export)
     except OSError as exc:
         raise ConfigError(f"Importdatei kann nicht gelesen werden: {args.folder_export}") from exc
+    except UnicodeDecodeError as exc:
+        raise ConfigError("Importdatei ist nicht UTF-8-kodiert.") from exc
     except json.JSONDecodeError as exc:
         raise ConfigError(f"Ungueltige JSON-Importdatei: {exc}") from exc
     except zipfile.BadZipFile as exc:
