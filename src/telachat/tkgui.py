@@ -28,7 +28,7 @@ from .controller import TelachatController
 from .model_choices import merge_model_choices
 from .skill_watchdog import set_runtime_skill_watchdog_enabled
 from .store import Message, Session
-from .templates import format_prompt_template_preview
+from .templates import custom_template_variables, format_prompt_template_preview
 
 
 SIDEBAR_QUICK_ACTION_ROW = 18
@@ -1056,10 +1056,20 @@ class TkTelachatApp:
         if not name:
             self.set_status("Keine Vorlage gewaehlt.")
             return
+        template = self.controller.prompt_templates().get(name)
+        if template is None:
+            self.set_status(f"Vorlage nicht gefunden: {name}")
+            self.refresh_template_choices()
+            return
+        values = self.ask_template_values(name, custom_template_variables(template))
+        if values is None:
+            self.set_status("Vorlage abgebrochen.")
+            return
         try:
             prompt = self.controller.apply_prompt_template(
                 name,
                 self.input_text.get("1.0", tk.END).strip(),
+                values=values,
             )
         except KeyError as exc:
             self.set_status(str(exc))
@@ -1067,6 +1077,23 @@ class TkTelachatApp:
         self.input_text.delete("1.0", tk.END)
         self.input_text.insert("1.0", prompt)
         self.set_status(f"Vorlage eingesetzt: {name}")
+
+    def ask_template_values(
+        self,
+        template_name: str,
+        variables: tuple[str, ...],
+    ) -> dict[str, str] | None:
+        values: dict[str, str] = {}
+        for variable in variables:
+            value = simpledialog.askstring(
+                f"Vorlage: {template_name}",
+                f"{variable}",
+                parent=self.root,
+            )
+            if value is None:
+                return None
+            values[variable] = value
+        return values
 
     def refresh_template_choices(self, selected: str | None = None) -> None:
         names = list(self.controller.prompt_templates())

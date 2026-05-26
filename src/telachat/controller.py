@@ -115,13 +115,19 @@ class TelachatController:
         self.config = load_config(self.config.path)
         return self.config.prompt_templates
 
-    def apply_prompt_template(self, name: str, text: str = "") -> str:
+    def apply_prompt_template(
+        self,
+        name: str,
+        text: str = "",
+        *,
+        values: dict[str, str] | None = None,
+    ) -> str:
         try:
             template = self.config.prompt_templates[name]
         except KeyError as exc:
             available = ", ".join(sorted(self.config.prompt_templates)) or "<keine>"
             raise KeyError(f"Prompt-Template '{name}' fehlt. Verfuegbar: {available}") from exc
-        return render_prompt_template(template, text)
+        return render_prompt_template(template, text, values=values)
 
     def list_sessions(
         self,

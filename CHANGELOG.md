@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.64.0 - 2026-05-26
+
+- Adds Tk and GTK dialogs for custom prompt-template variables before inserting
+  templates into the composer.
+- Makes `--template-var` fail clearly unless `--template` is also supplied.
+
 ## 0.63.0 - 2026-05-26
 
 - Adds custom prompt-template variables such as `{topic}` and `{audience}` to

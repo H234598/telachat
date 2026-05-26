@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.64.0 - 2026-05-26
+
+- Ergaenzt Tk- und GTK-Dialoge fuer Custom-Variablen in Prompt-Templates,
+  bevor ein Template in den Composer eingesetzt wird.
+- Meldet `--template-var` klar als Fehler, wenn kein `--template` angegeben
+  wurde.
+
 ## 0.63.0 - 2026-05-26
 
 - Ergaenzt Custom-Variablen wie `{topic}` und `{audience}` in

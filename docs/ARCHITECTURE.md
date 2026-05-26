@@ -40,6 +40,8 @@
   - Shared prompt-template renderer for CLI and GUI/controller paths.
   - Expands built-in variables such as `{input}`, `{date}`, `{time}`, and
     `{datetime}`.
+  - Reports custom variables so CLI and GUI paths can request values without
+    overwriting built-in renderer variables.
 - `telachat.controller`
   - Shared application service for GUI frontends.
   - Applies transient GUI generation overrides without rewriting config or
@@ -262,6 +264,8 @@ same single-template record shape used by scripts.
 `ask --template NAME --template-var KEY=VALUE` fills custom variables while
 leaving built-in variables such as `{date}` and `{input}` controlled by the
 renderer.
+Tk and GTK use the same metadata to ask for custom variable values in native
+dialogs before inserting a template into the composer.
 `templates --set`, `--rename`, and `--delete` update only the
 `[prompt_templates]` table and then reload the same config parser used by chat
 and GUI flows.

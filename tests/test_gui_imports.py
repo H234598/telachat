@@ -9,6 +9,7 @@ from unittest import mock
 
 from telachat.client import TokenUsage
 from telachat.config import ConfigError
+from telachat.templates import render_prompt_template
 
 
 class _FakeController:
@@ -42,6 +43,16 @@ class _FakeController:
         self.calls.append({"set_template": clean_name, "template": template})
         self.templates[clean_name] = template
         return self.templates
+
+    def apply_prompt_template(
+        self,
+        name: str,
+        text: str = "",
+        *,
+        values: dict[str, str] | None = None,
+    ) -> str:
+        self.calls.append({"apply_template": name, "text": text, "values": values or {}})
+        return render_prompt_template(self.templates[name], text, values=values)
 
 
 class _FakeList:
@@ -300,6 +311,33 @@ class GuiImportTests(unittest.TestCase):
         )
         self.assertEqual(statuses, [])
 
+    def test_tk_insert_template_prompts_for_custom_variables(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        controller = _FakeController(templates={"triage": "Pruefe {topic}: {input}"})
+        input_text = _FakeText("Fehler beim Login")
+        statuses: list[str] = []
+        app = SimpleNamespace(
+            controller=controller,
+            input_text=input_text,
+            template_var=_FakeText("triage"),
+            refresh_template_choices=lambda selected=None: None,
+            ask_template_values=lambda name, variables: {"topic": "Login"},
+            set_status=lambda text: statuses.append(text),
+        )
+
+        module.TkTelachatApp.insert_template(app)
+
+        self.assertEqual(input_text.get(), "Pruefe Login: Fehler beim Login")
+        self.assertEqual(statuses, ["Vorlage eingesetzt: triage"])
+        self.assertEqual(
+            controller.calls[-1],
+            {
+                "apply_template": "triage",
+                "text": "Fehler beim Login",
+                "values": {"topic": "Login"},
+            },
+        )
+
     def test_gtk_gui_imports(self) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -419,6 +457,43 @@ class GuiImportTests(unittest.TestCase):
             ],
         )
         self.assertEqual(status.get_text(), "")
+
+    def test_gtk_insert_template_prompts_for_custom_variables(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        controller = _FakeController(templates={"triage": "Pruefe {topic}: {input}"})
+        status = _FakeText("")
+        prompt = _FakeText("Fehler beim Login")
+        dialogs: list[tuple[str, tuple[str, ...]]] = []
+
+        def values_dialog(name: str, variables: tuple[str, ...], callback: object) -> None:
+            dialogs.append((name, variables))
+            callback({"topic": "Login"})
+
+        app = SimpleNamespace(
+            controller=controller,
+            selected_template_name=lambda: "triage",
+            input_prompt=lambda: prompt.get_text(),
+            set_input_prompt=prompt.set_text,
+            refresh_template_choices=lambda selected=None: None,
+            show_template_values_dialog=values_dialog,
+            status=status,
+        )
+        app.insert_template_with_values = lambda name, values: (  # type: ignore[attr-defined]
+            module.GtkTelachatApp.insert_template_with_values(app, name, values)
+        )
+
+        module.GtkTelachatApp.on_insert_template(app, object())
+
+        self.assertEqual(dialogs, [("triage", ("topic",))])
+        self.assertEqual(prompt.get_text(), "Pruefe Login: Fehler beim Login")
+        self.assertEqual(status.get_text(), "Vorlage eingesetzt: triage")
 
     def test_tk_refresh_sessions_uses_selected_sidebar_filters(self) -> None:
         module = importlib.import_module("telachat.tkgui")

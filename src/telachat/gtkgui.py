@@ -5,6 +5,7 @@ import os
 import threading
 from importlib.resources import as_file
 from pathlib import Path
+from typing import Callable
 
 import gi
 
@@ -32,7 +33,7 @@ from .controller import TelachatController
 from .model_choices import merge_model_choices
 from .skill_watchdog import set_runtime_skill_watchdog_enabled
 from .store import Message, Session
-from .templates import format_prompt_template_preview
+from .templates import custom_template_variables, format_prompt_template_preview
 from .themes import theme_by_name
 
 
@@ -902,8 +903,28 @@ class GtkTelachatApp(Adw.Application):
         if not name:
             self.status.set_text("Keine Vorlage gewaehlt.")
             return
+        template = self.controller.prompt_templates().get(name)
+        if template is None:
+            self.status.set_text(f"Vorlage nicht gefunden: {name}")
+            self.refresh_template_choices()
+            return
+        variables = custom_template_variables(template)
+        if variables:
+            self.show_template_values_dialog(
+                name,
+                variables,
+                lambda values: self.insert_template_with_values(name, values),
+            )
+            return
+        self.insert_template_with_values(name, {})
+
+    def insert_template_with_values(self, name: str, values: dict[str, str]) -> None:
         try:
-            prompt = self.controller.apply_prompt_template(name, self.input_prompt())
+            prompt = self.controller.apply_prompt_template(
+                name,
+                self.input_prompt(),
+                values=values,
+            )
         except KeyError as exc:
             self.status.set_text(str(exc))
             return
@@ -948,6 +969,44 @@ class GtkTelachatApp(Adw.Application):
             initial=self.selected_template_name() or "",
             callback=save,
         )
+
+    def show_template_values_dialog(
+        self,
+        template_name: str,
+        variables: tuple[str, ...],
+        callback: Callable[[dict[str, str]], None],
+    ) -> None:
+        dialog = Gtk.Window(title=f"Vorlage: {template_name}")
+        dialog.set_transient_for(self.window)
+        dialog.set_modal(True)
+        dialog.set_default_size(360, 120 + 48 * len(variables))
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        box.set_margin_top(14)
+        box.set_margin_bottom(14)
+        box.set_margin_start(14)
+        box.set_margin_end(14)
+        dialog.set_child(box)
+        entries: dict[str, Gtk.Entry] = {}
+        for variable in variables:
+            box.append(Gtk.Label(label=variable, xalign=0))
+            entry = Gtk.Entry()
+            entries[variable] = entry
+            box.append(entry)
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        row.set_halign(Gtk.Align.END)
+        box.append(row)
+        cancel = Gtk.Button(label="Abbrechen")
+        cancel.connect("clicked", lambda _button: dialog.close())
+        row.append(cancel)
+        insert = Gtk.Button(label="Einsetzen")
+
+        def insert_value(_button: Gtk.Button) -> None:
+            callback({name: entry.get_text() for name, entry in entries.items()})
+            dialog.close()
+
+        insert.connect("clicked", insert_value)
+        row.append(insert)
+        dialog.present()
 
     def on_rename_selected_template(self, _button: Gtk.Button) -> None:
         name = self.selected_template_name()

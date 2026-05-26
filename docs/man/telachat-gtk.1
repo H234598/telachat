@@ -1,4 +1,4 @@
-.TH TELACHAT-GTK 1 "2026-05-26" "Telachat 0.63.0" "User Commands"
+.TH TELACHAT-GTK 1 "2026-05-26" "Telachat 0.64.0" "User Commands"
 .SH NAME
 telachat-gtk \- start the GTK desktop frontend for Telachat
 .SH SYNOPSIS
@@ -27,7 +27,8 @@ Use \fB/find TEXT\fR to search within the currently loaded conversation.
 Prompt templates can be inserted from the sidebar. The template controls below
 the selector can preview a template with metadata in a copyable window, save
 the current composer text as a template, rename a template, or delete a saved
-template.
+template. If a template contains custom variables such as \fB{topic}\fR,
+Telachat asks for their values before insertion.
 .PP
 The prompt supports Slash-Command suggestions while typing. Press Tab to
 complete the current command, Shift+Enter to send a message, and Ctrl+/ to

@@ -79,6 +79,7 @@ class ControllerTests(unittest.TestCase):
                     [prompt_templates]
                     ticket = "Schreibe ein Ticket:\\n\\n{input}"
                     prefix = "Antworte knapp."
+                    triage = "Pruefe {topic}: {input}"
                     """,
                     encoding="utf-8",
                 )
@@ -91,6 +92,14 @@ class ControllerTests(unittest.TestCase):
                     self.assertEqual(
                         controller.apply_prompt_template("prefix", "Fehler beim Login"),
                         "Antworte knapp.\n\nFehler beim Login",
+                    )
+                    self.assertEqual(
+                        controller.apply_prompt_template(
+                            "triage",
+                            "Fehler beim Login",
+                            values={"topic": "Login"},
+                        ),
+                        "Pruefe Login: Fehler beim Login",
                     )
                 finally:
                     controller.close()
