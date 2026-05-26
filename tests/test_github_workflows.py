@@ -198,6 +198,29 @@ class GitHubWorkflowTests(unittest.TestCase):
 
         self.assertEqual([], failures)
 
+    def test_workflows_use_anonymous_public_fetch_checkout(self) -> None:
+        failures: list[str] = []
+        for workflow in _workflow_files():
+            text = workflow.read_text(encoding="utf-8")
+            if "uses: actions/checkout@" in text:
+                failures.append(
+                    f"{workflow.relative_to(ROOT)} still uses token-backed checkout."
+                )
+            if (
+                'git -c protocol.version=2 fetch --no-tags --prune --depth=1 origin "+${GITHUB_REF}:refs/remotes/origin/checkout"'
+                not in text
+            ):
+                failures.append(
+                    f"{workflow.relative_to(ROOT)} does not fetch the triggering ref "
+                    "through anonymous public Git."
+                )
+            if 'git checkout --force --detach "${GITHUB_SHA}"' not in text:
+                failures.append(
+                    f"{workflow.relative_to(ROOT)} does not detach at the triggering SHA."
+                )
+
+        self.assertEqual([], failures)
+
     def test_workflows_avoid_untrusted_trigger_contexts_in_scripts(self) -> None:
         failures: list[str] = []
         for workflow in _workflow_files():

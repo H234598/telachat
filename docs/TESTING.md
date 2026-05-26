@@ -29,6 +29,16 @@ sandbox. No external API key is needed.
 `git diff --check`; `make test3` repeats the suite three times to catch state
 leaks.
 
+## GitHub Actions checkout
+
+The Linux and Windows workflows use an inline anonymous `git fetch` checkout
+instead of `actions/checkout`. On 2026-05-26, GitHub-hosted runners returned
+HTTP 403 during the token-backed fetch with `remote: Your account is suspended`,
+while an unauthenticated fetch of this public repository still worked. If the
+repository becomes private, replace the inline checkout with a working service
+token or restore `actions/checkout` after the GitHub account/token issue is
+resolved.
+
 ## Live endpoint tests
 
 ```sh
