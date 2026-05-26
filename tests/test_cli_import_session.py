@@ -29,6 +29,7 @@ class CliImportSessionTests(unittest.TestCase):
             with redirect_stderr(err):
                 self.assertEqual(main(["import-session", str(import_path)]), 1)
             self.assertIn("nicht UTF-8-kodiert", err.getvalue())
+            self.assertNotIn("Traceback", err.getvalue())
 
     def test_import_session_dry_run_validates_without_writing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
