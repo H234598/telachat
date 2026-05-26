@@ -30,8 +30,12 @@ from .skill_watchdog import set_runtime_skill_watchdog_enabled
 from .store import Message, Session
 
 
+SIDEBAR_QUICK_ACTION_LABELS = ("Neu", "Regenerieren", "Check")
+SIDEBAR_SESSION_LIST_ROW = 23
+
+
 def sidebar_quick_action_labels() -> tuple[str, ...]:
-    return ("Neu", "Regenerieren", "Check")
+    return SIDEBAR_QUICK_ACTION_LABELS
 
 
 class TkTelachatApp:
@@ -126,7 +130,7 @@ class TkTelachatApp:
         self.paned.grid(row=0, column=0, sticky="nsew")
 
         self.sidebar = ttk.Frame(self.paned, style="Sidebar.TFrame", padding=14, width=300)
-        self.sidebar.rowconfigure(22, weight=1)
+        self.sidebar.rowconfigure(SIDEBAR_SESSION_LIST_ROW, weight=1)
 
         title = ttk.Label(self.sidebar, text="Telachat", font=("Sans", 22, "bold"))
         title.grid(row=0, column=0, columnspan=2, sticky="w")
@@ -255,7 +259,13 @@ class TkTelachatApp:
             selectbackground=palette.selection,
             selectforeground=palette.selection_fg,
         )
-        self.session_list.grid(row=23, column=0, columnspan=2, sticky="nsew", pady=(14, 0))
+        self.session_list.grid(
+            row=SIDEBAR_SESSION_LIST_ROW,
+            column=0,
+            columnspan=2,
+            sticky="nsew",
+            pady=(14, 0),
+        )
         self.session_list.bind("<<ListboxSelect>>", self._on_session_select)
         self.session_list.bind("<Double-Button-1>", self.on_session_row_double_click)
         self.session_list.bind("<Button-3>", self.show_session_context_menu)

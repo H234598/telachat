@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import inspect
 import queue
 import unittest
 import warnings
@@ -441,6 +442,13 @@ class GuiImportTests(unittest.TestCase):
             module.sidebar_quick_action_labels(),
             ("Neu", "Regenerieren", "Check"),
         )
+
+    def test_tk_sidebar_session_list_row_controls_stretch(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        source = inspect.getsource(module.TkTelachatApp._build)
+
+        self.assertIn("self.sidebar.rowconfigure(SIDEBAR_SESSION_LIST_ROW, weight=1)", source)
+        self.assertIn("row=SIDEBAR_SESSION_LIST_ROW", source)
 
     def test_tk_title_double_click_starts_rename(self) -> None:
         module = importlib.import_module("telachat.tkgui")
