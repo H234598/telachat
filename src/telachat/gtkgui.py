@@ -854,7 +854,7 @@ class GtkTelachatApp(Adw.Application):
     def apply_selected_folder_prompt(self) -> None:
         folder_id = self.selected_folder_id(for_new=True)
         if folder_id:
-            self.set_system_prompt(self.controller.folder_system_prompt(folder_id))
+            self.set_system_prompt(self.controller.folder_system_prompt_for_edit(folder_id))
             self.apply_selected_folder_backend(folder_id)
 
     def apply_selected_folder_backend(self, folder_id: str) -> None:
@@ -880,7 +880,11 @@ class GtkTelachatApp(Adw.Application):
         if not folder_id:
             self.status.set_text("Ordner waehlen.")
             return
-        folder = self.controller.set_folder_system_prompt(folder_id, self.system_prompt())
+        folder = self.controller.set_folder_system_prompt(
+            folder_id,
+            self.system_prompt(),
+            from_effective_prompt=True,
+        )
         self.status.set_text(f"Ordner-Prompt gespeichert: {folder.name}")
 
     def input_prompt(self) -> str:
@@ -1811,7 +1815,7 @@ class GtkTelachatApp(Adw.Application):
                 self.set_system_prompt(folder.system_prompt)
                 self.status.set_text(f"Ordner-Prompt gespeichert: {folder.name}")
             else:
-                self.set_system_prompt(self.controller.folder_system_prompt(folder_id))
+                self.set_system_prompt(self.controller.folder_system_prompt_for_edit(folder_id))
                 self.status.set_text("Ordner-Prompt geladen.")
         elif command == "/folder":
             if rest:

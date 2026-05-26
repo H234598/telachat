@@ -290,6 +290,20 @@ class ControllerTests(unittest.TestCase):
                         session.system_prompt,
                         "Projektkontext\n\nOrdner-Kontext:\nProjektwissen",
                     )
+                    self.assertEqual(
+                        controller.resolve_system_prompt("Projektkontext", folder.id),
+                        "Projektkontext\n\nOrdner-Kontext:\nProjektwissen",
+                    )
+                    self.assertEqual(
+                        controller.folder_system_prompt_for_edit(folder.id),
+                        "Projektkontext",
+                    )
+                    folder = controller.set_folder_system_prompt(
+                        folder.id,
+                        "Projektkontext\n\nOrdner-Kontext:\nProjektwissen",
+                        from_effective_prompt=True,
+                    )
+                    self.assertEqual(folder.system_prompt, "Projektkontext")
                     self.assertEqual(session.profile, "test")
                     self.assertEqual(session.model, "demo-large")
                     explicit_same, _messages = controller.new_session(
