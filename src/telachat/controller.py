@@ -177,7 +177,11 @@ class TelachatController:
             return self.system_prompt()
         folder = self.store.get_folder(folder_id)
         if folder:
-            base = folder.system_prompt or self.system_prompt()
+            base = (
+                _without_folder_context(folder.system_prompt, folder.context)
+                if folder.system_prompt
+                else self.system_prompt()
+            )
             return _with_folder_context(base, folder.context)
         return self.system_prompt()
 
@@ -186,7 +190,7 @@ class TelachatController:
             return self.system_prompt()
         folder = self.store.get_folder(folder_id)
         if folder and folder.system_prompt:
-            return folder.system_prompt
+            return _without_folder_context(folder.system_prompt, folder.context)
         return self.system_prompt()
 
     def resolve_system_prompt(self, system_prompt: str | None, folder_id: str | None) -> str:
@@ -195,8 +199,13 @@ class TelachatController:
         clean = system_prompt.strip()
         folder = self.store.get_folder(folder_id) if folder_id else None
         if folder:
-            folder_base = (folder.system_prompt or self.system_prompt()).strip()
-            if clean == folder_base:
+            folder_base = (
+                _without_folder_context(folder.system_prompt, folder.context)
+                if folder.system_prompt
+                else self.system_prompt()
+            ).strip()
+            clean_base = _without_folder_context(clean, folder.context).strip()
+            if clean == folder_base or clean_base == folder_base:
                 return self.folder_system_prompt(folder_id)
         if clean == self.system_prompt().strip():
             return self.folder_system_prompt(folder_id)
