@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 from telachat.client import TokenUsage
+from telachat.config import ConfigError
 
 
 class _FakeController:
@@ -74,6 +75,17 @@ class _FakeCombo:
         raise KeyError(key)
 
 
+class _FakeBoolVar:
+    def __init__(self, value: bool) -> None:
+        self.value = value
+
+    def get(self) -> bool:
+        return self.value
+
+    def set(self, value: bool) -> None:
+        self.value = value
+
+
 class _FakeDropdown:
     def __init__(self) -> None:
         self.selected = -1
@@ -138,6 +150,17 @@ class _FakeButton:
 
     def set_sensitive(self, value: bool) -> None:
         self.sensitive = value
+
+
+class _FakeCheckButton:
+    def __init__(self, active: bool) -> None:
+        self.active = active
+
+    def get_active(self) -> bool:
+        return self.active
+
+    def set_active(self, value: bool) -> None:
+        self.active = value
 
 
 class GuiImportTests(unittest.TestCase):
@@ -462,6 +485,47 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(calls, ["doctor"])
 
+    def test_tk_header_validation_toggle_updates_status(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        calls: list[bool] = []
+        controller = SimpleNamespace(
+            config=SimpleNamespace(validate_profile_headers=True),
+            set_header_validation=lambda enabled: calls.append(enabled) or enabled,
+        )
+        statuses: list[str] = []
+        app = SimpleNamespace(
+            controller=controller,
+            header_validation_var=_FakeBoolVar(False),
+            set_status=lambda text: statuses.append(text),
+        )
+
+        module.TkTelachatApp.on_header_validation_changed(app)
+
+        self.assertEqual(calls, [False])
+        self.assertFalse(app.header_validation_var.get())
+        self.assertEqual(statuses, ["Header-Pruefung: aus"])
+
+    def test_tk_header_validation_toggle_rolls_back_on_error(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+
+        def fail(_enabled: bool) -> bool:
+            raise ConfigError("Header kaputt")
+
+        app = SimpleNamespace(
+            controller=SimpleNamespace(
+                config=SimpleNamespace(validate_profile_headers=True),
+                set_header_validation=fail,
+            ),
+            header_validation_var=_FakeBoolVar(False),
+            statuses=[],
+        )
+        app.set_status = lambda text: app.statuses.append(text)
+
+        module.TkTelachatApp.on_header_validation_changed(app)
+
+        self.assertTrue(app.header_validation_var.get())
+        self.assertEqual(app.statuses, ["Header kaputt"])
+
     def test_tk_models_command_lists_configured_models(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         combo = _FakeCombo()
@@ -710,6 +774,68 @@ class GuiImportTests(unittest.TestCase):
         module.GtkTelachatApp.handle_command(app, "/doctor")
 
         self.assertEqual(calls, ["doctor"])
+
+    def test_gtk_header_validation_toggle_updates_status(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        calls: list[bool] = []
+        button = _FakeCheckButton(False)
+        app = SimpleNamespace(
+            controller=SimpleNamespace(
+                config=SimpleNamespace(validate_profile_headers=True),
+                set_header_validation=lambda enabled: calls.append(enabled) or enabled,
+            ),
+            header_validation_check=button,
+            status=_FakeText(""),
+        )
+        app._sync_header_validation_check = (
+            lambda enabled: module.GtkTelachatApp._sync_header_validation_check(app, enabled)
+        )
+
+        module.GtkTelachatApp.on_header_validation_toggled(app, button)
+
+        self.assertEqual(calls, [False])
+        self.assertFalse(button.get_active())
+        self.assertFalse(getattr(app, "_syncing_header_validation", False))
+        self.assertEqual(app.status.get_text(), "Header-Pruefung: aus")
+
+    def test_gtk_header_validation_toggle_rolls_back_on_error(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+
+        def fail(_enabled: bool) -> bool:
+            raise ConfigError("Header kaputt")
+
+        button = _FakeCheckButton(False)
+        app = SimpleNamespace(
+            controller=SimpleNamespace(
+                config=SimpleNamespace(validate_profile_headers=True),
+                set_header_validation=fail,
+            ),
+            header_validation_check=button,
+            status=_FakeText(""),
+        )
+        app._sync_header_validation_check = (
+            lambda enabled: module.GtkTelachatApp._sync_header_validation_check(app, enabled)
+        )
+
+        module.GtkTelachatApp.on_header_validation_toggled(app, button)
+
+        self.assertTrue(button.get_active())
+        self.assertFalse(getattr(app, "_syncing_header_validation", False))
+        self.assertEqual(app.status.get_text(), "Header kaputt")
 
     def test_gtk_models_command_lists_configured_models(self) -> None:
         with warnings.catch_warnings():
