@@ -11,6 +11,7 @@ USES_RE = re.compile(
     r"^\s*uses:\s*([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)@([^\s#]+)",
     re.MULTILINE,
 )
+WINDOWS_LATEST_RE = re.compile(r"^\s*runs-on:\s*windows-latest\s*$", re.MULTILINE)
 NODE24_MINIMUMS = {
     "actions/checkout": 5,
     "actions/setup-python": 6,
@@ -40,6 +41,18 @@ def _release_upload_commands(lines: list[str]) -> list[tuple[int, str]]:
 
 
 class GitHubWorkflowTests(unittest.TestCase):
+    def test_windows_workflows_use_explicit_runner_images(self) -> None:
+        failures: list[str] = []
+        for workflow in _workflow_files():
+            text = workflow.read_text(encoding="utf-8")
+            if WINDOWS_LATEST_RE.search(text):
+                failures.append(
+                    f"{workflow.relative_to(ROOT)} uses windows-latest; pin a "
+                    "specific Windows runner to avoid hosted-image migrations."
+                )
+
+        self.assertEqual([], failures)
+
     def test_official_actions_use_node24_compatible_majors(self) -> None:
         failures: list[str] = []
         for workflow in _workflow_files():
