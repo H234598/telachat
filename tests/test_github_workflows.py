@@ -164,6 +164,26 @@ class GitHubWorkflowTests(unittest.TestCase):
         self.assertIn("make linux-installer-smoke PYTHON=python", text)
         self.assertIn('FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"', text)
 
+    def test_workflows_with_javascript_actions_force_node24(self) -> None:
+        failures: list[str] = []
+        for workflow in _workflow_files():
+            text = workflow.read_text(encoding="utf-8")
+            javascript_actions = {
+                action.lower()
+                for action, _ref in USES_RE.findall(text)
+                if action.lower() in NODE24_MINIMUMS
+            }
+            if (
+                javascript_actions
+                and 'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"' not in text
+            ):
+                failures.append(
+                    f"{workflow.relative_to(ROOT)} uses JavaScript actions "
+                    f"{sorted(javascript_actions)} without forcing the Node 24 runtime."
+                )
+
+        self.assertEqual([], failures)
+
     def test_windows_workflow_checks_release_packaging_scripts(self) -> None:
         workflow = WORKFLOW_DIR / "windows.yml"
         text = workflow.read_text(encoding="utf-8")

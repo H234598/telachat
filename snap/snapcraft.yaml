@@ -1,6 +1,6 @@
 name: telachat
 base: core24
-version: "0.70.3"
+version: "0.70.4"
 summary: Local configurable AI chat client
 description: |
   Telachat is a local CLI and native desktop chat client for configurable
