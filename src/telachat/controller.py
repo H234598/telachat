@@ -181,15 +181,38 @@ class TelachatController:
             return _with_folder_context(base, folder.context)
         return self.system_prompt()
 
+    def folder_system_prompt_for_edit(self, folder_id: str | None) -> str:
+        if not folder_id:
+            return self.system_prompt()
+        folder = self.store.get_folder(folder_id)
+        if folder and folder.system_prompt:
+            return folder.system_prompt
+        return self.system_prompt()
+
     def resolve_system_prompt(self, system_prompt: str | None, folder_id: str | None) -> str:
         if system_prompt is None:
             return self.folder_system_prompt(folder_id)
         clean = system_prompt.strip()
+        folder = self.store.get_folder(folder_id) if folder_id else None
+        if folder:
+            folder_base = (folder.system_prompt or self.system_prompt()).strip()
+            if clean == folder_base:
+                return self.folder_system_prompt(folder_id)
         if clean == self.system_prompt().strip():
             return self.folder_system_prompt(folder_id)
         return clean
 
-    def set_folder_system_prompt(self, folder_id: str, system_prompt: str) -> Folder:
+    def set_folder_system_prompt(
+        self,
+        folder_id: str,
+        system_prompt: str,
+        *,
+        from_effective_prompt: bool = False,
+    ) -> Folder:
+        if from_effective_prompt:
+            folder = self.store.get_folder(folder_id)
+            if folder:
+                system_prompt = _without_folder_context(system_prompt, folder.context)
         return self.store.update_folder_system_prompt(folder_id, system_prompt)
 
     def set_folder_context(self, folder_id: str, context: str) -> Folder:
@@ -470,3 +493,17 @@ def _with_folder_context(system_prompt: str, context: str) -> str:
     if clean_system:
         return f"{clean_system}\n\nOrdner-Kontext:\n{clean_context}"
     return f"Ordner-Kontext:\n{clean_context}"
+
+
+def _without_folder_context(system_prompt: str, context: str) -> str:
+    clean = system_prompt.strip()
+    clean_context = context.strip()
+    if not clean_context:
+        return clean
+    marker = f"Ordner-Kontext:\n{clean_context}"
+    if clean == marker:
+        return ""
+    suffix = f"\n\n{marker}"
+    if clean.endswith(suffix):
+        return clean[: -len(suffix)].rstrip()
+    return clean

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.70.0"
+__version__ = "0.70.1"
 
 
 def main(argv: list[str] | None = None) -> int:

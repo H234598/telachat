@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.70.1 - 2026-05-26
+
+- Keeps per-folder context notes out of the editable Tk/GTK folder prompt
+  fields.
+- Still applies the context note when a new chat uses the selected folder's
+  base system prompt.
+- Strips an exact effective context suffix when saving GUI folder prompts.
+
 ## 0.70.0 - 2026-05-26
 
 - Adds per-folder context notes that are appended to the system prompt when

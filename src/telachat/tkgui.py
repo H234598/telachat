@@ -1501,7 +1501,7 @@ class TkTelachatApp:
     def apply_selected_folder_prompt(self) -> None:
         folder_id = self.selected_folder_id(for_new=True)
         if folder_id:
-            self.set_system_prompt_text(self.controller.folder_system_prompt(folder_id))
+            self.set_system_prompt_text(self.controller.folder_system_prompt_for_edit(folder_id))
             self.apply_selected_folder_backend(folder_id)
 
     def apply_selected_folder_backend(self, folder_id: str) -> None:
@@ -1527,7 +1527,11 @@ class TkTelachatApp:
             self.set_status("Ordner waehlen.")
             return
         prompt = self.system_text.get("1.0", tk.END).strip()
-        folder = self.controller.set_folder_system_prompt(folder_id, prompt)
+        folder = self.controller.set_folder_system_prompt(
+            folder_id,
+            prompt,
+            from_effective_prompt=True,
+        )
         self.set_status(f"Ordner-Prompt gespeichert: {folder.name}")
 
     def create_folder_dialog(self) -> None:
@@ -1833,7 +1837,7 @@ class TkTelachatApp:
                 self.set_system_prompt_text(folder.system_prompt)
                 self.set_status(f"Ordner-Prompt gespeichert: {folder.name}")
             else:
-                self.set_system_prompt_text(self.controller.folder_system_prompt(folder_id))
+                self.set_system_prompt_text(self.controller.folder_system_prompt_for_edit(folder_id))
                 self.set_status("Ordner-Prompt geladen.")
         elif command == "/folder":
             if rest:
