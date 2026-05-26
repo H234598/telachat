@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.71.0 - 2026-05-26
+
+- Adds `/folder-prompt TEXT` as the clearer slash command for saving a folder
+  prompt while keeping `/folder-system TEXT` as a compatible alias.
+
 ## 0.70.5 - 2026-05-26
 
 - Renames the Tk/GTK folder prompt action to `Prompt speichern` and clarifies

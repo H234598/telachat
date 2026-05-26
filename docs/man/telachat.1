@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-26" "Telachat 0.70.5" "User Commands"
+.TH TELACHAT 1 "2026-05-26" "Telachat 0.71.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -236,7 +236,7 @@ models, templates, themes, folders, tags, sort modes, and history sizes.
 /templates
 /template NAME TEXT
 /folder NAME
-/folder-system TEXT
+/folder-prompt TEXT
 /rename-folder NAME
 /delete-folder
 /move NAME
@@ -258,6 +258,9 @@ models, templates, themes, folders, tags, sort modes, and history sizes.
 /export [datei.md]
 /exit
 .fi
+.PP
+\fB/folder-system TEXT\fR remains a compatible alias for
+\fB/folder-prompt TEXT\fR.
 .SH FILES
 .TP
 .I ~/.config/telachat/config.toml

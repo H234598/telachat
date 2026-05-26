@@ -1806,7 +1806,7 @@ class GtkTelachatApp(Adw.Application):
                 else:
                     self.set_input_prompt(prompt)
                     self.status.set_text(f"Vorlage eingesetzt: {template_name}")
-        elif command == "/folder-system":
+        elif command == "/folder-prompt":
             folder_id = self.selected_real_folder_id()
             if not folder_id:
                 self.status.set_text("Ordner waehlen.")

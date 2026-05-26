@@ -154,12 +154,13 @@ Im interaktiven Chat funktionieren unter anderem:
 /permissions
 /templates
 /template NAME TEXT
-/folder-system TEXT
+/folder-prompt TEXT
 ```
 
 Wenn `telachat chat` in einem echten Terminal laeuft, vervollstaendigt `Tab`
 Slash-Befehle und Kontextwerte wie Provider, Modelle, Templates, Ordner,
 Session-Referenzen und Sortiermodi.
+`/folder-system TEXT` bleibt als Alias fuer `/folder-prompt TEXT` gueltig.
 
 Prompt-Templates lassen sich direkt verwalten:
 

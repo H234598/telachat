@@ -1757,7 +1757,7 @@ X-Test-Header = "yes"
                         "/tags",
                         "/stats",
                         "/untag Review",
-                        "/folder-system Ordnerkontext",
+                        "/folder-prompt Ordnerkontext",
                         "/unfile",
                         "/sort title",
                         "/search Testtitel",

@@ -1828,7 +1828,7 @@ class TkTelachatApp:
                     self.input_text.delete("1.0", tk.END)
                     self.input_text.insert("1.0", prompt)
                     self.set_status(f"Vorlage eingesetzt: {template_name}")
-        elif command == "/folder-system":
+        elif command == "/folder-prompt":
             folder_id = self.selected_real_folder_id()
             if not folder_id:
                 self.set_status("Ordner waehlen.")

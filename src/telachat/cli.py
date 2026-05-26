@@ -2293,7 +2293,7 @@ def _handle_command(
                     print(f"\nFehler: {exc}", file=sys.stderr)
                 else:
                     store.add_message(session.id, "assistant", answer)
-    elif command == "/folder-system":
+    elif command == "/folder-prompt":
         folder_id = getattr(session, "folder_id", None)
         if not folder_id:
             print("Aktuelle Session liegt in keinem Ordner.")

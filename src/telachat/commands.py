@@ -55,7 +55,12 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/templates", "/templates", "Prompt-Templates anzeigen"),
     SlashCommand("/template", "/template NAME TEXT", "Prompt-Template einsetzen"),
     SlashCommand("/folder", "/folder NAME", "Ordner anlegen/waehlen", aliases=("/ordner",)),
-    SlashCommand("/folder-system", "/folder-system TEXT", "Ordner-Systemprompt setzen"),
+    SlashCommand(
+        "/folder-prompt",
+        "/folder-prompt TEXT",
+        "Ordnerprompt setzen",
+        aliases=("/folder-system",),
+    ),
     SlashCommand("/rename-folder", "/rename-folder NAME", "Gewaehlten Ordner umbenennen"),
     SlashCommand("/delete-folder", "/delete-folder", "Gewaehlten Ordner loeschen"),
     SlashCommand("/move", "/move NAME", "Chat in Ordner ablegen", aliases=("/ablegen",)),

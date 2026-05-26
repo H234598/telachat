@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.71.0 - 2026-05-26
+
+- Fuegt `/folder-prompt TEXT` als klareren Slash-Befehl zum Speichern eines
+  Ordnerprompts hinzu; `/folder-system TEXT` bleibt als kompatibler Alias.
+
 ## 0.70.5 - 2026-05-26
 
 - Benennt die Tk/GTK-Ordnerprompt-Aktion in `Prompt speichern` um und macht

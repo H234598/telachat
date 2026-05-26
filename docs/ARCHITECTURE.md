@@ -334,7 +334,7 @@ GUI slash commands:
 /templates
 /template NAME TEXT
 /folder NAME | /ordner NAME
-/folder-system TEXT
+/folder-prompt TEXT
 /rename-folder NAME
 /delete-folder
 /edit-last TEXT | /edit TEXT
@@ -350,6 +350,9 @@ GUI slash commands:
 /system
 /exit | /quit | /q
 ```
+
+`/folder-system TEXT` bleibt als kompatibler Alias fuer `/folder-prompt TEXT`
+erhalten.
 
 GUI request cancellation:
 

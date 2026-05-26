@@ -123,9 +123,11 @@ Tags, Sortierungen und History-Groessen.
 /context
 /doctor
 /q
-/folder-system Projektkontext
+/folder-prompt Projektkontext
 /permissions
 ```
 
 Der Button `Prompt speichern` speichert den aktuell sichtbaren Systemprompt als
 Ordnerprompt fuer den gewaehlten Ordner.
+Der Slash-Befehl `/folder-system` bleibt als Alias fuer `/folder-prompt`
+erhalten.

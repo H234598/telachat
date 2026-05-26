@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-TELACHAT_VERSION="0.70.5"
+TELACHAT_VERSION="0.71.0"
 DEFAULT_RELEASE_URL="https://github.com/H234598/telachat/releases/download/v${TELACHAT_VERSION}/telachat.pyz"
 
 usage() {
