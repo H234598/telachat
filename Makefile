@@ -1,4 +1,4 @@
-.PHONY: all check test test3 compile zipapp linux-installer linux-rpm install clean doctor
+.PHONY: all check test test3 compile zipapp linux-installer linux-installer-smoke linux-rpm install clean doctor
 
 PYTHON ?= python3
 PREFIX ?= $(HOME)/.local
@@ -28,6 +28,17 @@ zipapp:
 linux-installer: zipapp
 	mkdir -p dist
 	install -m 0755 packaging/linux/install-telachat.sh dist/$(APP)-install-$(VERSION).sh
+
+linux-installer-smoke: linux-installer
+	tmp_dir=$$(mktemp -d "$${TMPDIR:-/tmp}/$(APP)-install-smoke.XXXXXX"); \
+	trap 'rm -rf "$$tmp_dir"' EXIT INT HUP TERM; \
+	dist/$(APP)-install-$(VERSION).sh \
+		--prefix "$$tmp_dir/prefix" \
+		--desktop-dir "$$tmp_dir/Desktop" \
+		--zipapp dist/$(APP).pyz; \
+	"$$tmp_dir/prefix/bin/$(APP)" --version; \
+	test -f "$$tmp_dir/Desktop/Telachat.desktop"; \
+	grep -F "Exec=$$tmp_dir/prefix/bin/" "$$tmp_dir/Desktop/Telachat.desktop" >/dev/null
 
 linux-rpm:
 	packaging/linux/build-rpm.sh

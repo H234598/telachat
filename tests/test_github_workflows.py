@@ -160,6 +160,8 @@ class GitHubWorkflowTests(unittest.TestCase):
         self.assertIn("python dist/telachat.pyz --version", text)
         self.assertIn("python dist/telachat.pyz profiles --json", text)
         self.assertIn("python dist/telachat.pyz config-check --json", text)
+        self.assertIn("name: Smoke test installer script", text)
+        self.assertIn("make linux-installer-smoke PYTHON=python", text)
 
     def test_windows_workflow_checks_release_packaging_scripts(self) -> None:
         workflow = WORKFLOW_DIR / "windows.yml"

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.65.1 - 2026-05-26
+
+- Adds `make linux-installer-smoke`, which tests the Linux installer with a
+  temporary prefix and temporary desktop shortcut directory.
+- Runs that safe installer smoke in the Linux release workflow before attaching
+  installer artifacts.
+
 ## 0.65.0 - 2026-05-26
 
 - Adds shared context completion for GUI slash commands, so Tk and GTK suggest

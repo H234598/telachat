@@ -17,8 +17,9 @@ make compile
 make test3
 make zipapp
 make linux-installer
+make linux-installer-smoke
 packaging/linux/install-telachat.sh --prefix /tmp/telachat-prefix --desktop-dir /tmp/telachat-desktop --zipapp dist/telachat.pyz
-python packaging/linux/package-cadence.py v0.65.0
+python packaging/linux/package-cadence.py v0.65.1
 man ./docs/man/telachat.1
 ```
 
@@ -27,7 +28,8 @@ The fake OpenAI-compatible HTTP server in `tests/test_client.py` binds to
 sandbox. No external API key is needed.
 `make check` runs bytecode compilation, the full offline suite, and
 `git diff --check`; `make test3` repeats the suite three times to catch state
-leaks.
+leaks. Use `make linux-installer-smoke` for local installer checks; it writes
+the desktop shortcut into a temporary directory instead of the real desktop.
 
 ## GitHub Actions checkout
 

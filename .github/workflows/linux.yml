@@ -202,6 +202,9 @@ jobs:
       - name: Build installer script
         run: make linux-installer PYTHON=python
 
+      - name: Smoke test installer script
+        run: make linux-installer-smoke PYTHON=python
+
       - name: Build RPM package
         if: steps.cadence.outputs.build_periodic == 'true'
         run: |

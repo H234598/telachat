@@ -23,6 +23,7 @@ make compile
 make test3
 make zipapp
 make linux-installer
+make linux-installer-smoke
 make install
 telachat --help
 python3 dist/telachat.pyz --help

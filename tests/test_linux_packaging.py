@@ -28,6 +28,20 @@ class LinuxPackagingTests(unittest.TestCase):
         self.assertEqual(output("not-a-version"), "build_periodic=false")
 
     @unittest.skipIf(os.name == "nt", "Linux shell launchers are not executable on Windows")
+    def test_make_installer_smoke_uses_temporary_desktop_directory(self) -> None:
+        result = subprocess.run(
+            ["make", "linux-installer-smoke"],
+            cwd=ROOT,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+        self.assertIn("Installed Telachat 0.65.1", result.stdout)
+        self.assertIn("telachat 0.65.1", result.stdout)
+
+    @unittest.skipIf(os.name == "nt", "Linux shell launchers are not executable on Windows")
     def test_installer_installs_zipapp_launchers_desktop_file_and_icon(self) -> None:
         subprocess.run(["make", "zipapp"], cwd=ROOT, check=True)
         with tempfile.TemporaryDirectory() as tmp:
@@ -73,7 +87,7 @@ class LinuxPackagingTests(unittest.TestCase):
                 stdout=subprocess.PIPE,
                 text=True,
             ).stdout
-            self.assertIn("telachat 0.65.0", version)
+            self.assertIn("telachat 0.65.1", version)
             launcher = (prefix / "bin/telachat-tk").read_text(encoding="utf-8")
             self.assertIn(str(prefix / "lib/telachat/telachat.pyz"), launcher)
             desktop_text = (desktop / "Telachat.desktop").read_text(encoding="utf-8")
@@ -100,7 +114,7 @@ class LinuxPackagingTests(unittest.TestCase):
                 f"{result.stdout}\n\nSTDERR:\n{result.stderr}"
             )
         rpm_root = ROOT / "dist/rpm/RPMS"
-        self.assertTrue(any(rpm_root.rglob("telachat-0.65.0-*.noarch.rpm")))
+        self.assertTrue(any(rpm_root.rglob("telachat-0.65.1-*.noarch.rpm")))
 
     def test_snapcraft_wrappers_keep_runtime_snap_mount_variable(self) -> None:
         snapcraft = (ROOT / "snap/snapcraft.yaml").read_text(encoding="utf-8")

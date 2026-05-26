@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.65.1 - 2026-05-26
+
+- Ergaenzt `make linux-installer-smoke`, das den Linux-Installer mit
+  temporaerem Prefix und temporaerem Desktop-Verzeichnis testet.
+- Fuehrt diesen sicheren Installer-Smoke im Linux-Release-Workflow aus, bevor
+  Installer-Artefakte an den Release gehaengt werden.
+
 ## 0.65.0 - 2026-05-26
 
 - Ergaenzt geteilte Kontext-Vervollstaendigung fuer GUI-Slash-Kommandos, damit

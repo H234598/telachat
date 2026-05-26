@@ -27,6 +27,7 @@ telachat backup -o ./backups
 telachat restore --dry-run ./backups/telachat-backup.zip
 packaging/linux/install-telachat.sh --prefix "$HOME/.local"
 make linux-installer
+make linux-installer-smoke
 make linux-rpm
 ```
 
