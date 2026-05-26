@@ -1083,17 +1083,56 @@ class TkTelachatApp:
         template_name: str,
         variables: tuple[str, ...],
     ) -> dict[str, str] | None:
-        values: dict[str, str] = {}
+        if not variables:
+            return {}
+        result: dict[str, str] | None = None
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"Vorlage: {template_name}")
+        dialog.transient(self.root)
+        dialog.minsize(360, 120 + 34 * len(variables))
+        dialog.columnconfigure(0, weight=1)
+        dialog.rowconfigure(0, weight=1)
+
+        frame = ttk.Frame(dialog, padding=14)
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.columnconfigure(1, weight=1)
+
+        value_vars: dict[str, tk.StringVar] = {}
+        first_entry: ttk.Entry | None = None
         for variable in variables:
-            value = simpledialog.askstring(
-                f"Vorlage: {template_name}",
-                f"{variable}",
-                parent=self.root,
-            )
-            if value is None:
-                return None
-            values[variable] = value
-        return values
+            row = len(value_vars)
+            ttk.Label(frame, text=variable).grid(row=row, column=0, sticky="w", pady=(0, 8))
+            value_var = tk.StringVar()
+            value_vars[variable] = value_var
+            entry = ttk.Entry(frame, textvariable=value_var)
+            entry.grid(row=row, column=1, sticky="ew", padx=(10, 0), pady=(0, 8))
+            if first_entry is None:
+                first_entry = entry
+
+        buttons = ttk.Frame(frame)
+        buttons.grid(row=len(value_vars), column=0, columnspan=2, sticky="ew", pady=(6, 0))
+        buttons.columnconfigure(0, weight=1)
+
+        def close_cancel() -> None:
+            dialog.destroy()
+
+        def close_insert() -> None:
+            nonlocal result
+            result = {name: value_var.get() for name, value_var in value_vars.items()}
+            dialog.destroy()
+
+        ttk.Button(buttons, text="Abbrechen", command=close_cancel).grid(row=0, column=1)
+        ttk.Button(buttons, text="Einsetzen", command=close_insert).grid(
+            row=0,
+            column=2,
+            padx=(8, 0),
+        )
+        dialog.protocol("WM_DELETE_WINDOW", close_cancel)
+        if first_entry is not None:
+            first_entry.focus_set()
+        dialog.grab_set()
+        self.root.wait_window(dialog)
+        return result
 
     def refresh_template_choices(self, selected: str | None = None) -> None:
         names = list(self.controller.prompt_templates())

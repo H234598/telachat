@@ -338,6 +338,12 @@ class GuiImportTests(unittest.TestCase):
             },
         )
 
+    def test_tk_ask_template_values_skips_dialog_without_custom_variables(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        app = SimpleNamespace(root=object())
+
+        self.assertEqual(module.TkTelachatApp.ask_template_values(app, "brief", ()), {})
+
     def test_gtk_gui_imports(self) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.64.1 - 2026-05-26
+
+- Ersetzt die Tk-Einzelabfragen fuer Custom-Template-Variablen durch ein
+  kompaktes Formular, das alle Werte vor dem Einsetzen sammelt.
+
 ## 0.64.0 - 2026-05-26
 
 - Ergaenzt Tk- und GTK-Dialoge fuer Custom-Variablen in Prompt-Templates,

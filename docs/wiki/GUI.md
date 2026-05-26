@@ -97,7 +97,8 @@ kopierbaren Vorschaufenster anzeigen: Tk ueber das Kontextmenue, GTK ueber
 `Vorschau`. Ab Version `0.61.0` zeigt diese Vorschau zusaetzlich Name,
 Zeichenanzahl und erkannte Template-Variablen. Ab Version `0.64.0` fragen Tk
 und GTK Custom-Variablen wie `{topic}` per Dialog ab, bevor das Template in den
-Composer eingesetzt wird.
+Composer eingesetzt wird. Ab Version `0.64.1` nutzt Tk dafuer ein einzelnes
+kompaktes Formular statt mehrerer Einzelabfragen.
 
 Slash-Commands funktionieren ebenfalls:
 

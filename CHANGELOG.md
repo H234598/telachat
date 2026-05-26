@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.64.1 - 2026-05-26
+
+- Replaces the Tk custom-template variable popup loop with one compact form
+  that collects all values before inserting the template.
+
 ## 0.64.0 - 2026-05-26
 
 - Adds Tk and GTK dialogs for custom prompt-template variables before inserting
