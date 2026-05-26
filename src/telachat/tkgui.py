@@ -4,8 +4,11 @@ import argparse
 import queue
 import threading
 import tkinter as tk
+from importlib.resources import as_file
+from pathlib import Path
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
+from .assets import ICON_RANDOM, ICON_SYSTEM, icon_labels, icon_png_resource, random_icon_name
 from .commands import (
     canonical_slash_command,
     estimate_context,
@@ -21,14 +24,14 @@ from .client import format_token_usage
 from .config import ConfigError, redact_secret
 from .controller import TelachatController
 from .model_choices import merge_model_choices
-from .skill_watchdog import start_skill_watchdog
+from .skill_watchdog import set_runtime_skill_watchdog_enabled
 from .store import Message, Session
 
 
 class TkTelachatApp:
     def __init__(self) -> None:
-        start_skill_watchdog()
         self.controller = TelachatController()
+        set_runtime_skill_watchdog_enabled(self.controller.config.skill_watchdog_enabled)
         self.theme = self.controller.theme()
         self.active_session: Session | None = None
         self.messages: list[Message] = []
@@ -37,6 +40,10 @@ class TkTelachatApp:
         self.active_operation_id: int | None = None
         self.cancelled_operation_ids: set[int] = set()
         self.operation_prompt_drafts: dict[int, str] = {}
+        self.app_icon_image: tk.PhotoImage | None = None
+        self.current_random_icon: str | None = None
+        self.icon_rotation_job: str | None = None
+        self.chat_background_image: tk.PhotoImage | None = None
         self.folder_display_to_id: dict[str, str | None] = {}
         self.tag_display_to_value: dict[str, str | None] = {"Alle Tags": None}
         self.sidebar_visible = True
@@ -92,6 +99,7 @@ class TkTelachatApp:
 
     def _build(self) -> None:
         palette = self.theme.palette
+        self._build_menu()
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
 
@@ -386,8 +394,244 @@ class TkTelachatApp:
         self.system_text.grid(row=8, column=0, sticky="nsew", pady=(4, 0))
         self.system_text.insert("1.0", self.controller.system_prompt())
         self._apply_theme_to_widgets()
+        self._apply_app_icon(force_random=self.controller.config.app_icon == ICON_RANDOM)
+        self._apply_chat_background()
         self._layout_panes()
         self.root.after_idle(self._set_initial_sashes)
+
+    def _build_menu(self) -> None:
+        menu_bar = tk.Menu(self.root)
+        file_menu = tk.Menu(menu_bar, tearoff=False)
+        file_menu.add_command(label="Neu", command=self.new_session)
+        file_menu.add_command(label="Regenerieren", command=self.regenerate_active_session)
+        file_menu.add_separator()
+        file_menu.add_command(label="Export", command=self.export_session)
+        file_menu.add_separator()
+        file_menu.add_command(label="Beenden", command=self.close)
+        menu_bar.add_cascade(label="Datei", menu=file_menu)
+
+        view_menu = tk.Menu(menu_bar, tearoff=False)
+        view_menu.add_command(label="Linke Leiste umschalten", command=self.toggle_sidebar)
+        view_menu.add_command(label="Systembereich umschalten", command=self.toggle_settings)
+        menu_bar.add_cascade(label="Ansicht", menu=view_menu)
+
+        options_menu = tk.Menu(menu_bar, tearoff=False)
+        options_menu.add_command(label="Einstellungen...", command=self.open_options_dialog)
+        menu_bar.add_cascade(label="Optionen", menu=options_menu)
+        self.root.config(menu=menu_bar)
+
+    def open_options_dialog(self) -> None:
+        existing = getattr(self, "options_window", None)
+        if existing is not None and existing.winfo_exists():
+            existing.lift()
+            existing.focus_set()
+            return
+
+        dialog = tk.Toplevel(self.root)
+        self.options_window = dialog
+        dialog.title("Telachat Einstellungen")
+        dialog.transient(self.root)
+        dialog.minsize(460, 360)
+        dialog.columnconfigure(0, weight=1)
+        dialog.rowconfigure(0, weight=1)
+
+        notebook = ttk.Notebook(dialog)
+        notebook.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
+        appearance = ttk.Frame(notebook, padding=14)
+        appearance.columnconfigure(1, weight=1)
+        notebook.add(appearance, text="Oberflaeche")
+
+        ttk.Label(appearance, text="Theme").grid(row=0, column=0, sticky="w")
+        self.options_theme_var = tk.StringVar(
+            value=self.controller.theme_labels()[self.theme.name]
+        )
+        theme_combo = ttk.Combobox(
+            appearance,
+            textvariable=self.options_theme_var,
+            state="readonly",
+            values=list(self.theme_display_to_name),
+        )
+        theme_combo.grid(row=0, column=1, sticky="ew", padx=(10, 0), pady=(0, 10))
+        theme_combo.bind("<<ComboboxSelected>>", self.on_options_theme_changed)
+
+        ttk.Label(appearance, text="Icon").grid(row=1, column=0, sticky="w")
+        self.icon_display_to_name = {
+            label: name for name, label in icon_labels().items()
+        }
+        current_icon_label = self._label_for_icon(self.controller.config.app_icon)
+        self.options_icon_var = tk.StringVar(value=current_icon_label)
+        icon_combo = ttk.Combobox(
+            appearance,
+            textvariable=self.options_icon_var,
+            state="readonly",
+            values=list(self.icon_display_to_name),
+        )
+        icon_combo.grid(row=1, column=1, sticky="ew", padx=(10, 0), pady=(0, 10))
+        icon_combo.bind("<<ComboboxSelected>>", self.on_options_icon_changed)
+
+        ttk.Label(appearance, text="Chat-Hintergrund").grid(row=2, column=0, sticky="w")
+        self.options_background_var = tk.StringVar(
+            value=self.controller.config.chat_background_image
+        )
+        background_entry = ttk.Entry(
+            appearance,
+            textvariable=self.options_background_var,
+            state="readonly",
+        )
+        background_entry.grid(row=2, column=1, sticky="ew", padx=(10, 0), pady=(0, 10))
+        background_buttons = ttk.Frame(appearance)
+        background_buttons.grid(row=3, column=1, sticky="ew", padx=(10, 0))
+        ttk.Button(
+            background_buttons,
+            text="Waehlen",
+            command=self.choose_chat_background,
+        ).grid(row=0, column=0, padx=(0, 8))
+        ttk.Button(
+            background_buttons,
+            text="Entfernen",
+            command=self.clear_chat_background,
+        ).grid(row=0, column=1)
+
+        security = ttk.Frame(notebook, padding=14)
+        security.columnconfigure(0, weight=1)
+        notebook.add(security, text="Sicherheit")
+        self.options_header_validation_var = tk.BooleanVar(
+            value=self.controller.config.validate_profile_headers
+        )
+        ttk.Checkbutton(
+            security,
+            text="Profil-Header pruefen",
+            variable=self.options_header_validation_var,
+            command=self.on_options_header_validation_changed,
+        ).grid(row=0, column=0, sticky="w", pady=(0, 10))
+        self.options_skill_watchdog_var = tk.BooleanVar(
+            value=self.controller.config.skill_watchdog_enabled
+        )
+        ttk.Checkbutton(
+            security,
+            text="Skill-Watchdog beim Start und stuendlich ausfuehren",
+            variable=self.options_skill_watchdog_var,
+            command=self.on_options_skill_watchdog_changed,
+        ).grid(row=1, column=0, sticky="w")
+
+        button_row = ttk.Frame(dialog, padding=(12, 0, 12, 12))
+        button_row.grid(row=1, column=0, sticky="ew")
+        button_row.columnconfigure(0, weight=1)
+        ttk.Button(button_row, text="Schliessen", command=dialog.destroy).grid(
+            row=0,
+            column=1,
+            sticky="e",
+        )
+
+    def on_options_theme_changed(self, _event: object) -> None:
+        self.theme_var.set(self.options_theme_var.get())
+        self.on_theme_changed(_event)
+
+    def on_options_icon_changed(self, _event: object) -> None:
+        icon_name = self.icon_display_to_name.get(self.options_icon_var.get(), ICON_SYSTEM)
+        try:
+            icon_name = self.controller.set_app_icon(icon_name)
+        except ValueError as exc:
+            self.set_status(str(exc))
+            return
+        self.options_icon_var.set(self._label_for_icon(icon_name))
+        self._apply_app_icon(force_random=icon_name == ICON_RANDOM)
+        self.set_status(f"Icon: {self._label_for_icon(icon_name)}")
+
+    def choose_chat_background(self) -> None:
+        path = filedialog.askopenfilename(
+            title="Chat-Hintergrund waehlen",
+            filetypes=[
+                ("Bilder", "*.png *.gif"),
+                ("PNG", "*.png"),
+                ("GIF", "*.gif"),
+                ("Alle Dateien", "*.*"),
+            ],
+        )
+        if not path:
+            return
+        background = self.controller.set_chat_background_image(path)
+        self.options_background_var.set(background)
+        self._apply_chat_background()
+        self.render_messages()
+        self.set_status("Chat-Hintergrund gespeichert.")
+
+    def clear_chat_background(self) -> None:
+        self.controller.set_chat_background_image("")
+        self.options_background_var.set("")
+        self._apply_chat_background()
+        self.render_messages()
+        self.set_status("Chat-Hintergrund entfernt.")
+
+    def on_options_header_validation_changed(self) -> None:
+        self.header_validation_var.set(self.options_header_validation_var.get())
+        self.on_header_validation_changed()
+        self.options_header_validation_var.set(self.header_validation_var.get())
+
+    def on_options_skill_watchdog_changed(self) -> None:
+        enabled = bool(self.options_skill_watchdog_var.get())
+        enabled = self.controller.set_skill_watchdog_enabled(enabled)
+        self.options_skill_watchdog_var.set(enabled)
+        set_runtime_skill_watchdog_enabled(enabled)
+        self.set_status(f"Skill-Watchdog: {'an' if enabled else 'aus'}")
+
+    def _label_for_icon(self, icon_name: str) -> str:
+        return icon_labels().get(icon_name, icon_labels()[ICON_SYSTEM])
+
+    def _apply_app_icon(self, *, force_random: bool = False) -> None:
+        icon_name = self.controller.config.app_icon
+        if icon_name == ICON_RANDOM:
+            if force_random or self.current_random_icon is None:
+                icon_name = random_icon_name(self.current_random_icon)
+                self.current_random_icon = icon_name
+                self._set_tk_window_icon(icon_name)
+            self._schedule_icon_rotation()
+            return
+        self._cancel_icon_rotation()
+        self.current_random_icon = None
+        if icon_name != ICON_SYSTEM:
+            self._set_tk_window_icon(icon_name)
+
+    def _set_tk_window_icon(self, icon_name: str) -> None:
+        try:
+            resource = icon_png_resource(icon_name)
+            with as_file(resource) as path:
+                image = tk.PhotoImage(file=str(path))
+        except (OSError, tk.TclError, ValueError) as exc:
+            self.set_status(f"Icon nicht geladen: {exc}")
+            return
+        self.app_icon_image = image
+        self.root.iconphoto(True, image)
+
+    def _schedule_icon_rotation(self) -> None:
+        self._cancel_icon_rotation()
+        self.icon_rotation_job = self.root.after(3_600_000, self._rotate_random_icon)
+
+    def _cancel_icon_rotation(self) -> None:
+        if self.icon_rotation_job is None:
+            return
+        try:
+            self.root.after_cancel(self.icon_rotation_job)
+        except tk.TclError:
+            pass
+        self.icon_rotation_job = None
+
+    def _rotate_random_icon(self) -> None:
+        self.icon_rotation_job = None
+        if self.controller.config.app_icon == ICON_RANDOM:
+            self._apply_app_icon(force_random=True)
+
+    def _apply_chat_background(self) -> None:
+        self.chat_background_image = None
+        path = self.controller.config.chat_background_image
+        if not path:
+            return
+        try:
+            image = tk.PhotoImage(file=str(Path(path).expanduser()))
+        except tk.TclError as exc:
+            self.set_status(f"Chat-Hintergrund nicht geladen: {exc}")
+            return
+        self.chat_background_image = image
 
     def _apply_theme_to_widgets(self) -> None:
         palette = self.theme.palette
@@ -723,6 +967,9 @@ class TkTelachatApp:
     def render_messages(self) -> None:
         self.chat_text.configure(state="normal")
         self.chat_text.delete("1.0", tk.END)
+        if self.chat_background_image is not None:
+            self.chat_text.image_create(tk.END, image=self.chat_background_image)
+            self.chat_text.insert(tk.END, "\n\n")
         if not self.messages:
             self.chat_text.insert(tk.END, "Bereit.\n")
         for message in self.messages:

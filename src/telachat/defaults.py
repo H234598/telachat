@@ -7,6 +7,9 @@ DEFAULT_BASE_URL = "https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1"
 DEFAULT_API_KEY = "env:TELACHAT_QWEN_API_KEY"
 DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
 DEFAULT_THEME = "system"
+DEFAULT_APP_ICON = "system"
+DEFAULT_CHAT_BACKGROUND_IMAGE = ""
+DEFAULT_SKILL_WATCHDOG_ENABLED = True
 DEFAULT_SYSTEM_PROMPT = (
     "Du bist Telachat, ein direkter, praktischer KI-Assistent. "
     "Antworte in der Sprache des Nutzers, rechne sorgfaeltig und erfinde "
@@ -29,7 +32,10 @@ DEFAULT_CONFIG = f"""# Telachat configuration.
 
 default_profile = "{DEFAULT_PROFILE}"
 theme = "{DEFAULT_THEME}"
+app_icon = "{DEFAULT_APP_ICON}"
+chat_background_image = "{DEFAULT_CHAT_BACKGROUND_IMAGE}"
 validate_profile_headers = true
+skill_watchdog_enabled = true
 default_system_prompt = "{DEFAULT_SYSTEM_PROMPT}"
 max_history_messages = 24
 

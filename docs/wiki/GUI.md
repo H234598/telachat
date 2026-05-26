@@ -13,6 +13,9 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - Links: Provider, Modell, Chats, Ordner, Tagfilter, Suche und Sortierung.
 - Mitte: Chatverlauf und Eingabe.
 - Rechts: Systemprompt sowie Temperatur- und Token-Limit-Regler.
+- Tk nutzt `Optionen -> Einstellungen...`; GTK nutzt die Preferences-
+  Schaltflaeche in der Titelleiste. Dort liegen Theme, Icon, Chat-Hintergrund,
+  Header-Pruefung und Skill-Watchdog-Schalter.
 - Linke Seite und Systemprompt sind einklappbar.
 - Die Seitenbreiten sind per Splitter anpassbar.
 - Der Archivfilter `Aktiv / Archiv / Alle` sitzt in der linken Seitenleiste.
@@ -59,7 +62,8 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 
 ## Themes
 
-- Beide GUIs nutzen denselben Theme-Katalog.
+- Beide GUIs nutzen denselben Theme-Katalog und dieselbe persistente
+  Optionenbasis in `config.toml`.
 - `system` folgt soweit moeglich Desktop-/Terminal-Hinweisen.
 - `TELACHAT_THEME` uebersteuert das gespeicherte Theme fuer einen Prozess.
 - `TELACHAT_SYSTEM_THEME` fixiert nur die System-Erkennung fuer einen Prozess.
@@ -67,7 +71,11 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
   `solarized-dark`, `nord`, `dracula`, `gruvbox`, `ocean`, `forest`, `rose`,
   `graphite-glass`, `liquid-chrome`, `black-ice`, `brushed-steel`.
 - Der Prompt-Befehl `/theme dracula` nutzt denselben gespeicherten Wert wie der
-  Theme-Waehler im Systembereich.
+  Optionen-Dialog.
+- `app_icon = "random"` waehlt sofort eines der importierten Icons und rotiert
+  danach stuendlich. Tk setzt damit das Fenstericon, GTK zeigt es in der
+  Titelleiste.
+- `chat_background_image` speichert einen lokalen Bildpfad fuer das Chatmodul.
 
 ## Prompt-Templates
 

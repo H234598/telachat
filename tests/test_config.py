@@ -10,7 +10,10 @@ from telachat.config import (
     ensure_default_config,
     load_config,
     redact_secret,
+    set_config_app_icon,
+    set_config_chat_background_image,
     set_config_header_validation,
+    set_config_skill_watchdog_enabled,
     set_config_theme,
 )
 
@@ -49,7 +52,10 @@ class ConfigTests(unittest.TestCase):
             self.assertEqual(cfg.profiles["jan"].api_key, "env:TELACHAT_JAN_API_KEY")
             self.assertEqual(cfg.profiles["codex"].api_mode, "codex")
             self.assertEqual(cfg.theme, "system")
+            self.assertEqual(cfg.app_icon, "system")
+            self.assertEqual(cfg.chat_background_image, "")
             self.assertTrue(cfg.validate_profile_headers)
+            self.assertTrue(cfg.skill_watchdog_enabled)
             self.assertIn("summarize", cfg.prompt_templates)
             self.assertIn("{input}", cfg.prompt_templates["summarize"])
 
@@ -116,6 +122,7 @@ theme = "profile-local"
                 """
 default_profile = "demo"
 theme = "system"
+validate_profile_headers = true
 
 [profiles.demo]
 base_url = "http://127.0.0.1:1/v1"
@@ -130,6 +137,47 @@ validate_profile_headers = false
             self.assertIn('theme = "system"\nvalidate_profile_headers = false', text)
             self.assertIn("validate_profile_headers = false", text.split("[profiles.demo]")[1])
             self.assertFalse(load_config(path).validate_profile_headers)
+
+    def test_gui_option_setters_update_top_level_options(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            path.write_text(
+                """
+default_profile = "demo"
+theme = "system"
+validate_profile_headers = true
+
+[profiles.demo]
+base_url = "http://127.0.0.1:1/v1"
+api_key = ""
+model = "demo"
+app_icon = "profile-local"
+skill_watchdog_enabled = false
+""".strip(),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(set_config_app_icon("random", path), "random")
+            self.assertEqual(
+                set_config_chat_background_image('/tmp/bg "eins".png', path),
+                '/tmp/bg "eins".png',
+            )
+            self.assertFalse(set_config_skill_watchdog_enabled(False, path))
+
+            text = path.read_text(encoding="utf-8")
+            self.assertIn(
+                'theme = "system"\napp_icon = "random"\nchat_background_image = "/tmp/bg \\"eins\\".png"',
+                text,
+            )
+            self.assertIn("validate_profile_headers = true\nskill_watchdog_enabled = false", text)
+            self.assertIn('app_icon = "profile-local"', text.split("[profiles.demo]")[1])
+            cfg = load_config(path)
+            self.assertEqual(cfg.app_icon, "random")
+            self.assertEqual(cfg.chat_background_image, '/tmp/bg "eins".png')
+            self.assertFalse(cfg.skill_watchdog_enabled)
+
+            with self.assertRaises(ValueError):
+                set_config_app_icon("nicht-da", path)
 
     def test_custom_prompt_templates_load(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

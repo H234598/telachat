@@ -21,7 +21,10 @@ Globale Optionen stehen im Kopf von `config.toml`:
 
 ```toml
 theme = "system"
+app_icon = "system"
+chat_background_image = ""
 validate_profile_headers = true
+skill_watchdog_enabled = true
 max_history_messages = 24
 ```
 
@@ -30,7 +33,11 @@ Setze den Wert auf `false`, wenn ein absichtlich ungewoehnlicher Provider
 Headernamen erwartet, die nicht durch die strikte Standard-HTTP-Pruefung
 passen. Steuerzeichen in Headerwerten und parser-gefaehrliche Headernamen
 werden ebenso wie nicht-portable Headernamen weiter abgelehnt. In Tk und GTK
-ist dieselbe Option im rechten Einstellungsbereich verfuegbar.
+ist dieselbe Option im Optionen-/Preferences-Dialog verfuegbar.
+
+`app_icon` akzeptiert `system`, `random` oder einen der mitgelieferten
+Icon-Namen. `random` waehlt sofort ein Icon und rotiert danach stuendlich.
+`chat_background_image` speichert einen lokalen Bildpfad fuer das Chatmodul.
 
 ## Codex-Skill-Watchdog
 
@@ -44,10 +51,10 @@ Der eigentliche Skill-Body bleibt erhalten. Manuell laeuft er mit:
 telachat skill-watchdog --json
 ```
 
-Tk und GTK starten denselben Lauf nur mit
-`TELACHAT_ENABLE_SKILL_WATCHDOG=1` beim App-Start und danach stuendlich im
-Hintergrund. `TELACHAT_DISABLE_SKILL_WATCHDOG=1` deaktiviert ihn auch dann.
-`TELACHAT_SKILL_WATCHDOG_ROOTS` kann eine mit `:` getrennte Root-Liste setzen.
+Tk und GTK starten denselben Lauf beim App-Start und danach stuendlich im
+Hintergrund. `skill_watchdog_enabled = false` in `config.toml` oder
+`TELACHAT_DISABLE_SKILL_WATCHDOG=1` deaktiviert ihn. `TELACHAT_SKILL_WATCHDOG_ROOTS`
+kann eine mit `:` getrennte Root-Liste setzen.
 
 Beispiele fuer Provider:
 

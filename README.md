@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.51.1`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.52.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -184,16 +184,20 @@ Provider-/Secret-Konfiguration bleibt redaktiert.
 Wenn Provider Usage-Daten melden, speichert Telachat diese an Assistant-
 Nachrichten und `stats` fasst Input-/Output-/Total-Tokens content-frei zusammen.
 
-GUI-Themes werden dauerhaft ueber `theme = "system"` in `config.toml`
-gesteuert. Verfuegbar sind unter anderem `system`, `light`, `dark`,
+GUI-Optionen werden dauerhaft im Kopf von `config.toml` gespeichert:
+`theme`, `app_icon`, `chat_background_image`, `validate_profile_headers` und
+`skill_watchdog_enabled`. Tk hat dafuer ein echtes Menue
+`Optionen -> Einstellungen...`; GTK hat eine Preferences-Schaltflaeche in der
+Titelleiste. Verfuegbare Themes sind unter anderem `system`, `light`, `dark`,
 `high-contrast`, `solarized-light`, `solarized-dark`, `nord`, `dracula`,
 `gruvbox`, `ocean`, `forest`, `rose`, `graphite-glass`, `liquid-chrome`,
 `black-ice` und `brushed-steel`. Temporär kann das Umfeld
 uebersteuern, z.B. `TELACHAT_THEME=dark telachat-tk`. Wenn `theme = "system"`
 aktiv ist, nutzt Telachat uebliche Desktop-/Terminal-Hinweise; mit
 `TELACHAT_SYSTEM_THEME=solarized-dark` kann nur die System-Erkennung fuer einen
-Prozess fixiert werden. Die GUIs haben zusaetzlich eine Theme-Auswahl im
-Systembereich.
+Prozess fixiert werden. `app_icon = "random"` waehlt sofort ein importiertes
+Icon und rotiert danach stuendlich. `chat_background_image` speichert einen
+lokalen Bildpfad fuer das Chatmodul.
 
 ```sh
 telachat theme
@@ -291,10 +295,10 @@ Secret-Werte werden nicht ausgegeben; `--strict` gibt einen Fehlercode zurueck,
 wenn eine nicht-lokale Secret-Quelle fehlt.
 `skill-watchdog` kuerzt ueberlange Codex-Skill-Frontmatter-`description`-
 Felder auf Loader-kompatible Laenge, legt Backups als
-`SKILL.md.telachat-watchdog.bak` an und laesst den Skill-Body erhalten.
-Tk/GTK starten den stuendlichen Hintergrundlauf nur mit
-`TELACHAT_ENABLE_SKILL_WATCHDOG=1`; `TELACHAT_DISABLE_SKILL_WATCHDOG=1`
-deaktiviert ihn auch dann.
+`SKILL.md.telachat-watchdog.bak` an und laesst den Skill-Body erhalten. Tk/GTK
+starten den Lauf beim App-Start und danach stuendlich.
+`skill_watchdog_enabled = false` in `config.toml` oder
+`TELACHAT_DISABLE_SKILL_WATCHDOG=1` deaktiviert ihn.
 
 Manpages:
 

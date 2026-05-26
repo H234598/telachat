@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import os
 import threading
+from importlib.resources import as_file
+from pathlib import Path
 
 import gi
 
@@ -11,6 +13,7 @@ gi.require_version("Adw", "1")
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
+from .assets import ICON_RANDOM, ICON_SYSTEM, icon_labels, icon_png_resource, random_icon_name
 from .commands import (
     canonical_slash_command,
     estimate_context,
@@ -26,14 +29,13 @@ from .client import format_token_usage
 from .config import ConfigError, redact_secret
 from .controller import TelachatController
 from .model_choices import merge_model_choices
-from .skill_watchdog import start_skill_watchdog
+from .skill_watchdog import set_runtime_skill_watchdog_enabled
 from .store import Message, Session
 from .themes import theme_by_name
 
 
 class GtkTelachatApp(Adw.Application):
     def __init__(self) -> None:
-        start_skill_watchdog()
         super().__init__(
             application_id="de.teladi.Telachat",
             flags=Gio.ApplicationFlags.NON_UNIQUE,
@@ -46,6 +48,9 @@ class GtkTelachatApp(Adw.Application):
         self.active_operation_id: int | None = None
         self.cancelled_operation_ids: set[int] = set()
         self.operation_prompt_drafts: dict[int, str] = {}
+        self.current_random_icon: str | None = None
+        self.icon_rotation_source_id: int | None = None
+        self.header_icon_texture: Gdk.Texture | None = None
         self.folder_display_to_id: dict[str, str | None] = {}
         self.tag_filter_values: dict[str, str | None] = {"Alle Tags": None}
         self.sort_keys = {
@@ -64,6 +69,7 @@ class GtkTelachatApp(Adw.Application):
 
     def on_activate(self, _app: Adw.Application) -> None:
         self.controller = TelachatController()
+        set_runtime_skill_watchdog_enabled(self.controller.config.skill_watchdog_enabled)
         self.theme = self.controller.theme()
         self._install_css()
         self.window = Adw.ApplicationWindow(application=self)
@@ -74,10 +80,18 @@ class GtkTelachatApp(Adw.Application):
 
         toolbar = Adw.ToolbarView()
         header = Adw.HeaderBar()
-        header.set_title_widget(Gtk.Label(label="Telachat GTK"))
+        title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.header_icon = Gtk.Image()
+        self.header_icon.set_pixel_size(24)
+        title_box.append(self.header_icon)
+        title_box.append(Gtk.Label(label="Telachat GTK"))
+        header.set_title_widget(title_box)
         sidebar_button = Gtk.Button(label="☰")
         sidebar_button.connect("clicked", self.on_toggle_sidebar)
         header.pack_start(sidebar_button)
+        options_button = Gtk.Button(label="⚙")
+        options_button.connect("clicked", self.on_preferences)
+        header.pack_end(options_button)
         system_button = Gtk.Button(label="System")
         system_button.connect("clicked", self.on_toggle_settings)
         header.pack_end(system_button)
@@ -341,6 +355,7 @@ class GtkTelachatApp(Adw.Application):
         self.refresh_folders()
         self.refresh_tag_filter()
         self.refresh_sessions()
+        self._apply_app_icon(force_random=self.controller.config.app_icon == ICON_RANDOM)
         if self.sessions:
             self.load_session(self.sessions[0].id)
         else:
@@ -350,6 +365,18 @@ class GtkTelachatApp(Adw.Application):
 
     def _install_css(self) -> None:
         palette = self.theme.palette
+        background_css = ""
+        background_path = getattr(self.controller.config, "chat_background_image", "")
+        if background_path:
+            try:
+                background_uri = Path(background_path).expanduser().resolve(strict=False).as_uri()
+                background_css = (
+                    f'background-image: url("{background_uri}");'
+                    "background-size: cover;"
+                    "background-position: center;"
+                )
+            except ValueError:
+                background_css = ""
         style_manager = Adw.StyleManager.get_default()
         if self.theme.name == "system" and "TELACHAT_SYSTEM_THEME" not in os.environ:
             high_contrast = getattr(style_manager, "get_high_contrast", lambda: False)()
@@ -385,6 +412,7 @@ class GtkTelachatApp(Adw.Application):
             .telachat-main {{
                 background-color: {palette.bg};
                 color: {palette.text};
+                {background_css}
             }}
             .telachat-text text {{
                 background-color: {palette.surface};
@@ -408,6 +436,199 @@ class GtkTelachatApp(Adw.Application):
             }}
             """.encode()
         )
+
+    def on_preferences(self, _button: Gtk.Button) -> None:
+        existing = getattr(self, "preferences_window", None)
+        if existing is not None and existing.get_visible():
+            existing.present()
+            return
+        window = Gtk.Window(title="Telachat Einstellungen")
+        self.preferences_window = window
+        window.set_transient_for(self.window)
+        window.set_modal(True)
+        window.set_default_size(460, 360)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        box.set_margin_top(14)
+        box.set_margin_bottom(14)
+        box.set_margin_start(14)
+        box.set_margin_end(14)
+        window.set_child(box)
+
+        box.append(Gtk.Label(label="Theme", xalign=0))
+        self.preferences_theme_names = list(self.controller.theme_labels())
+        self.preferences_theme_dropdown = Gtk.DropDown.new(
+            Gtk.StringList.new(
+                [self.controller.theme_labels()[name] for name in self.preferences_theme_names]
+            ),
+            None,
+        )
+        try:
+            self.preferences_theme_dropdown.set_selected(
+                self.preferences_theme_names.index(self.theme.name)
+            )
+        except ValueError:
+            self.preferences_theme_dropdown.set_selected(0)
+        self.preferences_theme_dropdown.connect(
+            "notify::selected",
+            self.on_preferences_theme_changed,
+        )
+        box.append(self.preferences_theme_dropdown)
+
+        box.append(Gtk.Label(label="Icon", xalign=0))
+        icon_map = icon_labels()
+        self.preferences_icon_names = list(icon_map)
+        self.preferences_icon_dropdown = Gtk.DropDown.new(
+            Gtk.StringList.new([icon_map[name] for name in self.preferences_icon_names]),
+            None,
+        )
+        try:
+            self.preferences_icon_dropdown.set_selected(
+                self.preferences_icon_names.index(self.controller.config.app_icon)
+            )
+        except ValueError:
+            self.preferences_icon_dropdown.set_selected(0)
+        self.preferences_icon_dropdown.connect(
+            "notify::selected",
+            self.on_preferences_icon_changed,
+        )
+        box.append(self.preferences_icon_dropdown)
+
+        box.append(Gtk.Label(label="Chat-Hintergrund", xalign=0))
+        background_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.preferences_background_entry = Gtk.Entry()
+        self.preferences_background_entry.set_text(self.controller.config.chat_background_image)
+        self.preferences_background_entry.set_hexpand(True)
+        background_row.append(self.preferences_background_entry)
+        save_background = Gtk.Button(label="Speichern")
+        save_background.connect("clicked", self.on_preferences_background_saved)
+        background_row.append(save_background)
+        clear_background = Gtk.Button(label="Entfernen")
+        clear_background.connect("clicked", self.on_preferences_background_cleared)
+        background_row.append(clear_background)
+        box.append(background_row)
+
+        self.preferences_header_check = Gtk.CheckButton(label="Profil-Header pruefen")
+        self.preferences_header_check.set_active(self.controller.config.validate_profile_headers)
+        self.preferences_header_check.connect(
+            "toggled",
+            self.on_preferences_header_validation_toggled,
+        )
+        box.append(self.preferences_header_check)
+
+        self.preferences_watchdog_check = Gtk.CheckButton(
+            label="Skill-Watchdog beim Start und stuendlich ausfuehren"
+        )
+        self.preferences_watchdog_check.set_active(self.controller.config.skill_watchdog_enabled)
+        self.preferences_watchdog_check.connect(
+            "toggled",
+            self.on_preferences_skill_watchdog_toggled,
+        )
+        box.append(self.preferences_watchdog_check)
+
+        close = Gtk.Button(label="Schliessen")
+        close.connect("clicked", lambda _button: window.close())
+        close.set_halign(Gtk.Align.END)
+        box.append(close)
+        window.present()
+
+    def on_preferences_theme_changed(self, *_args: object) -> None:
+        selected = self.preferences_theme_dropdown.get_selected()
+        if selected >= len(self.preferences_theme_names):
+            return
+        self.theme = self.controller.set_theme(self.preferences_theme_names[selected])
+        self._install_css()
+        if hasattr(self, "theme_dropdown"):
+            try:
+                self.theme_dropdown.set_selected(self.theme_names.index(self.theme.name))
+            except ValueError:
+                pass
+        self.status.set_text(f"Theme: {self.theme.label}")
+
+    def on_preferences_icon_changed(self, *_args: object) -> None:
+        selected = self.preferences_icon_dropdown.get_selected()
+        if selected >= len(self.preferences_icon_names):
+            return
+        icon_name = self.controller.set_app_icon(self.preferences_icon_names[selected])
+        self._apply_app_icon(force_random=icon_name == ICON_RANDOM)
+        self.status.set_text(f"Icon: {icon_labels().get(icon_name, icon_name)}")
+
+    def on_preferences_background_saved(self, _button: Gtk.Button) -> None:
+        path = self.preferences_background_entry.get_text().strip()
+        self.controller.set_chat_background_image(path)
+        self._install_css()
+        self.status.set_text("Chat-Hintergrund gespeichert.")
+
+    def on_preferences_background_cleared(self, _button: Gtk.Button) -> None:
+        self.preferences_background_entry.set_text("")
+        self.controller.set_chat_background_image("")
+        self._install_css()
+        self.status.set_text("Chat-Hintergrund entfernt.")
+
+    def on_preferences_header_validation_toggled(self, button: Gtk.CheckButton) -> None:
+        if getattr(self, "_syncing_header_validation", False):
+            return
+        enabled = button.get_active()
+        try:
+            enabled = self.controller.set_header_validation(enabled)
+        except ConfigError as exc:
+            button.set_active(self.controller.config.validate_profile_headers)
+            self.status.set_text(str(exc))
+        else:
+            self._sync_header_validation_check(enabled)
+            self.status.set_text(f"Header-Pruefung: {'an' if enabled else 'aus'}")
+
+    def on_preferences_skill_watchdog_toggled(self, button: Gtk.CheckButton) -> None:
+        enabled = self.controller.set_skill_watchdog_enabled(button.get_active())
+        set_runtime_skill_watchdog_enabled(enabled)
+        button.set_active(enabled)
+        self.status.set_text(f"Skill-Watchdog: {'an' if enabled else 'aus'}")
+
+    def _apply_app_icon(self, *, force_random: bool = False) -> None:
+        icon_name = self.controller.config.app_icon
+        if icon_name == ICON_RANDOM:
+            if force_random or self.current_random_icon is None:
+                icon_name = random_icon_name(self.current_random_icon)
+                self.current_random_icon = icon_name
+                self._set_header_icon(icon_name)
+            self._schedule_icon_rotation()
+            return
+        self._cancel_icon_rotation()
+        self.current_random_icon = None
+        if icon_name == ICON_SYSTEM:
+            if hasattr(self, "header_icon"):
+                self.header_icon.set_from_paintable(None)
+            return
+        self._set_header_icon(icon_name)
+
+    def _set_header_icon(self, icon_name: str) -> None:
+        try:
+            resource = icon_png_resource(icon_name)
+            with as_file(resource) as path:
+                texture = Gdk.Texture.new_from_file(Gio.File.new_for_path(str(path)))
+        except (GLib.Error, OSError, ValueError) as exc:
+            self.status.set_text(f"Icon nicht geladen: {exc}")
+            return
+        self.header_icon_texture = texture
+        self.header_icon.set_from_paintable(texture)
+
+    def _schedule_icon_rotation(self) -> None:
+        self._cancel_icon_rotation()
+        self.icon_rotation_source_id = GLib.timeout_add_seconds(
+            3600,
+            self._rotate_random_icon,
+        )
+
+    def _cancel_icon_rotation(self) -> None:
+        if self.icon_rotation_source_id is None:
+            return
+        GLib.source_remove(self.icon_rotation_source_id)
+        self.icon_rotation_source_id = None
+
+    def _rotate_random_icon(self) -> bool:
+        self.icon_rotation_source_id = None
+        if self.controller.config.app_icon == ICON_RANDOM:
+            self._apply_app_icon(force_random=True)
+        return GLib.SOURCE_REMOVE
 
     def on_theme_changed(self, *_args: object) -> None:
         selected = self.theme_dropdown.get_selected()

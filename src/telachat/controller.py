@@ -9,7 +9,10 @@ from .config import (
     ConfigError,
     Profile,
     load_config,
+    set_config_app_icon,
+    set_config_chat_background_image,
     set_config_header_validation,
+    set_config_skill_watchdog_enabled,
     set_config_theme,
 )
 from .store import (
@@ -65,6 +68,16 @@ class TelachatController:
         self.config = replace(load_config(self.config.path), theme=theme_name)
         return self.theme()
 
+    def set_app_icon(self, name: str) -> str:
+        icon = set_config_app_icon(name, self.config.path)
+        self.config = load_config(self.config.path)
+        return self.config.app_icon
+
+    def set_chat_background_image(self, path: str) -> str:
+        background = set_config_chat_background_image(path, self.config.path)
+        self.config = load_config(self.config.path)
+        return self.config.chat_background_image or background
+
     def set_header_validation(self, enabled: bool) -> bool:
         previous = self.config.validate_profile_headers
         set_config_header_validation(enabled, self.config.path)
@@ -75,6 +88,11 @@ class TelachatController:
             self.config = load_config(self.config.path)
             raise
         return self.config.validate_profile_headers
+
+    def set_skill_watchdog_enabled(self, enabled: bool) -> bool:
+        set_config_skill_watchdog_enabled(enabled, self.config.path)
+        self.config = load_config(self.config.path)
+        return self.config.skill_watchdog_enabled
 
     def prompt_templates(self) -> dict[str, str]:
         return self.config.prompt_templates

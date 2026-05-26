@@ -73,8 +73,6 @@ def start_skill_watchdog(
     description_limit: int = DEFAULT_DESCRIPTION_LIMIT,
     interval_seconds: int = DEFAULT_INTERVAL_SECONDS,
 ) -> bool:
-    if os.environ.get("TELACHAT_ENABLE_SKILL_WATCHDOG") != "1":
-        return False
     if os.environ.get("TELACHAT_DISABLE_SKILL_WATCHDOG") == "1":
         return False
     global _WATCHDOG_STARTED
@@ -90,6 +88,14 @@ def start_skill_watchdog(
     )
     thread.start()
     return True
+
+
+def set_runtime_skill_watchdog_enabled(enabled: bool) -> bool:
+    if enabled:
+        os.environ.pop("TELACHAT_DISABLE_SKILL_WATCHDOG", None)
+        return start_skill_watchdog()
+    os.environ["TELACHAT_DISABLE_SKILL_WATCHDOG"] = "1"
+    return False
 
 
 def iter_skill_files(roots: tuple[Path, ...]) -> tuple[Path, ...]:
@@ -138,7 +144,8 @@ def _watchdog_loop(
     interval_seconds: int,
 ) -> None:
     while True:
-        run_skill_watchdog(roots, description_limit=description_limit)
+        if os.environ.get("TELACHAT_DISABLE_SKILL_WATCHDOG") != "1":
+            run_skill_watchdog(roots, description_limit=description_limit)
         threading.Event().wait(max(60, interval_seconds))
 
 

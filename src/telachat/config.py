@@ -9,10 +9,14 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from .assets import normalize_icon_name
 from .defaults import (
     DEFAULT_CONFIG,
+    DEFAULT_APP_ICON,
+    DEFAULT_CHAT_BACKGROUND_IMAGE,
     DEFAULT_PROFILE,
     DEFAULT_PROMPT_TEMPLATES,
+    DEFAULT_SKILL_WATCHDOG_ENABLED,
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_THEME,
 )
@@ -107,7 +111,10 @@ class AppConfig:
     path: Path
     default_profile: str
     theme: str
+    app_icon: str
+    chat_background_image: str
     validate_profile_headers: bool
+    skill_watchdog_enabled: bool
     default_system_prompt: str
     max_history_messages: int
     profiles: dict[str, Profile]
@@ -152,6 +159,11 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
         raise ConfigError(f"Ungueltige TOML-Konfiguration in {target}: {exc}") from exc
 
     validate_profile_headers = _global_bool(raw, "validate_profile_headers", True)
+    skill_watchdog_enabled = _global_bool(
+        raw,
+        "skill_watchdog_enabled",
+        DEFAULT_SKILL_WATCHDOG_ENABLED,
+    )
     profile_blocks = raw.get("profiles")
     if not isinstance(profile_blocks, dict) or not profile_blocks:
         raise ConfigError("Konfiguration braucht mindestens einen [profiles.NAME]-Block.")
@@ -210,7 +222,13 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
         path=target,
         default_profile=default_profile,
         theme=theme,
+        app_icon=_app_icon(raw.get("app_icon", DEFAULT_APP_ICON)),
+        chat_background_image=_optional_string(
+            raw.get("chat_background_image", DEFAULT_CHAT_BACKGROUND_IMAGE),
+            "chat_background_image",
+        ),
         validate_profile_headers=validate_profile_headers,
+        skill_watchdog_enabled=skill_watchdog_enabled,
         default_system_prompt=str(raw.get("default_system_prompt", DEFAULT_SYSTEM_PROMPT)),
         max_history_messages=_positive_int(
             raw.get("max_history_messages", 24), "max_history_messages", None
@@ -228,6 +246,27 @@ def set_config_theme(value: str, path: Path | None = None) -> str:
     return theme
 
 
+def set_config_app_icon(value: str, path: Path | None = None) -> str:
+    icon = normalize_icon_name(value)
+    target = ensure_default_config(path)
+    replacement = f'app_icon = "{icon}"'
+    _set_top_level_assignment(target, "app_icon", replacement, after_key="theme")
+    return icon
+
+
+def set_config_chat_background_image(value: str, path: Path | None = None) -> str:
+    background = str(value or "").strip()
+    target = ensure_default_config(path)
+    replacement = f'chat_background_image = "{_toml_basic_string(background)}"'
+    _set_top_level_assignment(
+        target,
+        "chat_background_image",
+        replacement,
+        after_key="app_icon",
+    )
+    return background
+
+
 def set_config_header_validation(enabled: bool, path: Path | None = None) -> bool:
     target = ensure_default_config(path)
     replacement = f"validate_profile_headers = {str(bool(enabled)).lower()}"
@@ -236,6 +275,18 @@ def set_config_header_validation(enabled: bool, path: Path | None = None) -> boo
         "validate_profile_headers",
         replacement,
         after_key="theme",
+    )
+    return bool(enabled)
+
+
+def set_config_skill_watchdog_enabled(enabled: bool, path: Path | None = None) -> bool:
+    target = ensure_default_config(path)
+    replacement = f"skill_watchdog_enabled = {str(bool(enabled)).lower()}"
+    _set_top_level_assignment(
+        target,
+        "skill_watchdog_enabled",
+        replacement,
+        after_key="validate_profile_headers",
     )
     return bool(enabled)
 
@@ -445,6 +496,25 @@ def _theme(value: object) -> str:
     except ValueError as exc:
         available = ", ".join(theme_choices())
         raise ConfigError(f"{exc}. Erlaubt: {available}") from exc
+
+
+def _app_icon(value: object) -> str:
+    try:
+        return normalize_icon_name(value)
+    except ValueError as exc:
+        raise ConfigError(str(exc)) from exc
+
+
+def _optional_string(value: object, key: str) -> str:
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        raise ConfigError(f"Konfiguration {key} ist ungueltig.")
+    return value.strip()
+
+
+def _toml_basic_string(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"')
 
 
 def _prompt_templates(raw: object) -> dict[str, str]:

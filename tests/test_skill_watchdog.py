@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,35 +11,16 @@ from telachat.skill_watchdog import (
     compact_skill_description,
     iter_skill_files,
     run_skill_watchdog,
+    set_runtime_skill_watchdog_enabled,
     start_skill_watchdog,
 )
 
 
 class SkillWatchdogTests(unittest.TestCase):
-    def test_background_watchdog_is_opt_in(self) -> None:
+    def test_background_watchdog_starts_by_default(self) -> None:
         with mock.patch.dict(
             "os.environ",
-            {
-                "TELACHAT_ENABLE_SKILL_WATCHDOG": "",
-                "TELACHAT_DISABLE_SKILL_WATCHDOG": "",
-            },
-            clear=False,
-        ), mock.patch(
-            "telachat.skill_watchdog.threading.Thread"
-        ) as thread_cls, mock.patch(
-            "telachat.skill_watchdog._WATCHDOG_STARTED",
-            False,
-        ):
-            self.assertFalse(start_skill_watchdog((Path("/missing"),)))
-            thread_cls.assert_not_called()
-
-    def test_background_watchdog_starts_when_enabled(self) -> None:
-        with mock.patch.dict(
-            "os.environ",
-            {
-                "TELACHAT_ENABLE_SKILL_WATCHDOG": "1",
-                "TELACHAT_DISABLE_SKILL_WATCHDOG": "",
-            },
+            {"TELACHAT_DISABLE_SKILL_WATCHDOG": ""},
             clear=False,
         ), mock.patch(
             "telachat.skill_watchdog.threading.Thread"
@@ -50,13 +32,10 @@ class SkillWatchdogTests(unittest.TestCase):
             thread_cls.assert_called_once()
             thread_cls.return_value.start.assert_called_once()
 
-    def test_background_watchdog_disable_overrides_enable(self) -> None:
+    def test_background_watchdog_can_be_disabled(self) -> None:
         with mock.patch.dict(
             "os.environ",
-            {
-                "TELACHAT_ENABLE_SKILL_WATCHDOG": "1",
-                "TELACHAT_DISABLE_SKILL_WATCHDOG": "1",
-            },
+            {"TELACHAT_DISABLE_SKILL_WATCHDOG": "1"},
             clear=False,
         ), mock.patch(
             "telachat.skill_watchdog.threading.Thread"
@@ -65,6 +44,33 @@ class SkillWatchdogTests(unittest.TestCase):
             False,
         ):
             self.assertFalse(start_skill_watchdog((Path("/missing"),)))
+            thread_cls.assert_not_called()
+
+    def test_runtime_watchdog_enable_clears_stop_flag(self) -> None:
+        with mock.patch.dict("os.environ", {}, clear=True), mock.patch(
+            "telachat.skill_watchdog.threading.Thread"
+        ) as thread_cls, mock.patch(
+            "telachat.skill_watchdog._WATCHDOG_STARTED",
+            False,
+        ):
+            self.assertTrue(set_runtime_skill_watchdog_enabled(True))
+            self.assertNotIn("TELACHAT_DISABLE_SKILL_WATCHDOG", os.environ)
+            thread_cls.assert_called_once()
+            thread_cls.return_value.start.assert_called_once()
+
+    def test_runtime_watchdog_disable_sets_stop_flag(self) -> None:
+        with mock.patch.dict(
+            "os.environ",
+            {},
+            clear=True,
+        ), mock.patch(
+            "telachat.skill_watchdog.threading.Thread"
+        ) as thread_cls, mock.patch(
+            "telachat.skill_watchdog._WATCHDOG_STARTED",
+            False,
+        ):
+            self.assertFalse(set_runtime_skill_watchdog_enabled(False))
+            self.assertEqual(os.environ["TELACHAT_DISABLE_SKILL_WATCHDOG"], "1")
             thread_cls.assert_not_called()
 
     def test_compacts_oversized_frontmatter_description_and_preserves_body(self) -> None:

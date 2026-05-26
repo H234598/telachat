@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-- Restore the Tk/GTK Skill watchdog opt-in gate so GUI startup only launches the background loop with `TELACHAT_ENABLE_SKILL_WATCHDOG=1`.
+## 0.52.0 - 2026-05-26
+
+- Add a real Tk options menu and GTK preferences window for persistent GUI settings.
+- Persist `app_icon`, `chat_background_image`, and `skill_watchdog_enabled` in `config.toml`.
+- Import the provided SVG icons, ship PNG renderings for desktop use, and add an hourly random icon mode.
+- Keep the Skill watchdog default-on in Tk/GTK while adding a GUI/config opt-out.
 
 ## 0.51.1 - 2026-05-26
 

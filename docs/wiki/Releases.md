@@ -2,8 +2,16 @@
 
 ## Unreleased
 
-- Stellt den Opt-in-Gate fuer den Tk/GTK-Skill-Watchdog wieder her:
-  Hintergrundlauf nur mit `TELACHAT_ENABLE_SKILL_WATCHDOG=1`.
+## 0.52.0 - 2026-05-26
+
+- Ergaenzt ein echtes Tk-Optionsmenue und ein GTK-Preferences-Fenster fuer
+  persistente GUI-Einstellungen.
+- Speichert `app_icon`, `chat_background_image` und `skill_watchdog_enabled`
+  in `config.toml`.
+- Importiert die bereitgestellten SVG-Icons, liefert PNG-Renderings mit und
+  ergaenzt einen stuendlich rotierenden Zufallsmodus.
+- Haelt den Skill-Watchdog in Tk/GTK standardmaessig aktiv, aber abschaltbar
+  ueber GUI, `config.toml` oder `TELACHAT_DISABLE_SKILL_WATCHDOG=1`.
 
 ## 0.51.1 - 2026-05-26
 

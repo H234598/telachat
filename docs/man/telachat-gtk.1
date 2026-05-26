@@ -1,4 +1,4 @@
-.TH TELACHAT-GTK 1 "2026-05-26" "Telachat 0.51.1" "User Commands"
+.TH TELACHAT-GTK 1 "2026-05-26" "Telachat 0.52.0" "User Commands"
 .SH NAME
 telachat-gtk \- start the GTK desktop frontend for Telachat
 .SH SYNOPSIS
@@ -18,7 +18,9 @@ The System pane exposes a Theme selector. The persistent value is stored in
 \fIconfig.toml\fR as \fBtheme\fR and can be temporarily overridden with
 \fBTELACHAT_THEME\fR. If the persistent value is \fBsystem\fR,
 \fBTELACHAT_SYSTEM_THEME\fR can force the detected palette for one process.
-The composer also accepts \fB/theme NAME\fR.
+The preferences button opens persistent settings for theme, app icon, chat
+background, header validation, and the Skill watchdog. The composer also
+accepts \fB/theme NAME\fR.
 Use \fB/models\fR to show configured model choices or \fB/models live\fR to run
 the live model check and refresh available model choices.
 Use \fB/find TEXT\fR to search within the currently loaded conversation.
