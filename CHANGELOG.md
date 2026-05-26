@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Makes GUI `/folder-backend PROFILE` use that profile's default model instead
+  of pairing it with the previously selected model.
+
 ## 0.73.0 - 2026-05-26
 
 - Adds `/folder-backend [PROFILE MODEL]` to save the current or specified

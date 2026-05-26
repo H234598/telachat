@@ -720,6 +720,37 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(calls, [("folder1", "openai", "gpt-5.5")])
         self.assertEqual(app.status.get_text(), "Ordner-Backend gespeichert: Projekt")
 
+    def test_gtk_folder_backend_command_uses_target_profile_default_model(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        calls: list[tuple[str, str, str]] = []
+        app = SimpleNamespace(
+            selected_real_folder_id=lambda: "folder1",
+            selected_profile=lambda: "huggingface",
+            selected_model=lambda: "TKI",
+            controller=SimpleNamespace(
+                config=SimpleNamespace(
+                    profile=lambda name: SimpleNamespace(model=f"{name}-default")
+                ),
+                set_folder_backend=lambda folder_id, profile, model: calls.append(
+                    (folder_id, profile, model)
+                )
+                or SimpleNamespace(name="Projekt"),
+            ),
+            status=_FakeText(""),
+        )
+
+        module.GtkTelachatApp.handle_command(app, "/folder-backend openai")
+
+        self.assertEqual(calls, [("folder1", "openai", "openai-default")])
+        self.assertEqual(app.status.get_text(), "Ordner-Backend gespeichert: Projekt")
+
     def test_tk_refresh_tag_filter_preserves_selected_tag_value(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         controller = _FakeController(tags=[("projekt", 2), ("review", 1)])
@@ -864,6 +895,31 @@ class GuiImportTests(unittest.TestCase):
         module.TkTelachatApp.handle_command(app, "/folder-backend")
 
         self.assertEqual(calls, [("folder1", "openai", "gpt-5.5")])
+        self.assertEqual(statuses, ["Ordner-Backend gespeichert: Projekt"])
+
+    def test_tk_folder_backend_command_uses_target_profile_default_model(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        calls: list[tuple[str, str, str]] = []
+        statuses: list[str] = []
+        app = SimpleNamespace(
+            selected_real_folder_id=lambda: "folder1",
+            selected_profile=lambda: "huggingface",
+            model_var=_FakeText("TKI"),
+            controller=SimpleNamespace(
+                config=SimpleNamespace(
+                    profile=lambda name: SimpleNamespace(model=f"{name}-default")
+                ),
+                set_folder_backend=lambda folder_id, profile, model: calls.append(
+                    (folder_id, profile, model)
+                )
+                or SimpleNamespace(name="Projekt"),
+            ),
+            set_status=lambda text: statuses.append(text),
+        )
+
+        module.TkTelachatApp.handle_command(app, "/folder-backend openai")
+
+        self.assertEqual(calls, [("folder1", "openai", "openai-default")])
         self.assertEqual(statuses, ["Ordner-Backend gespeichert: Projekt"])
 
     def test_tk_generation_inputs_normalize_to_supported_ranges(self) -> None:

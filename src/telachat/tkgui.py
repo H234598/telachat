@@ -1858,8 +1858,12 @@ class TkTelachatApp:
             else:
                 parts = rest.split(maxsplit=1)
                 profile_name = parts[0] if parts else self.selected_profile()
-                model = parts[1] if len(parts) > 1 else self.model_var.get()
                 try:
+                    model = parts[1] if len(parts) > 1 else (
+                        self.controller.config.profile(profile_name).model
+                        if parts
+                        else self.model_var.get()
+                    )
                     folder = self.controller.set_folder_backend(folder_id, profile_name, model)
                 except ConfigError as exc:
                     self.set_status(str(exc))
