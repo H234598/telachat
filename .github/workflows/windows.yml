@@ -13,9 +13,39 @@ permissions:
   contents: read
 
 jobs:
+  powershell-syntax:
+    name: PowerShell syntax
+    runs-on: windows-2022
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Parse PowerShell packaging scripts
+        shell: pwsh
+        run: |
+          $Failures = @()
+          Get-ChildItem -Path packaging\windows -Filter *.ps1 |
+            Sort-Object FullName |
+            ForEach-Object {
+              $Tokens = $null
+              $ParseErrors = $null
+              [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$Tokens, [ref]$ParseErrors) | Out-Null
+              foreach ($ParseError in $ParseErrors) {
+                $Failures += "$($_.FullName):$($ParseError.Extent.StartLineNumber): $($ParseError.Message)"
+              }
+            }
+
+          if ($Failures.Count -gt 0) {
+            $Failures | ForEach-Object { Write-Error $_ }
+            exit 1
+          }
+
   test:
     name: Test Windows
     runs-on: windows-2022
+    timeout-minutes: 30
+    needs: powershell-syntax
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -32,9 +62,23 @@ jobs:
         shell: pwsh
         run: .\packaging\windows\test-windows.ps1 -Python python
 
+      - name: Smoke test NSIS installer script
+        shell: pwsh
+        run: |
+          $DistDir = Join-Path $env:RUNNER_TEMP "nsis-dist"
+          $AppDir = Join-Path $DistDir "TelachatTk"
+          New-Item -ItemType Directory -Force -Path $AppDir | Out-Null
+          Set-Content -Encoding ASCII -Path (Join-Path $AppDir "TelachatTk.exe") -Value "stub"
+
+          makensis /DPRODUCT_VERSION=0.0.0 "/DDIST_DIR=$DistDir" packaging\windows\telachat-tk.nsi
+          if ($LASTEXITCODE -ne 0) {
+            throw "NSIS installer smoke test failed with exit code $LASTEXITCODE."
+          }
+
   package:
     name: Package Windows
     runs-on: windows-2022
+    timeout-minutes: 45
     needs: test
     if: startsWith(github.ref, 'refs/tags/')
     permissions:

@@ -23,6 +23,31 @@ def _workflow_files() -> list[Path]:
     return sorted(WORKFLOW_DIR.glob("*.yml")) + sorted(WORKFLOW_DIR.glob("*.yaml"))
 
 
+def _workflow_job_blocks(text: str) -> dict[str, str]:
+    blocks: dict[str, list[str]] = {}
+    current: str | None = None
+    in_jobs = False
+
+    for line in text.splitlines():
+        if line == "jobs:":
+            in_jobs = True
+            continue
+        if not in_jobs:
+            continue
+        if line and not line.startswith(" "):
+            break
+
+        job_match = re.fullmatch(r"  ([A-Za-z0-9_-]+):", line)
+        if job_match:
+            current = job_match.group(1)
+            blocks[current] = []
+            continue
+        if current is not None:
+            blocks[current].append(line)
+
+    return {name: "\n".join(lines) for name, lines in blocks.items()}
+
+
 def _release_upload_commands(lines: list[str]) -> list[tuple[int, str]]:
     commands: list[tuple[int, str]] = []
     index = 0
@@ -69,6 +94,30 @@ class GitHubWorkflowTests(unittest.TestCase):
         self.assertIn("python dist/telachat.pyz --version", text)
         self.assertIn("python dist/telachat.pyz profiles --json", text)
         self.assertIn("python dist/telachat.pyz config-check --json", text)
+
+    def test_windows_workflow_checks_release_packaging_scripts(self) -> None:
+        workflow = WORKFLOW_DIR / "windows.yml"
+        text = workflow.read_text(encoding="utf-8")
+
+        self.assertIn("name: PowerShell syntax", text)
+        self.assertIn("[System.Management.Automation.Language.Parser]::ParseFile", text)
+        self.assertIn(r"Get-ChildItem -Path packaging\windows -Filter *.ps1", text)
+        self.assertIn("needs: powershell-syntax", text)
+        self.assertIn("name: Smoke test NSIS installer script", text)
+        self.assertIn("makensis /DPRODUCT_VERSION=0.0.0", text)
+        self.assertIn(r"packaging\windows\telachat-tk.nsi", text)
+
+    def test_workflow_jobs_have_timeouts(self) -> None:
+        failures: list[str] = []
+        for workflow in _workflow_files():
+            text = workflow.read_text(encoding="utf-8")
+            for job, body in _workflow_job_blocks(text).items():
+                if "\n    timeout-minutes:" not in f"\n{body}":
+                    failures.append(
+                        f"{workflow.relative_to(ROOT)} job {job} has no timeout-minutes."
+                    )
+
+        self.assertEqual([], failures)
 
     def test_windows_workflows_use_explicit_runner_images(self) -> None:
         failures: list[str] = []
