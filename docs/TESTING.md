@@ -7,6 +7,7 @@ cd /home/teladi/telachat
 PYTHONPATH=src python3 -m telachat --version
 PYTHONPATH=src python3 -m telachat config-check
 PYTHONPATH=src python3 -m telachat config-check --json
+PYTHONPATH=src python3 -m telachat config-check --show-redacted
 PYTHONPATH=src python3 -m telachat models --json
 PYTHONPATH=src python3 -m telachat theme
 PYTHONPATH=src python3 -m telachat stats --json
@@ -19,7 +20,7 @@ make zipapp
 make linux-installer
 make linux-installer-smoke
 packaging/linux/install-telachat.sh --prefix /tmp/telachat-prefix --desktop-dir /tmp/telachat-desktop --zipapp dist/telachat.pyz
-python packaging/linux/package-cadence.py v0.66.0
+python packaging/linux/package-cadence.py v0.67.0
 man ./docs/man/telachat.1
 ```
 
@@ -51,6 +52,7 @@ telachat models --live -p huggingface --json
 telachat config-check
 telachat config-check --strict
 telachat config-check --json
+telachat config-check --show-redacted
 telachat theme
 TELACHAT_THEME=dark telachat config-check
 TELACHAT_SYSTEM_THEME=solarized-dark telachat theme

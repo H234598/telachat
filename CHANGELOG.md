@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.67.0 - 2026-05-26
+
+- Adds `telachat config-check --show-redacted`, which prints a redacted TOML
+  view of the active configuration without raw API keys or auth headers.
+
 ## 0.66.0 - 2026-05-26
 
 - Remembers recently used custom prompt-template variable values per template

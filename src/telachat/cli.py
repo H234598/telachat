@@ -141,6 +141,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Nur dieses Profil pruefen",
     )
     p_config.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
+    p_config.add_argument(
+        "--show-redacted",
+        action="store_true",
+        help="Redaktierte config.toml ohne rohe Secrets ausgeben",
+    )
     p_config.set_defaults(func=cmd_config_check)
 
     p_theme = sub.add_parser("theme", help="GUI-Theme anzeigen oder setzen")
@@ -521,6 +526,8 @@ def cmd_models(args: argparse.Namespace) -> int:
 
 
 def cmd_config_check(args: argparse.Namespace) -> int:
+    if args.show_redacted and args.json:
+        raise ConfigError("--show-redacted kann nicht mit --json kombiniert werden.")
     cfg = load_config(args.config)
     missing = 0
     profile_rows = []
@@ -560,6 +567,9 @@ def cmd_config_check(args: argparse.Namespace) -> int:
                 sort_keys=True,
             )
         )
+        return 1 if args.strict and missing else 0
+    if args.show_redacted:
+        print(_redacted_config_toml(cfg), end="")
         return 1 if args.strict and missing else 0
     print(f"{APP_TITLE} config")
     print(f"Config: {cfg.path}")
@@ -2474,7 +2484,7 @@ def _restore_summary(summary: HistoryImportSummary) -> str:
 
 def _redacted_config_toml(cfg: object) -> str:
     lines = [
-        "# Redacted Telachat config backup.",
+        "# Redacted Telachat config.",
         "# Secret values are not included.",
         f"default_profile = {_toml_string(cfg.default_profile)}",
         f"theme = {_toml_string(cfg.theme)}",

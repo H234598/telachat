@@ -122,7 +122,7 @@ publication as best-effort and never as a blocking paid step.
 
 ## Feature ideas kept for later
 
-- Config editor with validation and secret redaction.
+- Full config editor with validation.
 - Markdown rendering with copy buttons.
 - Per-folder defaults for system prompt, model and attached knowledge/context.
 - Import bundles for a folder of chats without including API keys.
@@ -132,6 +132,10 @@ Implemented in 0.66.0:
 
 - Remembering recently used custom prompt-template variable values per template
   during the current GUI session.
+
+Implemented in 0.67.0:
+
+- Redacted read-only config view through `config-check --show-redacted`.
 
 ## Sources
 

@@ -1,5 +1,5 @@
 %global appname telachat
-%global appversion %{?_version}%{!?_version:0.66.0}
+%global appversion %{?_version}%{!?_version:0.67.0}
 
 Name:           %{appname}
 Version:        %{appversion}
@@ -57,6 +57,9 @@ sed "s|@TELACHAT_EXEC@|telachat-gui|g" packaging/linux/telachat.desktop.in \
 %{_mandir}/man1/telachat-gtk.1*
 
 %changelog
+* Tue May 26 2026 Teladi <teladi@example.invalid> - 0.67.0-1
+- Add redacted config TOML view to config-check.
+
 * Tue May 26 2026 Teladi <teladi@example.invalid> - 0.66.0-1
 - Remember recent custom prompt-template values in GUI sessions.
 

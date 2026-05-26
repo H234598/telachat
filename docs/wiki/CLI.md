@@ -13,6 +13,7 @@ telachat models --live -p huggingface --json
 telachat config-check
 telachat config-check --profile huggingface --strict
 telachat config-check --json
+telachat config-check --show-redacted
 telachat theme
 telachat templates
 telachat folders
@@ -45,6 +46,8 @@ abgefragt. `telachat config-check` prueft lokale Profile, Modelle und
 Secret-Quellen ohne API-Anfrage. `telachat config-check --strict` liefert einen
 Fehlercode, wenn eine nicht-lokale Secret-Quelle fehlt.
 Die Ausgabe zeigt auch, ob die globale Profil-Header-Pruefung aktiv ist.
+`telachat config-check --show-redacted` gibt die aktive Konfiguration als
+redaktierte TOML-Ansicht aus, ohne rohe API-Keys oder Auth-Header offenzulegen.
 `telachat skill-watchdog` kuerzt ueberlange Codex-Skill-Frontmatter-
 `description`-Felder, legt `SKILL.md.telachat-watchdog.bak` an und bewahrt den
 Skill-Body. Tk und GTK starten denselben Watchdog nur mit

@@ -673,6 +673,51 @@ model = "demo"
             finally:
                 _restore_env("TELACHAT_MISSING_TEST_KEY", old_missing)
 
+    def test_config_check_can_show_redacted_toml(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp) / "config.toml"
+            config.write_text(
+                """
+default_profile = "ok"
+
+[profiles.ok]
+label = "Okay"
+base_url = "http://127.0.0.1:9/v1"
+api_key = "sk-very-secret-123456"
+model = "demo"
+
+[profiles.ok.headers]
+Authorization = "Bearer raw-token-value"
+X-Trace = "visible"
+""".strip(),
+                encoding="utf-8",
+            )
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                self.assertEqual(
+                    main(["--config", str(config), "config-check", "--show-redacted"]),
+                    0,
+                )
+            text = out.getvalue()
+            self.assertIn("# Redacted Telachat config", text)
+            self.assertIn('api_key = "sk-...456"', text)
+            self.assertIn('Authorization = "Bea...lue"', text)
+            self.assertIn('X-Trace = "visible"', text)
+            self.assertNotIn("very-secret", text)
+            self.assertNotIn("raw-token", text)
+            payload = tomllib.loads(text)
+            self.assertEqual(payload["profiles"]["ok"]["api_key"], "sk-...456")
+            self.assertEqual(payload["profiles"]["ok"]["headers"]["X-Trace"], "visible")
+
+            err = io.StringIO()
+            with redirect_stderr(err):
+                self.assertEqual(
+                    main(["--config", str(config), "config-check", "--json", "--show-redacted"]),
+                    1,
+                )
+            self.assertIn("kann nicht mit --json kombiniert", err.getvalue())
+
     def test_models_lists_configured_and_live_models(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = Path(tmp) / "config.toml"

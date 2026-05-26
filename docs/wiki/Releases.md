@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.67.0 - 2026-05-26
+
+- Ergaenzt `telachat config-check --show-redacted`, das die aktive
+  Konfiguration als redaktierte TOML-Ansicht ausgibt.
+- Rohe API-Keys und Auth-Header bleiben dabei verborgen; normale nicht-geheime
+  Header bleiben sichtbar.
+
 ## 0.66.0 - 2026-05-26
 
 - Merkt sich zuletzt genutzte Custom-Variablenwerte pro Prompt-Template
