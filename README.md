@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.48.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.48.1`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -284,8 +284,9 @@ telachat ask --template summarize "Langer Text..."
 `models` zeigt konfigurierte Modelle pro Profil; mit `--live -p PROFILE` fragt
 es `/models` fuer ein Zielprofil ab. `config-check` prueft lokale Provider,
 Modelle und Secret-Quellen ohne
-Netzwerk/API-Anfrage. Secret-Werte werden nicht ausgegeben; `--strict` gibt
-einen Fehlercode zurueck, wenn eine nicht-lokale Secret-Quelle fehlt.
+Netzwerk/API-Anfrage und zeigt den Status der globalen Profil-Header-Pruefung.
+Secret-Werte werden nicht ausgegeben; `--strict` gibt einen Fehlercode zurueck,
+wenn eine nicht-lokale Secret-Quelle fehlt.
 
 Manpages:
 
@@ -371,6 +372,16 @@ stream = true
 [profiles.openrouter.headers]
 HTTP-Referer = "https://local.telachat"
 X-Title = "Telachat"
+```
+
+Telachat prueft Headernamen und Headerwerte standardmaessig vor dem Senden.
+Fuer absichtlich ungewoehnliche Provider kann die strikte Standard-HTTP-
+Pruefung global in `config.toml` oder in den GUI-Einstellungen abgeschaltet
+werden. Grundlegende Sicherheitschecks gegen Steuerzeichen in Headerwerten
+und parser-gefaehrliche Headernamen bleiben aktiv:
+
+```toml
+validate_profile_headers = false
 ```
 
 ## Tests und Build

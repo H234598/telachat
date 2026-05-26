@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.48.1 - 2026-05-25
+
+- Add direct GUI regression coverage for `/models` and `/models live` in both Tk and GTK frontends.
+- Validate configured profile header names and values before they are sent with API requests.
+- Add a persistent `validate_profile_headers` option plus Tk/GTK settings controls to relax strict standard header-name validation for intentionally unusual providers while still rejecting control characters.
+
 ## 0.48.0 - 2026-05-25
 
 - Add `/models [live]` to the shared slash-command catalog, CLI chat, and both desktop frontends.

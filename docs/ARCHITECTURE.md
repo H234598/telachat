@@ -214,8 +214,10 @@ profile, which is useful when optional provider presets are intentionally not
 configured.
 Configured extra headers are validated by default with
 `validate_profile_headers = true`. The option is global because header parsing
-happens while loading TOML, before provider-specific runtime state exists. Tk
-and GTK expose the same switch in the right settings pane.
+happens while loading TOML, before provider-specific runtime state exists. The
+switch relaxes only strict standard-name validation; control characters and
+parser-unsafe names remain rejected. Tk and GTK expose the same switch in the
+right settings pane.
 `profiles`, `models`, `config-check`, `sessions`, `stats`, `context`,
 `templates`, `folders`, `ask`, `export`, `export-folder`, and `doctor` also
 support `--json` for agent/script consumption. JSON output is redacted where it

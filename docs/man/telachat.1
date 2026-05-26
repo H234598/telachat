@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.48.0" "User Commands"
+.TH TELACHAT 1 "2026-05-25" "Telachat 0.48.1" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -32,7 +32,8 @@ Show configured model IDs per profile without network access. Use
 Check local configuration, model metadata, and secret references without an API
 request. Use \fB--profile NAME\fR to check one profile. Use \fB--strict\fR to
 fail when checked non-Codex provider secret sources are missing. Use
-\fB--json\fR for redacted structured output.
+\fB--json\fR for redacted structured output. The output also reports whether
+global profile-header validation is enabled.
 .TP
 .B theme
 Show or set the persistent GUI theme. Supported themes are \fIsystem\fR,

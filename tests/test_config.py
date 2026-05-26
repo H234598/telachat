@@ -225,14 +225,37 @@ api_key = "test"
 model = "demo"
 
 [profiles.local.headers]
-"Bad Header" = "line\\nbreak"
+"Bad@Header" = "ok"
 """.strip(),
                 encoding="utf-8",
             )
             self.assertEqual(
                 load_config(path).profile().extra_headers,
-                {"Bad Header": "line\nbreak"},
+                {"Bad@Header": "ok"},
             )
+
+            disabled_validation_cases = [
+                ('[profiles.local.headers]\n"Bad Header" = "x"\n', "Header-Namen"),
+                ('[profiles.local.headers]\n"Bad:Header" = "x"\n', "Header-Namen"),
+                ('[profiles.local.headers]\nX-Test = "line\\nbreak"\n', "Header-Wert"),
+            ]
+            for suffix, pattern in disabled_validation_cases:
+                with self.subTest(disabled_validation_suffix=suffix):
+                    path.write_text(
+                        """
+default_profile = "local"
+validate_profile_headers = false
+[profiles.local]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "test"
+model = "demo"
+
+""".lstrip()
+                        + suffix,
+                        encoding="utf-8",
+                    )
+                    with self.assertRaisesRegex(ConfigError, pattern):
+                        load_config(path)
 
             path.write_text(
                 """

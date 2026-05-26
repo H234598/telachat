@@ -1,5 +1,15 @@
 # Releases
 
+## 0.48.1 - 2026-05-25
+
+- Ergaenzt direkte GUI-Regression-Coverage fuer `/models` und `/models live`
+  in Tk und GTK.
+- Validiert konfigurierte Profil-Headernamen und -Werte, bevor sie mit
+  API-Requests gesendet werden.
+- Ergaenzt die persistente Option `validate_profile_headers` plus Tk/GTK-
+  Einstellungen, um die strikte Standard-Headernamen-Pruefung fuer bewusst
+  ungewoehnliche Provider abzuschalten; Steuerzeichen bleiben abgelehnt.
+
 ## 0.48.0 - 2026-05-25
 
 - Ergaenzt `/models [live]` im gemeinsamen Slash-Katalog, im CLI-Chat und in
