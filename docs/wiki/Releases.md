@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.57.1 - 2026-05-26
+
+- Stellt die sichtbare Seitenleistenaktion `Neu` in Tk und GTK wieder her,
+  waehrend `Regenerieren` und `Check` als Schnellaktionen erhalten bleiben.
+- Richtet die Tk-Seitenleistenzeilen ueber Konstanten aus, damit die Chatliste
+  nach der zusaetzlichen Schnellaktionszeile weiter korrekt mitwaechst.
+
 ## 0.57.0 - 2026-05-26
 
 - Ergaenzt eine gemeinsame Tastenkuerzel-Hilfe fuer CLI, Tk und GTK ueber

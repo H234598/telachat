@@ -197,6 +197,19 @@ class GuiImportTests(unittest.TestCase):
         module = importlib.import_module("telachat.tkgui")
         self.assertTrue(hasattr(module, "TkTelachatApp"))
 
+    def test_tk_sidebar_quick_actions_include_visible_new_session(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+
+        self.assertEqual(module.sidebar_quick_action_labels(), ("Neu", "Regenerieren", "Check"))
+        self.assertEqual(
+            module.sidebar_quick_action_method_names(),
+            ("new_session", "regenerate_active_session", "doctor"),
+        )
+        for method_name in module.sidebar_quick_action_method_names():
+            self.assertTrue(hasattr(module.TkTelachatApp, method_name))
+        self.assertEqual(module.SIDEBAR_FOLDER_ACTION_ROW, module.SIDEBAR_QUICK_ACTION_ROW + 2)
+        self.assertEqual(module.SIDEBAR_SESSION_LIST_ROW, module.SIDEBAR_FOLDER_PROMPT_ROW + 1)
+
     def test_gtk_gui_imports(self) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -207,6 +220,24 @@ class GuiImportTests(unittest.TestCase):
                     self.skipTest("PyGObject is not installed in this environment")
                 raise
         self.assertTrue(hasattr(module, "GtkTelachatApp"))
+
+    def test_gtk_sidebar_quick_actions_include_visible_new_session(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+
+        self.assertEqual(module.sidebar_quick_action_labels(), ("Neu", "Regenerieren", "Check"))
+        self.assertEqual(
+            module.sidebar_quick_action_method_names(),
+            ("on_new", "on_regenerate_active_session", "on_doctor"),
+        )
+        for method_name in module.sidebar_quick_action_method_names():
+            self.assertTrue(hasattr(module.GtkTelachatApp, method_name))
 
     def test_tk_refresh_sessions_uses_selected_sidebar_filters(self) -> None:
         module = importlib.import_module("telachat.tkgui")

@@ -35,6 +35,14 @@ from .store import Message, Session
 from .themes import theme_by_name
 
 
+def sidebar_quick_action_labels() -> tuple[str, ...]:
+    return ("Neu", "Regenerieren", "Check")
+
+
+def sidebar_quick_action_method_names() -> tuple[str, ...]:
+    return ("on_new", "on_regenerate_active_session", "on_doctor")
+
+
 class GtkTelachatApp(Adw.Application):
     def __init__(self) -> None:
         super().__init__(
@@ -194,14 +202,19 @@ class GtkTelachatApp(Adw.Application):
         insert_template_button.connect("clicked", self.on_insert_template)
         template_row.append(insert_template_button)
 
-        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        self.sidebar.append(row)
-        regenerate_button = Gtk.Button(label="Regenerieren")
-        regenerate_button.connect("clicked", self.on_regenerate_active_session)
-        row.append(regenerate_button)
-        check_button = Gtk.Button(label="Check")
-        check_button.connect("clicked", self.on_doctor)
-        row.append(check_button)
+        for index, (label, method_name) in enumerate(
+            zip(
+                sidebar_quick_action_labels(),
+                sidebar_quick_action_method_names(),
+                strict=True,
+            )
+        ):
+            if index % 2 == 0:
+                row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+                self.sidebar.append(row)
+            button = Gtk.Button(label=label)
+            button.connect("clicked", getattr(self, method_name))
+            row.append(button)
 
         folder_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.sidebar.append(folder_row)

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.57.1 - 2026-05-26
+
+- Restores the visible `Neu` sidebar action in Tk and GTK while keeping
+  `Regenerieren` and `Check` available as quick actions.
+- Aligns Tk sidebar row constants so the session list keeps the grow weight
+  after the extra quick-action row.
+
 ## 0.57.0 - 2026-05-26
 
 - Adds shared keyboard-shortcut help for CLI, Tk, and GTK via `/shortcuts`
