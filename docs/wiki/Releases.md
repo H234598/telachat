@@ -2,15 +2,21 @@
 
 ## Unreleased
 
+## 0.53.1 - 2026-05-26
+
+- Stellt den sicheren Opt-in-Default fuer den Skill-Watchdog nach der
+  Regression in `0.53.0` wieder her.
+- Sichert den Low-Level-Hintergrundstart wieder ueber
+  `TELACHAT_ENABLE_SKILL_WATCHDOG=1`, damit Tests und GUI-Starts keine
+  externen Codex-Skill-Dateien ohne explizite Aktivierung veraendern.
+
 ## 0.53.0 - 2026-05-26
 
 - Ergaenzt in Tk eine Ordner-/Chat-Exploreransicht mit aufklappbaren
   Ordnerzeilen.
 - Fuegt ein Tk-Rechtsklickmenue fuer Chat-, Ordner- und Leerraumaktionen hinzu.
 - Laesst Tk und GTK beim Neu-Anlegen zuerst den Unterhaltungsnamen abfragen.
-- Stellt die vom Nutzer gewuenschte Tk/GTK-Default-Ausfuehrung des
-  Skill-Watchdogs wieder her; abschaltbar bleibt sie ueber
-  `skill_watchdog_enabled = false` oder `TELACHAT_DISABLE_SKILL_WATCHDOG=1`.
+- Fuegt die Skill-Watchdog-Option in den neuen Tk/GTK-Einstellungen hinzu.
 
 ## 0.52.1 - 2026-05-26
 

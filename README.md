@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.53.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.53.1`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -301,9 +301,9 @@ wenn eine nicht-lokale Secret-Quelle fehlt.
 `skill-watchdog` kuerzt ueberlange Codex-Skill-Frontmatter-`description`-
 Felder auf Loader-kompatible Laenge, legt Backups als
 `SKILL.md.telachat-watchdog.bak` an und laesst den Skill-Body erhalten. Tk/GTK
-starten den Lauf beim App-Start und danach stuendlich.
-`skill_watchdog_enabled = false` in `config.toml` oder
-`TELACHAT_DISABLE_SKILL_WATCHDOG=1` deaktiviert ihn.
+starten den Lauf nur mit `skill_watchdog_enabled = true`; neue
+Konfigurationen bleiben sicher aus. `TELACHAT_DISABLE_SKILL_WATCHDOG=1`
+deaktiviert ihn auch dann.
 
 Manpages:
 

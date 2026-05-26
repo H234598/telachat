@@ -124,11 +124,13 @@ usage, GTK and Tk include input/output/total token counts in the response status
 The shared command path includes `/edit-last TEXT`, which updates the latest
 user message and removes later messages before `/regen` creates a replacement
 answer.
-Tk and GTK start the Codex Skill watchdog once at launch and then repeat hourly
-in a daemon thread unless `skill_watchdog_enabled = false` or
-`TELACHAT_DISABLE_SKILL_WATCHDOG=1` is set. This keeps oversized plugin
-descriptions below the local Codex loader limit without deleting the detailed
-Skill body.
+Tk and GTK start the Codex Skill watchdog once at launch only when
+`skill_watchdog_enabled = true`; it then repeats hourly in a daemon thread.
+The low-level background start is additionally gated by
+`TELACHAT_ENABLE_SKILL_WATCHDOG=1`, and
+`TELACHAT_DISABLE_SKILL_WATCHDOG=1` disables it even then. This keeps oversized
+plugin descriptions below the local Codex loader limit without deleting the
+detailed Skill body.
 `/fork [TITLE]` and `telachat fork` copy a session into an independent history
 branch while preserving provider, model, folder, system prompt, and messages.
 Saved sessions store both provider and model. Loading a session restores those

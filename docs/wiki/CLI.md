@@ -45,7 +45,8 @@ Die Ausgabe zeigt auch, ob die globale Profil-Header-Pruefung aktiv ist.
 `description`-Felder, legt `SKILL.md.telachat-watchdog.bak` an und bewahrt den
 Skill-Body. Tk und GTK starten denselben Watchdog nur mit
 `skill_watchdog_enabled = true` einmal direkt und danach stuendlich im
-Hintergrund; `TELACHAT_DISABLE_SKILL_WATCHDOG=1` deaktiviert ihn auch dann.
+Hintergrund; neue Konfigurationen bleiben aus.
+`TELACHAT_DISABLE_SKILL_WATCHDOG=1` deaktiviert ihn auch dann.
 `telachat theme [NAME]` zeigt oder setzt das persistente GUI-Theme. Fuer
 temporäre Starts kann `TELACHAT_THEME=dark telachat-tk` genutzt werden. Bei
 `theme = "system"` kann `TELACHAT_SYSTEM_THEME=solarized-dark` nur die

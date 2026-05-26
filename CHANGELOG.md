@@ -2,12 +2,17 @@
 
 ## Unreleased
 
+## 0.53.1 - 2026-05-26
+
+- Restore the Skill watchdog's safe opt-in default after the 0.53.0 release regression.
+- Keep the low-level background watchdog gated by `TELACHAT_ENABLE_SKILL_WATCHDOG=1` so tests and GUI startup cannot mutate external Codex skill files unless explicitly enabled.
+
 ## 0.53.0 - 2026-05-26
 
 - Add a Tk folder/session explorer view with expandable folder rows.
 - Add a Tk right-click context menu for session, folder, and empty-list actions.
 - Make the Tk and GTK New actions ask for a conversation name before creating the chat.
-- Restore the user-requested Tk/GTK default-on Skill watchdog while keeping `skill_watchdog_enabled = false` and `TELACHAT_DISABLE_SKILL_WATCHDOG=1` as opt-outs.
+- Add the Tk/GTK Skill watchdog option to the new preferences flow.
 
 ## 0.52.1 - 2026-05-26
 
