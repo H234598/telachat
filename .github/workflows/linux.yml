@@ -37,10 +37,30 @@ jobs:
       - name: Lint workflows
         run: ./actionlint
 
+  shell-lint:
+    name: Shell lint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Lint shell scripts
+        run: |
+          shellcheck -x \
+            packaging/linux/*.sh \
+            packaging/linux/wrappers/*.in
+
   test:
     name: Test Python ${{ matrix.python-version }}
     runs-on: ubuntu-24.04
-    needs: workflow-lint
+    needs:
+      - workflow-lint
+      - shell-lint
     strategy:
       fail-fast: false
       matrix:

@@ -83,8 +83,8 @@ import sys
 raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
 PY
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-repo_root=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd || printf '%s' "$script_dir")
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+repo_root=$(CDPATH='' cd -- "$script_dir/../.." 2>/dev/null && pwd || printf '%s' "$script_dir")
 
 if [ -z "$zipapp_source" ]; then
     if [ -f "$repo_root/dist/telachat.pyz" ]; then

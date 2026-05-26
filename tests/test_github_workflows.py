@@ -47,6 +47,10 @@ class GitHubWorkflowTests(unittest.TestCase):
 
         self.assertIn("runs-on: ubuntu-24.04", text)
         self.assertIn("name: Workflow lint", text)
+        self.assertIn("name: Shell lint", text)
+        self.assertIn("sudo apt-get install -y shellcheck", text)
+        self.assertIn("packaging/linux/*.sh", text)
+        self.assertIn("packaging/linux/wrappers/*.in", text)
         self.assertIn('ACTIONLINT_VERSION: "1.7.12"', text)
         self.assertIn(
             'ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"',
@@ -54,7 +58,8 @@ class GitHubWorkflowTests(unittest.TestCase):
         )
         self.assertIn("sha256sum -c -", text)
         self.assertIn("run: ./actionlint", text)
-        self.assertIn("needs: workflow-lint", text)
+        self.assertIn("      - workflow-lint", text)
+        self.assertIn("      - shell-lint", text)
         self.assertIn('          - "3.11"', text)
         self.assertIn('          - "3.12"', text)
         self.assertIn("make check PYTHON=python", text)
