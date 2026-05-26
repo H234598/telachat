@@ -73,6 +73,8 @@ def start_skill_watchdog(
     description_limit: int = DEFAULT_DESCRIPTION_LIMIT,
     interval_seconds: int = DEFAULT_INTERVAL_SECONDS,
 ) -> bool:
+    if os.environ.get("TELACHAT_ENABLE_SKILL_WATCHDOG") != "1":
+        return False
     if os.environ.get("TELACHAT_DISABLE_SKILL_WATCHDOG") == "1":
         return False
     global _WATCHDOG_STARTED

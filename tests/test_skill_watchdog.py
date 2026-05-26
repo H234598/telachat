@@ -15,10 +15,24 @@ from telachat.skill_watchdog import (
 
 
 class SkillWatchdogTests(unittest.TestCase):
-    def test_background_watchdog_can_be_disabled(self) -> None:
+    def test_background_watchdog_is_opt_in(self) -> None:
         with mock.patch.dict(
             "os.environ",
-            {"TELACHAT_DISABLE_SKILL_WATCHDOG": "1"},
+            {
+                "TELACHAT_ENABLE_SKILL_WATCHDOG": "",
+                "TELACHAT_DISABLE_SKILL_WATCHDOG": "",
+            },
+            clear=False,
+        ):
+            self.assertFalse(start_skill_watchdog((Path("/missing"),)))
+
+    def test_background_watchdog_disable_overrides_enable(self) -> None:
+        with mock.patch.dict(
+            "os.environ",
+            {
+                "TELACHAT_ENABLE_SKILL_WATCHDOG": "1",
+                "TELACHAT_DISABLE_SKILL_WATCHDOG": "1",
+            },
             clear=False,
         ):
             self.assertFalse(start_skill_watchdog((Path("/missing"),)))
