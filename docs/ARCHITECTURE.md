@@ -76,11 +76,11 @@ Default path:
 Default profile:
 
 ```toml
-[profiles.tki]
-label = "TKI"
+[profiles.huggingface]
+label = "HuggingFace"
 base_url = "https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1"
 api_key = "envfile:/home/teladi/.config/telachat/qwen.env#TELACHAT_QWEN_API_KEY"
-model = "Qwen/Qwen2.5-1.5B-Instruct"
+model = "TKI"
 ```
 
 GUI theme:
@@ -100,8 +100,8 @@ Telachat-specific CSS tokens. Tk uses the same token palette directly.
 
 Additional built-in profiles:
 
-- `openai`: OpenAI `/v1` Responses API using an env/envfile key, default model `gpt-5.5`, `reasoning_effort = "high"`, with GPT-5.x model options.
-- `huggingface`: Hugging Face Space `/v1`, model list centered on Qwen.
+- `huggingface`: Hugging Face Space `/v1`, default profile and model label `TKI`, mapped internally to the Qwen API model. Legacy `tki` profile references resolve to this profile.
+- `openai`: OpenAI `/v1` Responses API using an env/envfile key, default model `gpt-5.5`, `reasoning_effort = "high"`, with GPT-5.x model options and sampling parameters disabled by default.
 - `codex`: local `codex exec` bridge. This is not OpenAI-compatible HTTP.
 
 GUI frontends expose profiles as providers and `Profile.models` as the second
@@ -144,7 +144,7 @@ telachat --version
 telachat profiles
 telachat profiles --json
 telachat models
-telachat models --live -p tki
+telachat models --live -p huggingface
 telachat models --json
 telachat config-check
 telachat config-check --strict

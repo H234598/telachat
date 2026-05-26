@@ -63,13 +63,15 @@ class OpenAICompatClient:
             return self._responses_chat(messages)
         use_stream = self.profile.stream if stream is None else stream
         body = {
-            "model": self.profile.model,
+            "model": self.profile.api_model,
             "messages": messages,
-            "temperature": self.profile.temperature,
-            "top_p": self.profile.top_p,
             "max_tokens": self.profile.max_tokens,
             "stream": bool(use_stream),
         }
+        if self.profile.send_temperature:
+            body["temperature"] = self.profile.temperature
+        if self.profile.send_top_p:
+            body["top_p"] = self.profile.top_p
         if self.profile.reasoning_effort:
             body["reasoning_effort"] = self.profile.reasoning_effort
         if use_stream:
@@ -83,7 +85,7 @@ class OpenAICompatClient:
 
     def _responses_chat(self, messages: list[dict[str, str]]) -> ChatResult:
         body = {
-            "model": self.profile.model,
+            "model": self.profile.api_model,
             "input": [
                 {"role": item["role"], "content": item["content"]}
                 for item in messages
@@ -91,9 +93,11 @@ class OpenAICompatClient:
                 and item.get("content")
             ],
             "max_output_tokens": self.profile.max_tokens,
-            "temperature": self.profile.temperature,
-            "top_p": self.profile.top_p,
         }
+        if self.profile.send_temperature:
+            body["temperature"] = self.profile.temperature
+        if self.profile.send_top_p:
+            body["top_p"] = self.profile.top_p
         if self.profile.reasoning_effort:
             body["reasoning"] = {"effort": self.profile.reasoning_effort}
         raw = self._request_json("POST", "/responses", body)

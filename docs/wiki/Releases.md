@@ -1,5 +1,25 @@
 # Releases
 
+## Unreleased
+
+## 0.49.0 - 2026-05-26
+
+- Entfernt den doppelten Default-Provider `tki`; alte Referenzen werden weiter
+  als Alias auf `huggingface` aufgeloest.
+- Zeigt im HuggingFace-Profil den Modellalias `TKI`, sendet intern aber weiter
+  die echte Qwen-Modell-ID.
+- Profile koennen `temperature` und `top_p` aus API-Requests weglassen; das
+  OpenAI-Responses-Profil deaktiviert beide standardmaessig fuer GPT-5.x-
+  Kompatibilitaet.
+- Haertet das Windows-Packaging gegen unbrauchbare Microsoft-Store-Python-
+  Aliasse und ergaenzt ein wiederverwendbares Windows-Testskript.
+- Erzeugt versionierte portable Windows-ZIP- und NSIS-Installer-Artefakte mit
+  SHA256-Sidecars.
+- Deckt Windows-CI-Packaging und Release-Upload-Validierung ohne direkte
+  Wildcard-Uploads ab.
+- Haelt Windows-Pfadtests mit escape-aehnlichen Sequenzen in temporaeren
+  Verzeichnissen.
+
 ## 0.48.1 - 2026-05-25
 
 - Ergaenzt direkte GUI-Regression-Coverage fuer `/models` und `/models live`

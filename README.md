@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.48.1`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.49.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -256,7 +256,7 @@ verwalten:
 telachat folders
 telachat folders --create Arbeit --system "Antworte knapp und projektbezogen."
 telachat folders --set-system Arbeit "Nutze den Projektkontext."
-telachat folders --set-backend Arbeit tki Qwen/Qwen2.5-1.5B-Instruct
+telachat folders --set-backend Arbeit huggingface TKI
 telachat folders --clear-backend Arbeit
 telachat folders --show-system
 telachat folders --json --show-system
@@ -271,10 +271,10 @@ telachat templates
 telachat templates --json
 telachat --version
 telachat models
-telachat models --live -p tki --json
+telachat models --live -p huggingface --json
 telachat config-check
 telachat config-check --strict
-telachat config-check --profile tki --strict
+telachat config-check --profile huggingface --strict
 telachat config-check --json
 telachat stats --json
 telachat doctor --json --chat
@@ -296,31 +296,35 @@ man telachat-tk
 man telachat-gtk
 ```
 
-## Voreingestelltes TKI-Profil
+## Voreingestelltes HuggingFace-Profil
 
 ```toml
-[profiles.tki]
-label = "TKI"
+[profiles.huggingface]
+label = "HuggingFace"
 base_url = "https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1"
 api_key = "env:TELACHAT_QWEN_API_KEY"
-model = "Qwen/Qwen2.5-1.5B-Instruct"
+model = "TKI"
+models = ["TKI", "Qwen/Qwen2.5-1.5B-Instruct", "qwen2-5-1-5b-instruct-free"]
 temperature = 0.2
 top_p = 0.9
 max_tokens = 512
 timeout_seconds = 300
 stream = true
 api_mode = "chat_completions"
+
+[profiles.huggingface.model_aliases]
+TKI = "Qwen/Qwen2.5-1.5B-Instruct"
 ```
 
-Das Modell wird mit seinem echten Qwen-Namen angesprochen. Der Space erwartet
-inzwischen einen Bearer-Key; auf diesem Host liegt der lokale Wert in
+Der sichtbare Modellname `TKI` wird intern auf die echte Qwen-ID gemappt. Der
+Space erwartet inzwischen einen Bearer-Key; auf diesem Host liegt der lokale Wert in
 `~/.config/telachat/qwen.env` und wird per
 `envfile:~/.config/telachat/qwen.env#TELACHAT_QWEN_API_KEY` referenziert.
 
 Weitere Standardprofile:
 
-- `openai`: allgemeine OpenAI-API-Anbindung mit `env:OPENAI_API_KEY`, `gpt-5.5`, Responses API, `reasoning_effort = "high"` und GPT-5.x-Modelloptionen.
-- `huggingface`: dein Hugging-Face/Qwen-Space mit Qwen-Modellnamen.
+- `huggingface`: dein Hugging-Face/Qwen-Space; alte `tki`-Referenzen werden als Kompatibilitaetsalias auf dieses Profil aufgeloest.
+- `openai`: allgemeine OpenAI-API-Anbindung mit `env:OPENAI_API_KEY`, `gpt-5.5`, Responses API, `reasoning_effort = "high"` und GPT-5.x-Modelloptionen. Sampling-Parameter werden standardmaessig nicht gesendet, weil GPT-5.x-Responses-Modelle `temperature` je nach Modell nicht akzeptieren.
 - `lmstudio`: lokaler LM-Studio-Server unter `http://localhost:1234/v1`, Modell-ID lokal anpassen.
 - `ollama`: lokaler Ollama-OpenAI-Endpunkt unter `http://localhost:11434/v1`, Modell vorher mit Ollama bereitstellen.
 - `jan`: lokaler Jan-API-Server unter `http://127.0.0.1:1337/v1`, API-Key ueber `TELACHAT_JAN_API_KEY`.

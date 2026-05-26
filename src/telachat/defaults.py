@@ -2,7 +2,7 @@ from __future__ import annotations
 
 APP_NAME = "telachat"
 APP_TITLE = "Telachat"
-DEFAULT_PROFILE = "tki"
+DEFAULT_PROFILE = "huggingface"
 DEFAULT_BASE_URL = "https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1"
 DEFAULT_API_KEY = "env:TELACHAT_QWEN_API_KEY"
 DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
@@ -39,12 +39,12 @@ summarize = "{DEFAULT_PROMPT_TEMPLATES["summarize"].replace(chr(10), "\\n").repl
 explain = "{DEFAULT_PROMPT_TEMPLATES["explain"].replace(chr(10), "\\n").replace("{", "{{").replace("}", "}}")}"
 translate_de = "{DEFAULT_PROMPT_TEMPLATES["translate_de"].replace(chr(10), "\\n").replace("{", "{{").replace("}", "}}")}"
 
-[profiles.{DEFAULT_PROFILE}]
-label = "HuggingFace TKI"
+[profiles.huggingface]
+label = "HuggingFace"
 base_url = "{DEFAULT_BASE_URL}"
 api_key = "{DEFAULT_API_KEY}"
-model = "{DEFAULT_MODEL}"
-models = ["Qwen/Qwen2.5-1.5B-Instruct", "qwen2-5-1-5b-instruct-free"]
+model = "TKI"
+models = ["TKI", "Qwen/Qwen2.5-1.5B-Instruct", "qwen2-5-1-5b-instruct-free"]
 temperature = 0.2
 top_p = 0.9
 max_tokens = 512
@@ -52,18 +52,8 @@ timeout_seconds = 300
 stream = true
 api_mode = "chat_completions"
 
-[profiles.huggingface]
-label = "HuggingFace"
-base_url = "{DEFAULT_BASE_URL}"
-api_key = "{DEFAULT_API_KEY}"
-model = "Qwen/Qwen2.5-1.5B-Instruct"
-models = ["Qwen/Qwen2.5-1.5B-Instruct", "qwen2-5-1-5b-instruct-free"]
-temperature = 0.2
-top_p = 0.9
-max_tokens = 512
-timeout_seconds = 300
-stream = true
-api_mode = "chat_completions"
+[profiles.huggingface.model_aliases]
+TKI = "{DEFAULT_MODEL}"
 
 [profiles.openai]
 label = "OpenAI API"
@@ -78,6 +68,8 @@ reasoning_effort = "high"
 timeout_seconds = 300
 stream = false
 api_mode = "responses"
+send_temperature = false
+send_top_p = false
 
 # Local OpenAI-compatible desktop/server presets. Start the respective local
 # server first and adjust `model` to a model installed in that tool.

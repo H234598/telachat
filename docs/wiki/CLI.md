@@ -9,9 +9,9 @@ telachat --version
 telachat init
 telachat profiles
 telachat models
-telachat models --live -p tki --json
+telachat models --live -p huggingface --json
 telachat config-check
-telachat config-check --profile tki --strict
+telachat config-check --profile huggingface --strict
 telachat config-check --json
 telachat theme
 telachat templates
@@ -29,7 +29,7 @@ telachat restore --dry-run ./backups/telachat-backup.zip
 ## Provider und Template
 
 ```sh
-telachat ask -p tki "Hallo"
+telachat ask -p huggingface -m TKI "Hallo"
 telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
 telachat ask --template explain "SQLite WAL"
 ```
@@ -85,7 +85,7 @@ telachat tags --json
 telachat fork SESSION_ID --title "Variante A"
 telachat folders --create Projekt --system "Projektkontext"
 telachat folders --set-system Projekt "Neuer Projektkontext"
-telachat folders --set-backend Projekt tki Qwen/Qwen2.5-1.5B-Instruct
+telachat folders --set-backend Projekt huggingface TKI
 telachat folders --clear-backend Projekt
 telachat folders --show-system
 telachat folders --json --show-system

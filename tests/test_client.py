@@ -148,11 +148,30 @@ class ClientTests(unittest.TestCase):
         result = OpenAICompatClient(profile).chat([{"role": "user", "content": "Hi"}])
 
         self.assertIsInstance(result, ChatResult)
+        self.assertEqual(FakeOpenAIHandler.requests[-1]["model"], "demo-model")
         self.assertEqual(FakeOpenAIHandler.requests[-1]["temperature"], 0.42)
         self.assertEqual(FakeOpenAIHandler.requests[-1]["top_p"], 0.66)
         self.assertEqual(FakeOpenAIHandler.requests[-1]["max_tokens"], 123)
         self.assertEqual(FakeOpenAIHandler.requests[-1]["reasoning_effort"], "low")
         self.assertEqual(FakeOpenAIHandler.requests[-1]["stream"], False)
+
+    def test_request_can_omit_sampling_parameters_and_resolve_model_alias(self) -> None:
+        profile = Profile(
+            **{
+                **self.profile(stream=False).__dict__,
+                "model": "Friendly",
+                "model_aliases": {"Friendly": "real-model"},
+                "send_temperature": False,
+                "send_top_p": False,
+            }
+        )
+        result = OpenAICompatClient(profile).chat([{"role": "user", "content": "Hi"}])
+
+        self.assertIsInstance(result, ChatResult)
+        body = FakeOpenAIHandler.requests[-1]
+        self.assertEqual(body["model"], "real-model")
+        self.assertNotIn("temperature", body)
+        self.assertNotIn("top_p", body)
 
     def test_stream_chat(self) -> None:
         client = OpenAICompatClient(self.profile(stream=True))
@@ -230,6 +249,31 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(body["temperature"], 0.35)
         self.assertEqual(body["top_p"], 0.55)
         self.assertEqual(body["reasoning"], {"effort": "high"})
+
+    def test_responses_request_can_omit_sampling_parameters(self) -> None:
+        profile = Profile(
+            **{
+                **self.profile(stream=False).__dict__,
+                "api_mode": "responses",
+                "model": "Display",
+                "model_aliases": {"Display": "api-model"},
+                "send_temperature": False,
+                "send_top_p": False,
+            }
+        )
+        client = OpenAICompatClient(profile)
+        with mock.patch.object(
+            client,
+            "_request_json",
+            return_value={"output_text": "Response OK"},
+        ) as request:
+            result = client.chat([{"role": "user", "content": "Hi"}])
+
+        self.assertIsInstance(result, ChatResult)
+        body = request.call_args.args[2]
+        self.assertEqual(body["model"], "api-model")
+        self.assertNotIn("temperature", body)
+        self.assertNotIn("top_p", body)
 
     def test_usage_summary_formatting(self) -> None:
         usage = TokenUsage(

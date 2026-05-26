@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.49.0 - 2026-05-26
+
+- Remove the duplicate default `tki` provider while keeping it as a legacy alias for stored sessions and folder backends.
+- Show the HuggingFace model alias `TKI` while sending the real Qwen model ID to the API.
+- Let profiles omit `temperature` and `top_p` from API requests; the OpenAI Responses profile disables both by default for GPT-5.x compatibility.
 - Harden Windows packaging around unusable Microsoft Store Python aliases and add a reusable Windows test script.
 - Add versioned Windows portable ZIP and NSIS installer outputs with SHA256 sidecar files.
 - Add Windows CI packaging coverage and release upload validation without raw wildcard uploads.

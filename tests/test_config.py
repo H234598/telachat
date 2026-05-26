@@ -22,8 +22,12 @@ class ConfigTests(unittest.TestCase):
             ensure_default_config(path)
             cfg = load_config(path)
             profile = cfg.profile()
-            self.assertEqual(profile.name, "tki")
-            self.assertEqual(profile.model, "Qwen/Qwen2.5-1.5B-Instruct")
+            self.assertEqual(profile.name, "huggingface")
+            self.assertEqual(profile.model, "TKI")
+            self.assertEqual(profile.api_model, "Qwen/Qwen2.5-1.5B-Instruct")
+            self.assertEqual(cfg.profile("tki").name, "huggingface")
+            self.assertNotIn("tki", cfg.profiles)
+            self.assertIn("TKI", profile.models)
             self.assertIn("Qwen/Qwen2.5-1.5B-Instruct", profile.models)
             self.assertTrue(profile.base_url.endswith("/v1"))
             self.assertIn("huggingface", cfg.profiles)
@@ -36,6 +40,8 @@ class ConfigTests(unittest.TestCase):
             self.assertEqual(cfg.profiles["openai"].model, "gpt-5.5")
             self.assertIn("gpt-5.5", cfg.profiles["openai"].models)
             self.assertEqual(cfg.profiles["openai"].reasoning_effort, "high")
+            self.assertFalse(cfg.profiles["openai"].send_temperature)
+            self.assertFalse(cfg.profiles["openai"].send_top_p)
             self.assertEqual(cfg.profiles["lmstudio"].base_url, "http://localhost:1234/v1")
             self.assertEqual(cfg.profiles["lmstudio"].api_key, "lm-studio")
             self.assertEqual(cfg.profiles["ollama"].base_url, "http://localhost:11434/v1")
@@ -143,6 +149,51 @@ ticket = "Schreibe ein Ticket:\\n\\n{input}"
             )
             cfg = load_config(path)
             self.assertEqual(cfg.prompt_templates, {"ticket": "Schreibe ein Ticket:\n\n{input}"})
+
+    def test_profile_model_aliases_and_generation_parameter_flags_load(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            path.write_text(
+                """
+default_profile = "local"
+
+[profiles.local]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "test"
+model = "Friendly"
+models = ["Friendly", "real-model"]
+send_temperature = false
+send_top_p = false
+
+[profiles.local.model_aliases]
+Friendly = "real-model"
+""".strip(),
+                encoding="utf-8",
+            )
+            profile = load_config(path).profile()
+            self.assertEqual(profile.api_model, "real-model")
+            self.assertFalse(profile.send_temperature)
+            self.assertFalse(profile.send_top_p)
+
+    def test_profile_alias_does_not_shadow_existing_profile(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            path.write_text(
+                """
+default_profile = "tki"
+
+[profiles.tki]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "test"
+model = "legacy-model"
+""".strip(),
+                encoding="utf-8",
+            )
+            cfg = load_config(path)
+
+            self.assertEqual(cfg.profile().name, "tki")
+            self.assertEqual(cfg.profile("tki").name, "tki")
+            self.assertEqual(cfg.profile().model, "legacy-model")
 
     def test_profile_stream_and_api_mode_are_validated(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

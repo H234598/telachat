@@ -26,6 +26,7 @@ class ConfigError(RuntimeError):
 
 _HEADER_NAME_RE = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
 _HEADER_NAME_SAFETY_RE = re.compile(r"^[!-9;-~]+$")
+_PROFILE_ALIASES = {"tki": "huggingface"}
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,7 @@ class Profile:
     api_key: str
     model: str
     models: list[str] | None = None
+    model_aliases: dict[str, str] | None = None
     temperature: float = 0.2
     top_p: float = 0.9
     max_tokens: int = 512
@@ -43,11 +45,18 @@ class Profile:
     timeout_seconds: int = 300
     stream: bool = True
     api_mode: str = "chat_completions"
+    send_temperature: bool = True
+    send_top_p: bool = True
     extra_headers: dict[str, str] | None = None
 
     @property
     def display_name(self) -> str:
         return self.label or self.name
+
+    @property
+    def api_model(self) -> str:
+        aliases = self.model_aliases or {}
+        return aliases.get(self.model, self.model)
 
     def resolved_api_key(self) -> str:
         key = self.api_key or ""
@@ -106,6 +115,8 @@ class AppConfig:
 
     def profile(self, name: str | None = None) -> Profile:
         wanted = name or self.default_profile
+        if wanted not in self.profiles:
+            wanted = _PROFILE_ALIASES.get(wanted, wanted)
         try:
             return self.profiles[wanted]
         except KeyError as exc:
@@ -164,6 +175,7 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
             api_key=api_key,
             model=model,
             models=_models(values, model, name),
+            model_aliases=_string_map(values.get("model_aliases"), name, "model_aliases"),
             temperature=_number_between(
                 values.get("temperature", 0.2),
                 "temperature",
@@ -185,6 +197,8 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
             ),
             stream=_bool(values, "stream", True, name),
             api_mode=_api_mode(values.get("api_mode", "chat_completions"), name),
+            send_temperature=_bool(values, "send_temperature", True, name),
+            send_top_p=_bool(values, "send_top_p", True, name),
             extra_headers=extra_headers,
         )
 
@@ -286,6 +300,24 @@ def _models(values: dict[str, Any], default_model: str, profile_name: str) -> li
     if default_model not in clean:
         clean.insert(0, default_model)
     return clean
+
+
+def _string_map(
+    raw: object,
+    profile_name: str,
+    key: str,
+) -> dict[str, str] | None:
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise ConfigError(f"Profil '{profile_name}' hat ungueltiges {key}.")
+    result: dict[str, str] = {}
+    for name, value in raw.items():
+        clean_name = str(name).strip()
+        if not clean_name or not isinstance(value, str) or not value.strip():
+            raise ConfigError(f"Profil '{profile_name}' hat ungueltiges {key}.")
+        result[clean_name] = value.strip()
+    return result
 
 
 def _headers(raw: object, profile_name: str, *, validate: bool) -> dict[str, str] | None:

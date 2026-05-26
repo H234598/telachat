@@ -192,7 +192,10 @@ class TelachatController:
         clean_profile = default_profile.strip()
         clean_model = default_model.strip()
         if clean_profile:
-            self.config.profile(clean_profile).with_overrides(model=clean_model or None)
+            profile = self.config.profile(clean_profile).with_overrides(
+                model=clean_model or None
+            )
+            clean_profile = profile.name
         elif clean_model:
             self.config.profile(None).with_overrides(model=clean_model)
         return clean_profile, clean_model

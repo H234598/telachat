@@ -566,12 +566,16 @@ def cmd_folders(args: argparse.Namespace) -> int:
     store = ChatStore()
     try:
         if args.create:
-            _validate_folder_backend(cfg, args.profile or "", args.model or "")
+            profile_name, model = _validate_folder_backend(
+                cfg,
+                args.profile or "",
+                args.model or "",
+            )
             folder = store.create_folder(
                 args.create,
                 system_prompt=args.system or "",
-                default_profile=args.profile or "",
-                default_model=args.model or "",
+                default_profile=profile_name,
+                default_model=model,
             )
             if not args.json:
                 print(f"Ordner bereit: {folder.id} {folder.name}")
@@ -587,7 +591,7 @@ def cmd_folders(args: argparse.Namespace) -> int:
             folder_ref = args.set_backend[0]
             profile_name = args.set_backend[1]
             model = args.set_backend[2] if len(args.set_backend) == 3 else ""
-            _validate_folder_backend(cfg, profile_name, model)
+            profile_name, model = _validate_folder_backend(cfg, profile_name, model)
             folder_id = _resolve_real_folder(store, folder_ref)
             folder = store.update_folder_backend(folder_id, profile_name, model)
             if not args.json:
@@ -935,12 +939,15 @@ def _profile_record(name: str, profile: Profile, *, is_default: bool) -> dict[st
         "api_key": redact_secret(profile.api_key),
         "model": profile.model,
         "models": profile.models or [profile.model],
+        "model_aliases": profile.model_aliases or {},
         "temperature": profile.temperature,
         "top_p": profile.top_p,
         "max_tokens": profile.max_tokens,
         "reasoning_effort": profile.reasoning_effort,
         "timeout_seconds": profile.timeout_seconds,
         "stream": profile.stream,
+        "send_temperature": profile.send_temperature,
+        "send_top_p": profile.send_top_p,
     }
 
 
@@ -1101,13 +1108,15 @@ def _cli_tag(tag: object) -> str:
         raise ConfigError(str(exc)) from exc
 
 
-def _validate_folder_backend(cfg: AppConfig, profile_name: str, model: str) -> None:
+def _validate_folder_backend(cfg: AppConfig, profile_name: str, model: str) -> tuple[str, str]:
     clean_profile = profile_name.strip()
     clean_model = model.strip()
     if clean_profile:
-        cfg.profile(clean_profile).with_overrides(model=clean_model or None)
+        profile = cfg.profile(clean_profile).with_overrides(model=clean_model or None)
+        clean_profile = profile.name
     elif clean_model:
         cfg.profile(None).with_overrides(model=clean_model)
+    return clean_profile, clean_model
 
 
 def _message_record(message: object) -> dict[str, object]:
@@ -2303,7 +2312,10 @@ def _backup_manifest(cfg: object, backup_db: Path) -> dict[str, object]:
                 "base_url": profile.base_url,
                 "model": profile.model,
                 "models": list(profile.models or [profile.model]),
+                "model_aliases": dict(profile.model_aliases or {}),
                 "api_key": redact_secret(profile.api_key),
+                "send_temperature": profile.send_temperature,
+                "send_top_p": profile.send_top_p,
             }
             for name, profile in sorted(cfg.profiles.items())
         },
@@ -2355,6 +2367,8 @@ def _redacted_config_toml(cfg: object) -> str:
         lines.append(f"timeout_seconds = {profile.timeout_seconds}")
         lines.append(f"stream = {str(profile.stream).lower()}")
         lines.append(f"api_mode = {_toml_string(profile.api_mode)}")
+        lines.append(f"send_temperature = {str(profile.send_temperature).lower()}")
+        lines.append(f"send_top_p = {str(profile.send_top_p).lower()}")
         if profile.extra_headers:
             lines.append("")
             lines.append(f"[profiles.{_toml_key(name)}.headers]")
@@ -2362,6 +2376,11 @@ def _redacted_config_toml(cfg: object) -> str:
                 lines.append(
                     f"{_toml_key(header)} = {_toml_string(_redacted_header_value(header, value))}"
                 )
+        if profile.model_aliases:
+            lines.append("")
+            lines.append(f"[profiles.{_toml_key(name)}.model_aliases]")
+            for alias, model in sorted(profile.model_aliases.items()):
+                lines.append(f"{_toml_key(alias)} = {_toml_string(model)}")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 

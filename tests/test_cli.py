@@ -40,16 +40,19 @@ class CliTests(unittest.TestCase):
                 with redirect_stdout(out):
                     self.assertEqual(main(["profiles"]), 0)
                 text = out.getvalue()
-                self.assertIn("tki", text)
-                self.assertIn("Qwen/Qwen2.5-1.5B-Instruct", text)
+                self.assertIn("huggingface", text)
+                self.assertIn("TKI", text)
                 self.assertNotIn("sk-", text)
 
                 out = io.StringIO()
                 with redirect_stdout(out):
                     self.assertEqual(main(["profiles", "--json"]), 0)
                 payload = json.loads(out.getvalue())
-                self.assertEqual(payload["default_profile"], "tki")
-                self.assertTrue(any(profile["name"] == "tki" for profile in payload["profiles"]))
+                self.assertEqual(payload["default_profile"], "huggingface")
+                self.assertTrue(
+                    any(profile["name"] == "huggingface" for profile in payload["profiles"])
+                )
+                self.assertFalse(any(profile["name"] == "tki" for profile in payload["profiles"]))
                 self.assertNotIn("sk-", out.getvalue())
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
@@ -425,7 +428,7 @@ class CliTests(unittest.TestCase):
                     )
                 payload = json.loads(out.getvalue())
                 self.assertEqual(payload["answer"], "JSON OK")
-                self.assertEqual(payload["model"], "Qwen/Qwen2.5-1.5B-Instruct")
+                self.assertEqual(payload["model"], "TKI")
                 self.assertEqual(
                     payload["usage"],
                     {"input_tokens": 9, "output_tokens": 3, "total_tokens": 12},
@@ -861,7 +864,7 @@ stream = false
                 self.assertEqual(payload["folders"][0]["name"], "Projekt")
                 self.assertTrue(payload["folders"][0]["has_system_prompt"])
                 self.assertTrue(payload["folders"][0]["has_default_backend"])
-                self.assertEqual(payload["folders"][0]["default_profile"], "tki")
+                self.assertEqual(payload["folders"][0]["default_profile"], "huggingface")
                 self.assertEqual(payload["folders"][0]["default_model"], "qwen-alt")
                 self.assertNotIn("system_prompt", payload["folders"][0])
 

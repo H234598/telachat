@@ -34,12 +34,17 @@ ist dieselbe Option im rechten Einstellungsbereich verfuegbar.
 
 Beispiele fuer Provider:
 
-- `huggingface` / `tki`
+- `huggingface`
 - `openai`
 - `lmstudio`
 - `ollama`
 - `jan`
 - `codex`
+
+`huggingface` ist das Default-Profil. Das Modell `TKI` ist ein sichtbarer Alias
+und wird intern auf `Qwen/Qwen2.5-1.5B-Instruct` gemappt. Alte gespeicherte
+`tki`-Profilreferenzen werden beim Laden weiter auf `huggingface` aufgeloest,
+aber neue Standardconfigs enthalten kein separates `tki`-Profil mehr.
 
 ## Secrets
 

@@ -32,7 +32,7 @@ leaks.
 telachat doctor
 telachat --version
 telachat models
-telachat models --live -p tki --json
+telachat models --live -p huggingface --json
 telachat config-check
 telachat config-check --strict
 telachat config-check --json
@@ -43,12 +43,12 @@ telachat backup -o /tmp/telachat-backups
 telachat restore --dry-run /tmp/telachat-backups/FILE.zip
 telachat doctor --chat
 telachat doctor --json --chat
-telachat config-check --profile tki --strict
+telachat config-check --profile huggingface --strict
 python3 dist/telachat.pyz config-check --profile jan --json --strict
 telachat templates
 telachat folders --show-system
 telachat folders --json --show-system
-telachat folders --set-backend Arbeit tki Qwen/Qwen2.5-1.5B-Instruct
+telachat folders --set-backend Arbeit huggingface TKI
 telachat folders --clear-backend Arbeit
 telachat export SESSION_ID --json
 telachat import-session session.json --json
@@ -78,7 +78,7 @@ telachat-gtk
 telachat-tk
 ```
 
-Live tests use the active profile from `config.toml`, currently `tki`.
+Live tests use the active profile from `config.toml`, currently `huggingface`.
 `doctor --chat` and `ask` send prompts to the configured API.
 The GUI commands require a graphical desktop session.
 OpenAI live tests require `OPENAI_API_KEY`.
@@ -141,7 +141,7 @@ completion, and `/archive` slash-command behavior.
 ## Expected default live configuration
 
 ```text
-Profile: tki / TKI
+Profile: huggingface / TKI
 API: https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1
 Model: Qwen/Qwen2.5-1.5B-Instruct
 Key: local envfile `/home/teladi/.config/telachat/qwen.env`
