@@ -797,6 +797,8 @@ def cmd_ask(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     profile = _selected_profile(cfg, args)
     system_prompt = args.system or cfg.default_system_prompt
+    if args.template_var and not args.template:
+        raise ConfigError("--template-var braucht --template.")
     prompt = _read_prompt(args.prompt, args.stdin)
     if not prompt:
         raise ConfigError("Kein Prompt angegeben.")
