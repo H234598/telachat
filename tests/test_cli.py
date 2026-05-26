@@ -689,6 +689,15 @@ model = "demo"
 [profiles.ok.headers]
 Authorization = "Bearer raw-token-value"
 X-Trace = "visible"
+
+[profiles.other]
+label = "Other"
+base_url = "http://127.0.0.1:9/v1"
+api_key = "sk-other-secret-654321"
+model = "other"
+
+[profiles.other.headers]
+Authorization = "Bearer other-token-value"
 """.strip(),
                 encoding="utf-8",
             )
@@ -701,14 +710,38 @@ X-Trace = "visible"
                 )
             text = out.getvalue()
             self.assertIn("# Redacted Telachat config", text)
+            self.assertIn("[profiles.other]", text)
             self.assertIn('api_key = "sk-...456"', text)
             self.assertIn('Authorization = "Bea...lue"', text)
             self.assertIn('X-Trace = "visible"', text)
             self.assertNotIn("very-secret", text)
             self.assertNotIn("raw-token", text)
+            self.assertNotIn("other-secret", text)
+            self.assertNotIn("other-token", text)
             payload = tomllib.loads(text)
             self.assertEqual(payload["profiles"]["ok"]["api_key"], "sk-...456")
             self.assertEqual(payload["profiles"]["ok"]["headers"]["X-Trace"], "visible")
+
+            filtered = io.StringIO()
+            with redirect_stdout(filtered):
+                self.assertEqual(
+                    main(
+                        [
+                            "--config",
+                            str(config),
+                            "config-check",
+                            "--profile",
+                            "ok",
+                            "--show-redacted",
+                        ]
+                    ),
+                    0,
+                )
+            filtered_text = filtered.getvalue()
+            self.assertIn("[profiles.ok]", filtered_text)
+            self.assertNotIn("[profiles.other]", filtered_text)
+            filtered_payload = tomllib.loads(filtered_text)
+            self.assertEqual(sorted(filtered_payload["profiles"]), ["ok"])
 
             err = io.StringIO()
             with redirect_stderr(err):
