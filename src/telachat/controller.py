@@ -18,6 +18,7 @@ from .config import (
     set_config_skill_watchdog_enabled,
     set_config_theme,
 )
+from .folder_prompts import with_folder_context, without_folder_context
 from .store import (
     ChatStore,
     Folder,
@@ -178,11 +179,11 @@ class TelachatController:
         folder = self.store.get_folder(folder_id)
         if folder:
             base = (
-                _without_folder_context(folder.system_prompt, folder.context)
+                without_folder_context(folder.system_prompt, folder.context)
                 if folder.system_prompt
                 else self.system_prompt()
             )
-            return _with_folder_context(base, folder.context)
+            return with_folder_context(base, folder.context)
         return self.system_prompt()
 
     def folder_system_prompt_for_edit(self, folder_id: str | None) -> str:
@@ -190,7 +191,7 @@ class TelachatController:
             return self.system_prompt()
         folder = self.store.get_folder(folder_id)
         if folder and folder.system_prompt:
-            return _without_folder_context(folder.system_prompt, folder.context)
+            return without_folder_context(folder.system_prompt, folder.context)
         return self.system_prompt()
 
     def resolve_system_prompt(self, system_prompt: str | None, folder_id: str | None) -> str:
@@ -200,11 +201,11 @@ class TelachatController:
         folder = self.store.get_folder(folder_id) if folder_id else None
         if folder:
             folder_base = (
-                _without_folder_context(folder.system_prompt, folder.context)
+                without_folder_context(folder.system_prompt, folder.context)
                 if folder.system_prompt
                 else self.system_prompt()
             ).strip()
-            clean_base = _without_folder_context(clean, folder.context).strip()
+            clean_base = without_folder_context(clean, folder.context).strip()
             if clean == folder_base or clean_base == folder_base:
                 return self.folder_system_prompt(folder_id)
         if clean == self.system_prompt().strip():
@@ -221,7 +222,7 @@ class TelachatController:
         if from_effective_prompt:
             folder = self.store.get_folder(folder_id)
             if folder:
-                system_prompt = _without_folder_context(system_prompt, folder.context)
+                system_prompt = without_folder_context(system_prompt, folder.context)
         return self.store.update_folder_system_prompt(folder_id, system_prompt)
 
     def set_folder_context(self, folder_id: str, context: str) -> Folder:
@@ -498,27 +499,3 @@ class TelachatController:
 def _assistant_message_metadata(usage: TokenUsage | None) -> dict[str, object] | None:
     record = token_usage_record(usage)
     return {"usage": record} if record else None
-
-
-def _with_folder_context(system_prompt: str, context: str) -> str:
-    clean_context = context.strip()
-    if not clean_context:
-        return system_prompt
-    clean_system = system_prompt.strip()
-    if clean_system:
-        return f"{clean_system}\n\nOrdner-Kontext:\n{clean_context}"
-    return f"Ordner-Kontext:\n{clean_context}"
-
-
-def _without_folder_context(system_prompt: str, context: str) -> str:
-    clean = system_prompt.strip()
-    clean_context = context.strip()
-    if not clean_context:
-        return clean
-    marker = f"Ordner-Kontext:\n{clean_context}"
-    if clean == marker:
-        return ""
-    suffix = f"\n\n{marker}"
-    if clean.endswith(suffix):
-        return clean[: -len(suffix)].rstrip()
-    return clean

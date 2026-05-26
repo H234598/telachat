@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Haelt Aenderungen durch CLI `/folder-prompt` und `/folder-context` direkt
+  fuer den aktuellen interaktiven Chat wirksam, analog zur GUI-Aktualisierung.
+
 ## 0.72.0 - 2026-05-26
 
 - Fuegt `/folder-context TEXT` hinzu, um Ordner-Kontextnotizen direkt aus CLI

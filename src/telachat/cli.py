@@ -41,6 +41,7 @@ from .config import (
     set_config_theme,
 )
 from .defaults import APP_TITLE
+from .folder_prompts import with_folder_context
 from .paths import config_path, db_path, state_dir
 from .skill_watchdog import DEFAULT_DESCRIPTION_LIMIT, run_skill_watchdog
 from .store import (
@@ -2056,6 +2057,11 @@ def cli_completion_candidates(line: str, cfg: object, store: ChatStore) -> list[
     )
 
 
+def _folder_system_prompt_for_chat(cfg: object, folder: Folder) -> str:
+    base = folder.system_prompt or getattr(cfg, "default_system_prompt", "")
+    return with_folder_context(base, folder.context)
+
+
 def _backend_label(session: object) -> str:
     if getattr(session, "model", ""):
         return f"{session.profile}/{session.model}"
@@ -2299,6 +2305,7 @@ def _handle_command(
             print("Aktuelle Session liegt in keinem Ordner.")
         elif rest:
             folder = store.update_folder_system_prompt(folder_id, rest)
+            system_prompt = _folder_system_prompt_for_chat(cfg, folder)
             print(f"Ordnerprompt gesetzt: {folder.name}")
         else:
             folder = store.get_folder(folder_id)
@@ -2312,6 +2319,7 @@ def _handle_command(
             print("Aktuelle Session liegt in keinem Ordner.")
         elif rest:
             folder = store.update_folder_context(folder_id, rest)
+            system_prompt = _folder_system_prompt_for_chat(cfg, folder)
             print(f"Ordner-Kontext gespeichert: {folder.name}")
         else:
             folder = store.get_folder(folder_id)
@@ -2326,8 +2334,8 @@ def _handle_command(
         else:
             folder = store.create_folder(rest)
             session = store.move_session(session.id, folder.id)
-            if folder.system_prompt:
-                system_prompt = folder.system_prompt
+            if folder.system_prompt or folder.context:
+                system_prompt = _folder_system_prompt_for_chat(cfg, folder)
             print(f"Abgelegt in Ordner: {folder.name}")
     elif command == "/rename-folder":
         if not session.folder_id:
@@ -2353,8 +2361,8 @@ def _handle_command(
         else:
             folder = store.create_folder(rest)
             session = store.move_session(session.id, folder.id)
-            if folder.system_prompt:
-                system_prompt = folder.system_prompt
+            if folder.system_prompt or folder.context:
+                system_prompt = _folder_system_prompt_for_chat(cfg, folder)
             print(f"Chat abgelegt: {folder.name}")
     elif command == "/unfile":
         session = store.move_session(session.id, None)
