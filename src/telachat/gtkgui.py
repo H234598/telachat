@@ -16,6 +16,8 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
 from .assets import ICON_RANDOM, ICON_SYSTEM, icon_labels, icon_png_resource, random_icon_name
 from .commands import (
+    SESSION_SORT_NAMES,
+    apply_slash_completion,
     canonical_slash_command,
     estimate_context,
     format_context_lines,
@@ -24,6 +26,7 @@ from .commands import (
     format_stats_lines,
     format_stats_summary,
     keyboard_shortcut_help,
+    slash_completion_candidates,
     slash_command_help,
     slash_command_suggestions,
 )
@@ -317,6 +320,7 @@ class GtkTelachatApp(Adw.Application):
         self.command_popover.set_parent(self.input_view)
         self.command_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
         self.command_popover.set_child(self.command_box)
+        self.current_command_completions: list[str] = []
 
         self.settings = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self.settings.add_css_class("telachat-panel")
@@ -1206,16 +1210,26 @@ class GtkTelachatApp(Adw.Application):
 
     def refresh_command_suggestions(self) -> bool:
         text = self.input_prompt()
-        first_token = text.split(maxsplit=1)[0] if text.startswith("/") else ""
-        suggestions = slash_command_suggestions(first_token)
-        if not suggestions:
+        if not text.startswith("/"):
+            self.hide_command_suggestions()
+            return GLib.SOURCE_REMOVE
+        command_token, separator, _rest = text.partition(" ")
+        labels: list[str] = []
+        if separator:
+            completions = self.command_completion_candidates(text)
+            labels = [completion.strip() for completion in completions]
+        else:
+            suggestions = slash_command_suggestions(command_token)
+            completions = [f"{item.name} " for item in suggestions]
+            labels = [f"{item.usage}  -  {item.description}" for item in suggestions]
+        if not completions:
             self.hide_command_suggestions()
             return GLib.SOURCE_REMOVE
         while child := self.command_box.get_first_child():
             self.command_box.remove(child)
-        self.current_command_suggestions = suggestions
-        for item in suggestions:
-            label = Gtk.Label(label=f"{item.usage}  -  {item.description}", xalign=0)
+        self.current_command_completions = completions
+        for item in labels:
+            label = Gtk.Label(label=item, xalign=0)
             label.set_margin_top(4)
             label.set_margin_bottom(4)
             label.set_margin_start(8)
@@ -1225,19 +1239,31 @@ class GtkTelachatApp(Adw.Application):
         return GLib.SOURCE_REMOVE
 
     def hide_command_suggestions(self) -> None:
+        self.current_command_completions = []
         if hasattr(self, "command_popover"):
             self.command_popover.popdown()
 
     def complete_slash_command(self) -> None:
         text = self.input_prompt()
-        first_token = text.split(maxsplit=1)[0] if text.startswith("/") else ""
-        suggestions = slash_command_suggestions(first_token, limit=1)
-        if not suggestions:
+        completions = list(getattr(self, "current_command_completions", []))
+        if not completions:
+            completions = self.command_completion_candidates(text)
+        if not completions:
             self.refresh_command_suggestions()
             return
-        rest = text.partition(" ")[2]
-        self.set_input_prompt(f"{suggestions[0].name} {rest}".rstrip() + " ")
+        self.set_input_prompt(apply_slash_completion(text, completions[0]))
         self.hide_command_suggestions()
+
+    def command_completion_candidates(self, text: str) -> list[str]:
+        if self.controller is None:
+            return []
+        return slash_completion_candidates(
+            text,
+            self.controller.config,
+            self.controller.store,
+            sort_names=SESSION_SORT_NAMES,
+            theme_names=self.controller.theme_labels().keys(),
+        )
 
     def _send_worker(
         self,

@@ -66,6 +66,18 @@ class _FakeList:
         return None
 
 
+class _FakeSuggestionList:
+    def __init__(self, selection: tuple[int, ...] = ()) -> None:
+        self.selection = selection
+        self.removed = False
+
+    def curselection(self) -> tuple[int, ...]:
+        return self.selection
+
+    def grid_remove(self) -> None:
+        self.removed = True
+
+
 class _FakeText:
     def __init__(self, value: str) -> None:
         self.value = value
@@ -858,6 +870,23 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(result, "break")
         self.assertEqual(calls, ["shortcuts"])
 
+    def test_tk_complete_slash_command_uses_context_completion(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        prompt = _FakeText("/provider op")
+        suggestions = _FakeSuggestionList()
+        app = SimpleNamespace(
+            input_text=prompt,
+            command_suggestions=suggestions,
+            current_command_completions=["openai "],
+        )
+        app.hide_command_suggestions = lambda: module.TkTelachatApp.hide_command_suggestions(app)
+
+        result = module.TkTelachatApp.complete_slash_command(app, object())
+
+        self.assertEqual(result, "break")
+        self.assertEqual(prompt.get_text(), "/provider openai ")
+        self.assertTrue(suggestions.removed)
+
     def test_tk_doctor_command_starts_existing_check(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         calls: list[str] = []
@@ -1267,6 +1296,29 @@ class GuiImportTests(unittest.TestCase):
         self.assertIn("Ctrl+/", created[0].body)
         self.assertEqual(created[0].responses, [("ok", "OK")])
         self.assertTrue(created[0].presented)
+
+    def test_gtk_complete_slash_command_uses_context_completion(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        prompt = _FakeText("/theme dr")
+        hidden: list[bool] = []
+        app = SimpleNamespace(
+            input_prompt=prompt.get_text,
+            set_input_prompt=prompt.set_text,
+            current_command_completions=["dracula "],
+            hide_command_suggestions=lambda: hidden.append(True),
+        )
+
+        module.GtkTelachatApp.complete_slash_command(app)
+
+        self.assertEqual(prompt.get_text(), "/theme dracula ")
+        self.assertEqual(hidden, [True])
 
     def test_gtk_doctor_command_starts_existing_check(self) -> None:
         with warnings.catch_warnings():

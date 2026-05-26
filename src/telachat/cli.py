@@ -18,14 +18,15 @@ from . import __version__
 from .client import ApiError, ChatResult, OpenAICompatClient, token_usage_record
 from .commands import (
     ContextEstimate,
+    SESSION_SORT_NAMES,
     canonical_slash_command,
     estimate_context,
     format_context_lines,
     format_message_matches,
     format_stats_lines,
     keyboard_shortcut_help,
+    slash_completion_candidates,
     slash_command_help,
-    slash_command_name_suggestions,
 )
 from .config import (
     AppConfig,
@@ -1924,64 +1925,13 @@ def install_readline_completion(cfg: object, store: ChatStore) -> object | None:
 
 
 def cli_completion_candidates(line: str, cfg: object, store: ChatStore) -> list[str]:
-    if not line.startswith("/"):
-        return []
-    command_token, separator, rest = line.partition(" ")
-    if not separator:
-        return [f"{name} " for name in slash_command_name_suggestions(command_token)]
-
-    command = canonical_slash_command(command_token)
-    prefix = rest.rsplit(maxsplit=1)[-1] if rest and not rest.endswith(" ") else ""
-    if command in {"/profile", "/provider"}:
-        return _completion_matches(sorted(cfg.profiles), prefix)
-    if command == "/model":
-        return _completion_matches(_configured_models(cfg), prefix)
-    if command == "/models":
-        return _completion_matches(["live"], prefix)
-    if command == "/template":
-        return _completion_matches(sorted(cfg.prompt_templates), prefix)
-    if command == "/theme":
-        return _completion_matches(theme_labels().keys(), prefix)
-    if command in {"/folder", "/move", "/rename-folder"}:
-        return _completion_matches([folder.name for folder in store.list_folders()], prefix)
-    if command in {"/load", "/tags"}:
-        return _completion_matches(_session_refs(store), prefix)
-    if command == "/tag":
-        return _completion_matches([tag for tag, _count in store.list_tags()], prefix)
-    if command == "/sort":
-        return _completion_matches(sorted(SESSION_SORTS), prefix)
-    if command in {"/history"}:
-        return _completion_matches(["6", "12", "24", "48"], prefix)
-    return []
-
-
-def _completion_matches(values: Iterable[str], prefix: str) -> list[str]:
-    clean = prefix.lower()
-    matches = []
-    for value in values:
-        if value.lower().startswith(clean):
-            matches.append(f"{value} ")
-    return matches[:24]
-
-
-def _configured_models(cfg: object) -> list[str]:
-    models: list[str] = []
-    seen: set[str] = set()
-    for profile in cfg.profiles.values():
-        for model in profile.models or [profile.model]:
-            if model not in seen:
-                models.append(model)
-                seen.add(model)
-    return models
-
-
-def _session_refs(store: ChatStore) -> list[str]:
-    refs: list[str] = []
-    for session in store.list_sessions(100, archive="all"):
-        refs.append(session.id)
-        if session.title:
-            refs.append(session.title)
-    return refs
+    return slash_completion_candidates(
+        line,
+        cfg,
+        store,
+        sort_names=SESSION_SORT_NAMES,
+        theme_names=theme_labels().keys(),
+    )
 
 
 def _backend_label(session: object) -> str:

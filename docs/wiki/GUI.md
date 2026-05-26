@@ -102,6 +102,10 @@ kompaktes Formular statt mehrerer Einzelabfragen.
 
 Slash-Commands funktionieren ebenfalls:
 
+Ab Version `0.65.0` vervollstaendigt `Tab` nicht nur den Befehl selbst,
+sondern auch Kontextwerte wie Provider, Modelle, Templates, Themes, Ordner,
+Tags, Sortierungen und History-Groessen.
+
 ```text
 /templates
 /template summarize Mein Text

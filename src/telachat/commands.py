@@ -79,6 +79,8 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/exit", "/exit", "Chat beenden", aliases=("/quit", "/q")),
 )
 
+SESSION_SORT_NAMES: tuple[str, ...] = ("newest", "oldest", "title", "title-desc", "provider")
+
 KEYBOARD_SHORTCUTS: tuple[tuple[str, str], ...] = (
     ("Shift+Enter", "Nachricht senden"),
     ("Ctrl+Enter", "Nachricht senden"),
@@ -247,6 +249,64 @@ def slash_command_name_suggestions(prefix: str, *, limit: int = 24) -> list[str]
     return matches
 
 
+def slash_completion_candidates(
+    line: str,
+    cfg: object,
+    store: object,
+    *,
+    sort_names: Iterable[str] = (),
+    theme_names: Iterable[str] = (),
+    limit: int = 24,
+) -> list[str]:
+    if not line.startswith("/"):
+        return []
+    command_token, separator, rest = line.partition(" ")
+    if not separator:
+        return [
+            f"{name} "
+            for name in slash_command_name_suggestions(command_token, limit=limit)
+        ]
+
+    command = canonical_slash_command(command_token)
+    prefix = rest.rsplit(maxsplit=1)[-1] if rest and not rest.endswith(" ") else ""
+    if command in {"/profile", "/provider"}:
+        return _completion_matches(sorted(getattr(cfg, "profiles", {})), prefix, limit=limit)
+    if command == "/model":
+        return _completion_matches(_configured_models(cfg), prefix, limit=limit)
+    if command == "/models":
+        return _completion_matches(("live",), prefix, limit=limit)
+    if command == "/template":
+        return _completion_matches(
+            sorted(getattr(cfg, "prompt_templates", {})),
+            prefix,
+            limit=limit,
+        )
+    if command == "/theme":
+        return _completion_matches(theme_names, prefix, limit=limit)
+    if command in {"/folder", "/move", "/rename-folder"}:
+        return _completion_matches(_folder_names(store), prefix, limit=limit)
+    if command in {"/load", "/tags"}:
+        return _completion_matches(_session_refs(store), prefix, limit=limit)
+    if command == "/tag":
+        return _completion_matches(_tag_names(store), prefix, limit=limit)
+    if command == "/sort":
+        return _completion_matches(sort_names, prefix, limit=limit)
+    if command == "/history":
+        return _completion_matches(("6", "12", "24", "48"), prefix, limit=limit)
+    return []
+
+
+def apply_slash_completion(line: str, completion: str) -> str:
+    if not line.startswith("/"):
+        return line
+    if " " not in line:
+        return completion
+    if line.endswith(" "):
+        return f"{line}{completion}"
+    head, _separator, _tail = line.rpartition(" ")
+    return f"{head} {completion}"
+
+
 def canonical_slash_command(name: str) -> str:
     clean = name.strip().lower()
     for command in SLASH_COMMANDS:
@@ -270,6 +330,61 @@ def _format_count_pairs(
         for label, count in pairs
     ]
     return ", ".join(labels) if labels else "-"
+
+
+def _completion_matches(
+    values: Iterable[str],
+    prefix: str,
+    *,
+    limit: int = 24,
+) -> list[str]:
+    clean = prefix.lower()
+    matches: list[str] = []
+    for value in values:
+        text = str(value)
+        if text and text.lower().startswith(clean):
+            matches.append(f"{text} ")
+            if len(matches) >= limit:
+                return matches
+    return matches
+
+
+def _configured_models(cfg: object) -> list[str]:
+    models: list[str] = []
+    seen: set[str] = set()
+    for profile in getattr(cfg, "profiles", {}).values():
+        configured = getattr(profile, "models", None) or [getattr(profile, "model", "")]
+        for model in configured:
+            if model and model not in seen:
+                models.append(model)
+                seen.add(model)
+    return models
+
+
+def _folder_names(store: object) -> list[str]:
+    list_folders = getattr(store, "list_folders", None)
+    if not callable(list_folders):
+        return []
+    return [getattr(folder, "name", "") for folder in list_folders()]
+
+
+def _session_refs(store: object) -> list[str]:
+    list_sessions = getattr(store, "list_sessions", None)
+    if not callable(list_sessions):
+        return []
+    refs: list[str] = []
+    for session in list_sessions(100, archive="all"):
+        refs.append(getattr(session, "id", ""))
+        if getattr(session, "title", ""):
+            refs.append(getattr(session, "title"))
+    return refs
+
+
+def _tag_names(store: object) -> list[str]:
+    list_tags = getattr(store, "list_tags", None)
+    if not callable(list_tags):
+        return []
+    return [tag for tag, _count in list_tags()]
 
 
 def _approx_tokens(chars: int) -> int:

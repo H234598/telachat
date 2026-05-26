@@ -5,6 +5,8 @@ from types import SimpleNamespace
 
 from telachat.commands import (
     SLASH_COMMANDS,
+    SESSION_SORT_NAMES,
+    apply_slash_completion,
     canonical_slash_command,
     estimate_context,
     format_context_lines,
@@ -13,6 +15,7 @@ from telachat.commands import (
     format_stats_lines,
     format_stats_summary,
     keyboard_shortcut_help,
+    slash_completion_candidates,
     slash_command_help,
     slash_command_name_suggestions,
     slash_command_suggestions,
@@ -68,6 +71,53 @@ class CommandCatalogTests(unittest.TestCase):
         self.assertEqual(canonical_slash_command("/ablegen"), "/move")
         self.assertEqual(canonical_slash_command("/edit"), "/edit-last")
         self.assertEqual(canonical_slash_command("/keys"), "/shortcuts")
+
+    def test_slash_completion_candidates_include_context_values(self) -> None:
+        cfg = SimpleNamespace(
+            profiles={
+                "openai": SimpleNamespace(models=("gpt-5.5",), model="gpt-5"),
+                "huggingface": SimpleNamespace(models=(), model="TKI"),
+            },
+            prompt_templates={"summarize": "Kurz: {input}"},
+        )
+        store = SimpleNamespace(
+            list_folders=lambda: [SimpleNamespace(name="Arbeit")],
+            list_sessions=lambda limit, archive="active": [
+                SimpleNamespace(id="abc123", title="Alpha Plan")
+            ],
+            list_tags=lambda: [("projekt", 1)],
+        )
+
+        kwargs = {
+            "sort_names": SESSION_SORT_NAMES,
+            "theme_names": ("dracula", "brushed-steel"),
+        }
+
+        self.assertIn("/permissions ", slash_completion_candidates("/per", cfg, store, **kwargs))
+        self.assertIn("openai ", slash_completion_candidates("/provider op", cfg, store, **kwargs))
+        self.assertIn("gpt-5.5 ", slash_completion_candidates("/model gpt", cfg, store, **kwargs))
+        self.assertIn("summarize ", slash_completion_candidates("/template su", cfg, store, **kwargs))
+        self.assertIn("brushed-steel ", slash_completion_candidates("/theme br", cfg, store, **kwargs))
+        self.assertIn("Arbeit ", slash_completion_candidates("/move Ar", cfg, store, **kwargs))
+        self.assertIn("projekt ", slash_completion_candidates("/tag pr", cfg, store, **kwargs))
+        self.assertIn("title-desc ", slash_completion_candidates("/sort title-", cfg, store, **kwargs))
+        self.assertTrue(
+            any(
+                item.startswith("Alpha Plan")
+                for item in slash_completion_candidates("/load Alpha", cfg, store, **kwargs)
+            )
+        )
+
+    def test_apply_slash_completion_replaces_current_token(self) -> None:
+        self.assertEqual(apply_slash_completion("/per", "/permissions "), "/permissions ")
+        self.assertEqual(
+            apply_slash_completion("/provider op", "openai "),
+            "/provider openai ",
+        )
+        self.assertEqual(
+            apply_slash_completion("/theme ", "dracula "),
+            "/theme dracula ",
+        )
 
     def test_declared_aliases_resolve_to_canonical_commands(self) -> None:
         for command in SLASH_COMMANDS:

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.65.0 - 2026-05-26
+
+- Ergaenzt geteilte Kontext-Vervollstaendigung fuer GUI-Slash-Kommandos, damit
+  Tk und GTK nach Befehlen wie `/provider`, `/model`, `/template`, `/theme`,
+  `/move`, `/tag`, `/load`, `/sort` und `/history` passende Werte anbieten.
+
 ## 0.64.1 - 2026-05-26
 
 - Ersetzt die Tk-Einzelabfragen fuer Custom-Template-Variablen durch ein

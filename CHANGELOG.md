@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.65.0 - 2026-05-26
+
+- Adds shared context completion for GUI slash commands, so Tk and GTK suggest
+  values after commands such as `/provider`, `/model`, `/template`, `/theme`,
+  `/move`, `/tag`, `/load`, `/sort`, and `/history`.
+
 ## 0.64.1 - 2026-05-26
 
 - Replaces the Tk custom-template variable popup loop with one compact form

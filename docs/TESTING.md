@@ -18,7 +18,7 @@ make test3
 make zipapp
 make linux-installer
 packaging/linux/install-telachat.sh --prefix /tmp/telachat-prefix --desktop-dir /tmp/telachat-desktop --zipapp dist/telachat.pyz
-python packaging/linux/package-cadence.py v0.64.1
+python packaging/linux/package-cadence.py v0.65.0
 man ./docs/man/telachat.1
 ```
 
@@ -107,8 +107,8 @@ across saved messages, CLI session filtering/sorting, and selective folder
 exports. It also covers per-session tags, tag filtering/search, tag import/export,
 tag counts, session archiving, archive filtering/search, archive import/export,
 legacy archive-column migration, per-session model persistence, legacy model-column
-migration, OpenAI Responses `reasoning.effort`, interactive CLI completion
-candidates, offline config checks with secret redaction, and documented
+migration, OpenAI Responses `reasoning.effort`, shared CLI/GUI slash-command
+completion candidates, offline config checks with secret redaction, and documented
 terminal slash-command actions, including `/theme` and `/find`. Theme tests
 cover config persistence, env overrides, system-palette detection, CLI setting,
 and controller persistence. Config tests validate profile booleans, API modes,
@@ -126,7 +126,8 @@ the active view. They also verify prompt restoration for cancelled Send
 operations when the composer is still empty.
 Backup tests inspect the ZIP bundle and verify that envfile secret values and
 secret-like header values are not included. GUI smoke and regression tests also
-cover construction of the slash-command autocomplete widgets, visible
+cover construction of the slash-command autocomplete widgets, context-value
+completion from the prompt, visible
 archive/tag-filter propagation, Tk tag-filter selection preservation, and
 model-choice merge behavior after live model discovery. Controller and client
 tests verify that generation overrides reach the API profile and that Responses

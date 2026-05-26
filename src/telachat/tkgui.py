@@ -11,6 +11,8 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 
 from .assets import ICON_RANDOM, ICON_SYSTEM, icon_labels, icon_png_resource, random_icon_name
 from .commands import (
+    SESSION_SORT_NAMES,
+    apply_slash_completion,
     canonical_slash_command,
     estimate_context,
     format_context_lines,
@@ -19,6 +21,7 @@ from .commands import (
     format_stats_lines,
     format_stats_summary,
     keyboard_shortcut_help,
+    slash_completion_candidates,
     slash_command_help,
     slash_command_suggestions,
 )
@@ -361,6 +364,7 @@ class TkTelachatApp:
         )
         self.command_suggestions.bind("<Double-Button-1>", self.on_command_suggestion_selected)
         self.command_suggestions.bind("<Return>", self.on_command_suggestion_selected)
+        self.current_command_completions: list[str] = []
         self.send_button = ttk.Button(composer, text="Senden", command=self.send_message)
         self.send_button.grid(row=0, column=1, sticky="ns")
         self.cancel_button = ttk.Button(
@@ -987,33 +991,45 @@ class TkTelachatApp:
 
     def refresh_command_suggestions(self) -> None:
         text = self.input_text.get("1.0", "end-1c")
-        first_token = text.split(maxsplit=1)[0] if text.startswith("/") else ""
-        suggestions = slash_command_suggestions(first_token)
-        if not suggestions:
+        if not text.startswith("/"):
             self.hide_command_suggestions()
             return
+        command_token, separator, _rest = text.partition(" ")
+        labels: list[str] = []
+        if separator:
+            completions = self.command_completion_candidates(text)
+            labels = [completion.strip() for completion in completions]
+        else:
+            suggestions = slash_command_suggestions(command_token)
+            completions = [f"{item.name} " for item in suggestions]
+            labels = [f"{item.usage}  -  {item.description}" for item in suggestions]
+        if not completions:
+            self.hide_command_suggestions()
+            return
+        self.current_command_completions = completions
         self.command_suggestions.delete(0, tk.END)
-        for item in suggestions:
-            self.command_suggestions.insert(tk.END, f"{item.usage}  -  {item.description}")
+        for label in labels:
+            self.command_suggestions.insert(tk.END, label)
         self.command_suggestions.grid(row=1, column=0, sticky="ew", padx=(0, 10), pady=(4, 0))
         self.command_suggestions.selection_set(0)
 
     def hide_command_suggestions(self, _event: object | None = None) -> str:
+        self.current_command_completions = []
         self.command_suggestions.grid_remove()
         return "break"
 
     def complete_slash_command(self, _event: object) -> str:
         text = self.input_text.get("1.0", "end-1c")
-        first_token = text.split(maxsplit=1)[0] if text.startswith("/") else ""
-        suggestions = slash_command_suggestions(first_token)
-        if not suggestions:
+        completions = list(getattr(self, "current_command_completions", []))
+        if not completions:
+            completions = self.command_completion_candidates(text)
+        if not completions:
             self.refresh_command_suggestions()
             return "break"
         selection = self.command_suggestions.curselection()
         index = selection[0] if selection else 0
-        command = suggestions[index].name if index < len(suggestions) else suggestions[0].name
-        rest = text.partition(" ")[2]
-        replacement = f"{command} {rest}".rstrip() + " "
+        completion = completions[index] if index < len(completions) else completions[0]
+        replacement = apply_slash_completion(text, completion)
         self.input_text.delete("1.0", tk.END)
         self.input_text.insert("1.0", replacement)
         self.hide_command_suggestions()
@@ -1021,6 +1037,15 @@ class TkTelachatApp:
 
     def on_command_suggestion_selected(self, _event: object) -> None:
         self.complete_slash_command(_event)
+
+    def command_completion_candidates(self, text: str) -> list[str]:
+        return slash_completion_candidates(
+            text,
+            self.controller.config,
+            self.controller.store,
+            sort_names=SESSION_SORT_NAMES,
+            theme_names=self.controller.theme_labels().keys(),
+        )
 
     def doctor(self) -> None:
         operation_id = self.begin_operation("Pruefe...")

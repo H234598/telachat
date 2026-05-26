@@ -116,7 +116,9 @@ model-selection step. They also expose folder filtering, sorting, text search,
 chat pinning, and a slash-command path through the same composer used for
 prompts. The live Check action merges `/models` results into the model selector
 while keeping the current selection first. The GUI composers show slash-command
-suggestions while typing and Tab completes the current command. The left
+suggestions while typing and Tab completes the current command or context values
+such as providers, models, templates, themes, folders, tags, sort modes, and
+history sizes. The left
 chat/provider pane and the right system pane are real resizable split panes
 rather than fixed sidebars. Session archive state is a soft-hide flag: normal
 lists show active chats, while explicit archive filters and direct session
