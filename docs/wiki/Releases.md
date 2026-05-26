@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.52.1 - 2026-05-26
+
 - Stellt den sicheren Skill-Watchdog-Default wieder her: neue Konfigurationen
   bleiben aus, bis `skill_watchdog_enabled = true` gesetzt wird.
 - Macht die Default-Konfiguration wieder mit Python 3.11 kompatibel.

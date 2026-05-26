@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.52.1 - 2026-05-26
+
 - Restore the Skill watchdog's safe default: new configs keep it off unless explicitly enabled, and runtime starts set the required `TELACHAT_ENABLE_SKILL_WATCHDOG=1` gate.
 - Keep default configuration generation compatible with Python 3.11.
 
