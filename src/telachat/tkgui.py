@@ -18,7 +18,7 @@ from .commands import (
     slash_command_suggestions,
 )
 from .client import format_token_usage
-from .config import redact_secret
+from .config import ConfigError, redact_secret
 from .controller import TelachatController
 from .model_choices import merge_model_choices
 from .store import Message, Session
@@ -323,7 +323,7 @@ class TkTelachatApp:
         self.cancel_button.grid(row=0, column=2, sticky="ns", padx=(8, 0))
 
         self.settings = ttk.Frame(self.paned, padding=14, width=320)
-        self.settings.rowconfigure(7, weight=1)
+        self.settings.rowconfigure(8, weight=1)
         ttk.Label(self.settings, text="Theme").grid(row=0, column=0, sticky="w")
         self.theme_display_to_name = {
             label: name for name, label in self.controller.theme_labels().items()
@@ -361,7 +361,16 @@ class TkTelachatApp:
             width=8,
         )
         self.max_tokens_spin.grid(row=5, column=0, sticky="ew", pady=(4, 12))
-        ttk.Label(self.settings, text="System").grid(row=6, column=0, sticky="w")
+        self.header_validation_var = tk.BooleanVar(
+            value=self.controller.config.validate_profile_headers
+        )
+        ttk.Checkbutton(
+            self.settings,
+            text="Header pruefen",
+            variable=self.header_validation_var,
+            command=self.on_header_validation_changed,
+        ).grid(row=6, column=0, sticky="w", pady=(0, 12))
+        ttk.Label(self.settings, text="System").grid(row=7, column=0, sticky="w")
         self.system_text = tk.Text(
             self.settings,
             width=32,
@@ -372,7 +381,7 @@ class TkTelachatApp:
             insertbackground=palette.text,
             highlightbackground=palette.border,
         )
-        self.system_text.grid(row=7, column=0, sticky="nsew", pady=(4, 0))
+        self.system_text.grid(row=8, column=0, sticky="nsew", pady=(4, 0))
         self.system_text.insert("1.0", self.controller.system_prompt())
         self._apply_theme_to_widgets()
         self._layout_panes()
@@ -417,6 +426,17 @@ class TkTelachatApp:
         self.theme_var.set(self.controller.theme_labels()[self.theme.name])
         self._apply_theme_to_widgets()
         self.set_status(f"Theme: {self.theme.label}")
+
+    def on_header_validation_changed(self) -> None:
+        enabled = bool(self.header_validation_var.get())
+        try:
+            enabled = self.controller.set_header_validation(enabled)
+        except ConfigError as exc:
+            self.header_validation_var.set(self.controller.config.validate_profile_headers)
+            self.set_status(str(exc))
+        else:
+            self.header_validation_var.set(enabled)
+            self.set_status(f"Header-Pruefung: {'an' if enabled else 'aus'}")
 
     def refresh_profiles(self) -> None:
         self.profile_display_to_name = {

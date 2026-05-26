@@ -4,7 +4,14 @@ import time
 from dataclasses import dataclass, replace
 
 from .client import ChatResult, OpenAICompatClient, TokenUsage, token_usage_record
-from .config import AppConfig, Profile, load_config, set_config_theme
+from .config import (
+    AppConfig,
+    ConfigError,
+    Profile,
+    load_config,
+    set_config_header_validation,
+    set_config_theme,
+)
 from .store import (
     ChatStore,
     Folder,
@@ -57,6 +64,17 @@ class TelachatController:
         set_config_theme(theme_name, self.config.path)
         self.config = replace(load_config(self.config.path), theme=theme_name)
         return self.theme()
+
+    def set_header_validation(self, enabled: bool) -> bool:
+        previous = self.config.validate_profile_headers
+        set_config_header_validation(enabled, self.config.path)
+        try:
+            self.config = load_config(self.config.path)
+        except ConfigError:
+            set_config_header_validation(previous, self.config.path)
+            self.config = load_config(self.config.path)
+            raise
+        return self.config.validate_profile_headers
 
     def prompt_templates(self) -> dict[str, str]:
         return self.config.prompt_templates

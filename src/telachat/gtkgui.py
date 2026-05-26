@@ -23,7 +23,7 @@ from .commands import (
     slash_command_suggestions,
 )
 from .client import format_token_usage
-from .config import redact_secret
+from .config import ConfigError, redact_secret
 from .controller import TelachatController
 from .model_choices import merge_model_choices
 from .store import Message, Session
@@ -318,6 +318,13 @@ class GtkTelachatApp(Adw.Application):
         self.settings.append(self.max_tokens_spin)
         self.refresh_generation_defaults()
 
+        self.header_validation_check = Gtk.CheckButton(label="Header pruefen")
+        self.header_validation_check.set_active(
+            self.controller.config.validate_profile_headers
+        )
+        self.header_validation_check.connect("toggled", self.on_header_validation_toggled)
+        self.settings.append(self.header_validation_check)
+
         self.settings.append(Gtk.Label(label="System", xalign=0))
         self.system_view = Gtk.TextView()
         self.system_view.add_css_class("telachat-input")
@@ -406,6 +413,28 @@ class GtkTelachatApp(Adw.Application):
             self.theme = self.controller.set_theme(self.theme_names[selected])
             self._install_css()
             self.status.set_text(f"Theme: {self.theme.label}")
+
+    def on_header_validation_toggled(self, button: Gtk.CheckButton) -> None:
+        if getattr(self, "_syncing_header_validation", False):
+            return
+        enabled = button.get_active()
+        try:
+            enabled = self.controller.set_header_validation(enabled)
+        except ConfigError as exc:
+            self._sync_header_validation_check(self.controller.config.validate_profile_headers)
+            self.status.set_text(str(exc))
+        else:
+            self._sync_header_validation_check(enabled)
+            self.status.set_text(f"Header-Pruefung: {'an' if enabled else 'aus'}")
+
+    def _sync_header_validation_check(self, enabled: bool) -> None:
+        if self.header_validation_check.get_active() == enabled:
+            return
+        self._syncing_header_validation = True
+        try:
+            self.header_validation_check.set_active(enabled)
+        finally:
+            self._syncing_header_validation = False
 
     def on_close(self, _window: Adw.ApplicationWindow) -> bool:
         if self.controller:

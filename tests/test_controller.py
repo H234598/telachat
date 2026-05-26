@@ -35,6 +35,28 @@ class ControllerTests(unittest.TestCase):
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_header_validation_can_be_changed_through_controller(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                controller = TelachatController()
+                try:
+                    self.assertTrue(controller.config.validate_profile_headers)
+                    self.assertFalse(controller.set_header_validation(False))
+                    self.assertFalse(controller.config.validate_profile_headers)
+                    config_text = (Path(tmp) / "config" / "telachat" / "config.toml").read_text(
+                        encoding="utf-8"
+                    )
+                    self.assertIn("validate_profile_headers = false", config_text)
+                finally:
+                    controller.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_apply_prompt_template(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

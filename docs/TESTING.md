@@ -97,8 +97,9 @@ migration, OpenAI Responses `reasoning.effort`, interactive CLI completion
 candidates, offline config checks with secret redaction, and documented
 terminal slash-command actions, including `/theme` and `/find`. Theme tests
 cover config persistence, env overrides, system-palette detection, CLI setting,
-and controller persistence. Config tests validate profile booleans and API
-modes. `/stats` and `/context` tests cover shared content-free formatters plus
+and controller persistence. Config tests validate profile booleans, API modes,
+and the `validate_profile_headers` option. `/stats` and `/context` tests cover
+shared content-free formatters plus
 terminal, Tk, and GTK prompt paths. `/doctor` prompt tests cover terminal
 `/models` output, local secret-source errors, and GUI dispatch to the existing
 Check action.

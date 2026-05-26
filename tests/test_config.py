@@ -10,6 +10,7 @@ from telachat.config import (
     ensure_default_config,
     load_config,
     redact_secret,
+    set_config_header_validation,
     set_config_theme,
 )
 
@@ -42,6 +43,7 @@ class ConfigTests(unittest.TestCase):
             self.assertEqual(cfg.profiles["jan"].api_key, "env:TELACHAT_JAN_API_KEY")
             self.assertEqual(cfg.profiles["codex"].api_mode, "codex")
             self.assertEqual(cfg.theme, "system")
+            self.assertTrue(cfg.validate_profile_headers)
             self.assertIn("summarize", cfg.prompt_templates)
             self.assertIn("{input}", cfg.prompt_templates["summarize"])
 
@@ -85,6 +87,43 @@ theme = "profile-local"
             self.assertIn('default_profile = "demo"\ntheme = "dark"', text)
             self.assertIn('theme = "profile-local"', text)
             self.assertEqual(load_config(path).theme, "dark")
+
+    def test_header_validation_config_and_setter(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            ensure_default_config(path)
+            self.assertFalse(set_config_header_validation(False, path))
+            cfg = load_config(path)
+            self.assertFalse(cfg.validate_profile_headers)
+            self.assertIn(
+                "validate_profile_headers = false",
+                path.read_text(encoding="utf-8"),
+            )
+
+            self.assertTrue(set_config_header_validation(True, path))
+            self.assertTrue(load_config(path).validate_profile_headers)
+
+    def test_set_header_validation_only_updates_top_level_option(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            path.write_text(
+                """
+default_profile = "demo"
+theme = "system"
+
+[profiles.demo]
+base_url = "http://127.0.0.1:1/v1"
+api_key = ""
+model = "demo"
+validate_profile_headers = false
+""".strip(),
+                encoding="utf-8",
+            )
+            self.assertFalse(set_config_header_validation(False, path))
+            text = path.read_text(encoding="utf-8")
+            self.assertIn('theme = "system"\nvalidate_profile_headers = false', text)
+            self.assertIn("validate_profile_headers = false", text.split("[profiles.demo]")[1])
+            self.assertFalse(load_config(path).validate_profile_headers)
 
     def test_custom_prompt_templates_load(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -175,6 +214,40 @@ X-Title = "Telachat"
                     path.write_text(profile_base + suffix, encoding="utf-8")
                     with self.assertRaisesRegex(ConfigError, pattern):
                         load_config(path)
+
+            path.write_text(
+                """
+default_profile = "local"
+validate_profile_headers = false
+[profiles.local]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "test"
+model = "demo"
+
+[profiles.local.headers]
+"Bad Header" = "line\\nbreak"
+""".strip(),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                load_config(path).profile().extra_headers,
+                {"Bad Header": "line\nbreak"},
+            )
+
+            path.write_text(
+                """
+default_profile = "local"
+validate_profile_headers = false
+[profiles.local]
+base_url = "http://127.0.0.1:1/v1"
+api_key = "test"
+model = "demo"
+headers = "bad"
+""".strip(),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ConfigError, "headers"):
+                load_config(path)
 
     def test_numeric_config_values_are_validated(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -29,6 +29,7 @@ DEFAULT_CONFIG = f"""# Telachat configuration.
 
 default_profile = "{DEFAULT_PROFILE}"
 theme = "{DEFAULT_THEME}"
+validate_profile_headers = true
 default_system_prompt = "{DEFAULT_SYSTEM_PROMPT}"
 max_history_messages = 24
 

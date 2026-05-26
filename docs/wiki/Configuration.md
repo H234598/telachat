@@ -17,6 +17,19 @@ Die SQLite-Historie liegt unter:
 Profile werden in TOML konfiguriert. Die GUI trennt Provider- und
 Modellauswahl: erst Provider waehlen, dann Modell oder Profilvariante.
 
+Globale Optionen stehen im Kopf von `config.toml`:
+
+```toml
+theme = "system"
+validate_profile_headers = true
+max_history_messages = 24
+```
+
+`validate_profile_headers` prueft konfigurierte Zusatz-Header vor dem Senden.
+Setze den Wert auf `false`, wenn ein absichtlich ungewoehnlicher Provider
+Header erwartet, die nicht durch die Standard-HTTP-Pruefung passen. In Tk und
+GTK ist dieselbe Option im rechten Einstellungsbereich verfuegbar.
+
 Beispiele fuer Provider:
 
 - `huggingface` / `tki`

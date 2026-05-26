@@ -25,6 +25,7 @@ class ConfigError(RuntimeError):
 
 
 _HEADER_NAME_RE = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
+_HEADER_NAME_SAFETY_RE = re.compile(r"^[^:\s\x00-\x1f\x7f]+$")
 
 
 @dataclass(frozen=True)
@@ -97,6 +98,7 @@ class AppConfig:
     path: Path
     default_profile: str
     theme: str
+    validate_profile_headers: bool
     default_system_prompt: str
     max_history_messages: int
     profiles: dict[str, Profile]
@@ -138,6 +140,7 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
     except tomllib.TOMLDecodeError as exc:
         raise ConfigError(f"Ungueltige TOML-Konfiguration in {target}: {exc}") from exc
 
+    validate_profile_headers = _global_bool(raw, "validate_profile_headers", True)
     profile_blocks = raw.get("profiles")
     if not isinstance(profile_blocks, dict) or not profile_blocks:
         raise ConfigError("Konfiguration braucht mindestens einen [profiles.NAME]-Block.")
@@ -149,7 +152,11 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
         base_url = _required_string(values, "base_url", name).rstrip("/")
         api_key = str(values.get("api_key", ""))
         model = _required_string(values, "model", name)
-        extra_headers = _headers(values.get("headers"), name)
+        extra_headers = _headers(
+            values.get("headers"),
+            name,
+            validate=validate_profile_headers,
+        )
         profiles[name] = Profile(
             name=name,
             label=str(values.get("label", name)),
@@ -189,6 +196,7 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
         path=target,
         default_profile=default_profile,
         theme=theme,
+        validate_profile_headers=validate_profile_headers,
         default_system_prompt=str(raw.get("default_system_prompt", DEFAULT_SYSTEM_PROMPT)),
         max_history_messages=_positive_int(
             raw.get("max_history_messages", 24), "max_history_messages", None
@@ -201,10 +209,33 @@ def load_config(path: Path | None = None, *, create: bool = True) -> AppConfig:
 def set_config_theme(value: str, path: Path | None = None) -> str:
     theme = normalize_theme_name(value)
     target = ensure_default_config(path)
-    text = target.read_text(encoding="utf-8")
     replacement = f'theme = "{theme}"'
+    _set_top_level_assignment(target, "theme", replacement, after_key="default_profile")
+    return theme
+
+
+def set_config_header_validation(enabled: bool, path: Path | None = None) -> bool:
+    target = ensure_default_config(path)
+    replacement = f"validate_profile_headers = {str(bool(enabled)).lower()}"
+    _set_top_level_assignment(
+        target,
+        "validate_profile_headers",
+        replacement,
+        after_key="theme",
+    )
+    return bool(enabled)
+
+
+def _set_top_level_assignment(
+    target: Path,
+    key: str,
+    replacement: str,
+    *,
+    after_key: str | None = None,
+) -> None:
+    text = target.read_text(encoding="utf-8")
     lines = text.splitlines()
-    default_profile_index: int | None = None
+    after_index: int | None = None
     first_table_index = len(lines)
     for index, line in enumerate(lines):
         stripped = line.strip()
@@ -216,19 +247,16 @@ def set_config_theme(value: str, path: Path | None = None) -> str:
         before, sep, _after = line.partition("=")
         if not sep:
             continue
-        key = before.strip()
-        if key == "theme":
+        current_key = before.strip()
+        if current_key == key:
             lines[index] = replacement
             target.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-            return theme
-        if key == "default_profile":
-            default_profile_index = index
-    insert_index = (
-        default_profile_index + 1 if default_profile_index is not None else first_table_index
-    )
+            return
+        if after_key is not None and current_key == after_key:
+            after_index = index
+    insert_index = after_index + 1 if after_index is not None else first_table_index
     lines.insert(insert_index, replacement)
     target.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-    return theme
 
 
 def redact_secret(value: str) -> str:
@@ -260,7 +288,7 @@ def _models(values: dict[str, Any], default_model: str, profile_name: str) -> li
     return clean
 
 
-def _headers(raw: object, profile_name: str) -> dict[str, str] | None:
+def _headers(raw: object, profile_name: str, *, validate: bool) -> dict[str, str] | None:
     if raw is None:
         return None
     if not isinstance(raw, dict):
@@ -269,12 +297,18 @@ def _headers(raw: object, profile_name: str) -> dict[str, str] | None:
     for name, value in raw.items():
         if not isinstance(name, str) or not isinstance(value, str):
             raise ConfigError(f"Profil '{profile_name}' hat ungueltige headers.")
-        if not _HEADER_NAME_RE.fullmatch(name):
+        if not _HEADER_NAME_SAFETY_RE.fullmatch(name):
             raise ConfigError(f"Profil '{profile_name}' hat ungueltigen Header-Namen.")
-        if any(ord(char) < 32 or ord(char) == 127 for char in value):
+        if validate and not _HEADER_NAME_RE.fullmatch(name):
+            raise ConfigError(f"Profil '{profile_name}' hat ungueltigen Header-Namen.")
+        if _has_header_control(value):
             raise ConfigError(f"Profil '{profile_name}' hat ungueltigen Header-Wert.")
         headers[name] = value
     return headers
+
+
+def _has_header_control(value: str) -> bool:
+    return any(ord(char) < 32 or ord(char) == 127 for char in value)
 
 
 def _optional_reasoning_effort(value: object, profile_name: str) -> str | None:
@@ -346,6 +380,13 @@ def _field_label(key: str, profile_name: str | None) -> str:
     if profile_name is None:
         return f"Konfiguration {key}"
     return f"Profil '{profile_name}' {key}"
+
+
+def _global_bool(values: dict[str, Any], key: str, default: bool) -> bool:
+    value = values.get(key, default)
+    if isinstance(value, bool):
+        return value
+    raise ConfigError(f"Konfiguration {key} ist ungueltig.")
 
 
 def _bool(values: dict[str, Any], key: str, default: bool, profile_name: str) -> bool:

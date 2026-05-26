@@ -490,6 +490,7 @@ def cmd_config_check(args: argparse.Namespace) -> int:
                     "sqlite": str(db_path()),
                     "default_profile": cfg.default_profile,
                     "theme": cfg.theme,
+                    "validate_profile_headers": cfg.validate_profile_headers,
                     "profile_filter": args.profile,
                     "prompt_templates": len(cfg.prompt_templates),
                     "missing_secrets": missing,
@@ -505,6 +506,7 @@ def cmd_config_check(args: argparse.Namespace) -> int:
     print(f"SQLite: {db_path()}")
     print(f"Default profile: {cfg.default_profile}")
     print(f"Theme: {cfg.theme}")
+    print(f"Header validation: {'on' if cfg.validate_profile_headers else 'off'}")
     if args.profile:
         print(f"Profile filter: {args.profile}")
     for row in profile_rows:
@@ -2294,6 +2296,7 @@ def _backup_manifest(cfg: object, backup_db: Path) -> dict[str, object]:
         "database_path": str(db_path()),
         "default_profile": cfg.default_profile,
         "theme": cfg.theme,
+        "validate_profile_headers": cfg.validate_profile_headers,
         "profiles": {
             name: {
                 "api_mode": profile.api_mode,
@@ -2323,6 +2326,7 @@ def _redacted_config_toml(cfg: object) -> str:
         "# Secret values are not included.",
         f"default_profile = {_toml_string(cfg.default_profile)}",
         f"theme = {_toml_string(cfg.theme)}",
+        f"validate_profile_headers = {str(cfg.validate_profile_headers).lower()}",
         f"default_system_prompt = {_toml_string(cfg.default_system_prompt)}",
         f"max_history_messages = {cfg.max_history_messages}",
         "",

@@ -800,6 +800,7 @@ stream = false
                 with redirect_stdout(out):
                     self.assertEqual(main(["config-check"]), 0)
                 self.assertIn("Theme: dark", out.getvalue())
+                self.assertIn("Header validation: on", out.getvalue())
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
@@ -1188,7 +1189,9 @@ X-Test-Header = "yes"
                 self.assertEqual(manifest["counts"]["sessions"], 1)
                 self.assertEqual(manifest["counts"]["messages"], 1)
                 self.assertEqual(manifest["theme"], "system")
+                self.assertTrue(manifest["validate_profile_headers"])
                 self.assertEqual(parsed["theme"], "system")
+                self.assertTrue(parsed["validate_profile_headers"])
 
                 restore_data = Path(tmp) / "restore-data"
                 os.environ["XDG_DATA_HOME"] = str(restore_data)

@@ -39,6 +39,7 @@ telachat ask --template explain "SQLite WAL"
 abgefragt. `telachat config-check` prueft lokale Profile, Modelle und
 Secret-Quellen ohne API-Anfrage. `telachat config-check --strict` liefert einen
 Fehlercode, wenn eine nicht-lokale Secret-Quelle fehlt.
+Die Ausgabe zeigt auch, ob die globale Profil-Header-Pruefung aktiv ist.
 `telachat theme [NAME]` zeigt oder setzt das persistente GUI-Theme. Fuer
 temporäre Starts kann `TELACHAT_THEME=dark telachat-tk` genutzt werden. Bei
 `theme = "system"` kann `TELACHAT_SYSTEM_THEME=solarized-dark` nur die
