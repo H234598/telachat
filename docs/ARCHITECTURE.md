@@ -215,8 +215,10 @@ telachat import-session FILE.json --dry-run
 telachat export-folder <folder-name-or-id>
 telachat export-folder <folder-name-or-id> --single-file
 telachat export-folder <folder-name-or-id> --json
+telachat export-folder <folder-name-or-id> --bundle
 telachat export-folder <folder-name-or-id> --all --json
 telachat import-folder FILE.json
+telachat import-folder FILE.zip
 telachat import-folder FILE.json --dry-run
 telachat backup
 telachat backup -o DIR
@@ -251,8 +253,11 @@ support `--json` for agent/script consumption. JSON output is redacted where it
 contains provider configuration;
 folder system prompts are
 included only when `folders --show-system --json` is requested or when exporting
-that folder as a portable data bundle. Folder backend defaults are not secrets
-and are included in folder JSON whenever they are configured.
+that folder as a portable data bundle. `export-folder --bundle` stores the same
+`telachat.folder.v1` payload as `folder.json` in a ZIP plus a small manifest;
+it does not include `config.toml`, provider secrets, or environment files.
+Folder backend defaults are not secrets and are included in folder JSON whenever
+they are configured.
 
 `stats` is read-only and does not include message content. It counts sessions,
 messages by role, folders, tag assignments, profile usage, model usage, and

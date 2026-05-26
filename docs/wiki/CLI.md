@@ -112,8 +112,10 @@ telachat import-session session.json --folder Importe
 telachat export-folder Projekt -o ./projekt-export
 telachat export-folder Projekt --single-file -o projekt.md
 telachat export-folder Projekt --json -o projekt.json
+telachat export-folder Projekt --bundle -o projekt.zip
 telachat export-folder Projekt --all --json -o projekt-alle.json
 telachat import-folder projekt.json --folder Importiert
+telachat import-folder projekt.zip --dry-run --json
 telachat import-folder projekt.json --dry-run --json
 ```
 

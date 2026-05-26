@@ -329,6 +329,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Ordner als maschinenlesbares JSON exportieren",
     )
+    p_export_folder.add_argument(
+        "--bundle",
+        action="store_true",
+        help="Ordner als portables ZIP-Bundle mit JSON-Export schreiben",
+    )
     p_export_folder.set_defaults(func=cmd_export_folder)
 
     p_import_session = sub.add_parser(
@@ -362,12 +367,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_import_folder = sub.add_parser(
         "import-folder",
-        help="JSON-Ordnerexport additiv importieren",
+        help="JSON-Ordnerexport oder ZIP-Bundle additiv importieren",
     )
     p_import_folder.add_argument(
-        "folder_json",
+        "folder_export",
         type=Path,
-        help="Export aus `telachat export-folder --json`",
+        help="Export aus `telachat export-folder --json` oder `--bundle`",
     )
     p_import_folder.add_argument(
         "--folder",
@@ -1361,6 +1366,53 @@ def _folder_export_record(
     return record
 
 
+def _folder_export_payload(
+    store: ChatStore,
+    folder: str,
+    folder_id: str | None,
+    title: str,
+    sort: str,
+    sessions: list[Session],
+) -> dict[str, object]:
+    return {
+        "format": "telachat.folder.v1",
+        "title": title,
+        "folder": _folder_export_record(store, folder, folder_id),
+        "sort": sort,
+        "sessions": [_session_export_payload(store, session) for session in sessions],
+    }
+
+
+def _folder_bundle_manifest(
+    payload: dict[str, object],
+    archive_filter: str,
+) -> dict[str, object]:
+    sessions = payload.get("sessions")
+    session_count = len(sessions) if isinstance(sessions, list) else 0
+    message_count = 0
+    if isinstance(sessions, list):
+        for item in sessions:
+            if isinstance(item, dict) and isinstance(item.get("messages"), list):
+                message_count += len(item["messages"])
+    return {
+        "app": "telachat",
+        "format": "telachat.folder-bundle.v1",
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "folder_export_format": payload.get("format"),
+        "title": payload.get("title"),
+        "folder": payload.get("folder"),
+        "sort": payload.get("sort"),
+        "archive_filter": archive_filter,
+        "contains_config": False,
+        "contains_api_keys": False,
+        "files": ["folder.json", "manifest.json"],
+        "counts": {
+            "sessions": session_count,
+            "messages": message_count,
+        },
+    }
+
+
 def _clean_session_import_payload(payload: object) -> tuple[dict[str, object], list[tuple[str, str]]]:
     if not isinstance(payload, dict):
         raise ConfigError("Importsession ist kein Objekt.")
@@ -1525,24 +1577,36 @@ def cmd_export(args: argparse.Namespace) -> int:
 
 
 def cmd_export_folder(args: argparse.Namespace) -> int:
+    if args.bundle and (args.json or args.single_file):
+        raise ConfigError("--bundle kann nicht mit --json oder --single-file kombiniert werden.")
     store = ChatStore()
     try:
         folder_id = _resolve_folder_filter(store, args.folder)
+        archive_filter = _archive_filter_from_args(args)
         sessions = store.list_sessions(
             10000,
             folder_id=folder_id,
             sort=SESSION_SORTS[args.sort],
-            archive=_archive_filter_from_args(args),
+            archive=archive_filter,
         )
         title = _folder_export_title(store, args.folder, folder_id)
+        if args.bundle:
+            payload = _folder_export_payload(store, args.folder, folder_id, title, args.sort, sessions)
+            target = _folder_bundle_target(args.output, title)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+                archive.writestr(
+                    "folder.json",
+                    json.dumps(payload, indent=2, sort_keys=True) + "\n",
+                )
+                archive.writestr(
+                    "manifest.json",
+                    json.dumps(_folder_bundle_manifest(payload, archive_filter), indent=2, sort_keys=True) + "\n",
+                )
+            print(target)
+            return 0
         if args.json:
-            payload = {
-                "format": "telachat.folder.v1",
-                "title": title,
-                "folder": _folder_export_record(store, args.folder, folder_id),
-                "sort": args.sort,
-                "sessions": [_session_export_payload(store, session) for session in sessions],
-            }
+            payload = _folder_export_payload(store, args.folder, folder_id, title, args.sort, sessions)
             text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
             if args.output:
                 args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -1655,11 +1719,13 @@ def cmd_import_session(args: argparse.Namespace) -> int:
 
 def cmd_import_folder(args: argparse.Namespace) -> int:
     try:
-        payload = json.loads(args.folder_json.read_text(encoding="utf-8"))
+        payload = _read_folder_export_payload(args.folder_export)
     except OSError as exc:
-        raise ConfigError(f"Importdatei kann nicht gelesen werden: {args.folder_json}") from exc
+        raise ConfigError(f"Importdatei kann nicht gelesen werden: {args.folder_export}") from exc
     except json.JSONDecodeError as exc:
         raise ConfigError(f"Ungueltige JSON-Importdatei: {exc}") from exc
+    except zipfile.BadZipFile as exc:
+        raise ConfigError(f"Ungueltiges Ordner-Bundle: {args.folder_export}") from exc
     if not isinstance(payload, dict) or payload.get("format") != "telachat.folder.v1":
         raise ConfigError("Importdatei ist kein telachat.folder.v1 Export.")
     source_sessions = payload.get("sessions")
@@ -2410,6 +2476,29 @@ def _export_sessions_markdown(store: ChatStore, sessions: list[object], title: s
 def _safe_filename(value: str) -> str:
     clean = re.sub(r"[^A-Za-z0-9._-]+", "-", value.strip().lower()).strip(".-_")
     return clean[:80] or "telachat"
+
+
+def _folder_bundle_target(output: Path | None, title: str) -> Path:
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    default_name = f"telachat-folder-{_safe_filename(title)}-{stamp}.zip"
+    if output is None:
+        return Path(default_name)
+    target = output.expanduser()
+    if target.suffix.lower() == ".zip":
+        return target
+    return target / default_name
+
+
+def _read_folder_export_payload(path: Path) -> object:
+    source = path.expanduser()
+    if source.suffix.lower() == ".zip":
+        with zipfile.ZipFile(source) as archive:
+            try:
+                raw = archive.read("folder.json")
+            except KeyError as exc:
+                raise ConfigError("Ordner-Bundle enthaelt keine folder.json.") from exc
+        return json.loads(raw.decode("utf-8"))
+    return json.loads(source.read_text(encoding="utf-8"))
 
 
 def _backup_target(output: Path | None) -> Path:

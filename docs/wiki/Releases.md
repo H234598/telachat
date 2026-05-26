@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.69.0 - 2026-05-26
+
+- Ergaenzt `telachat export-folder --bundle`, das einen Ordnerexport als ZIP
+  mit `folder.json` und Manifest schreibt.
+- `telachat import-folder` kann diese ZIP-Bundles direkt lesen; Provider-
+  Konfiguration und API-Keys bleiben ausserhalb des Bundles.
+
 ## 0.68.0 - 2026-05-26
 
 - Ergaenzt in Tk und GTK einen kompakten Kopier-Button in der Chat-Kopfzeile.

@@ -1,5 +1,5 @@
 %global appname telachat
-%global appversion %{?_version}%{!?_version:0.68.0}
+%global appversion %{?_version}%{!?_version:0.69.0}
 
 Name:           %{appname}
 Version:        %{appversion}
@@ -57,6 +57,9 @@ sed "s|@TELACHAT_EXEC@|telachat-gui|g" packaging/linux/telachat.desktop.in \
 %{_mandir}/man1/telachat-gtk.1*
 
 %changelog
+* Tue May 26 2026 Teladi <teladi@example.invalid> - 0.69.0-1
+- Add portable folder ZIP bundles for export-folder/import-folder.
+
 * Tue May 26 2026 Teladi <teladi@example.invalid> - 0.68.0-1
 - Add latest assistant response copy button to Tk and GTK.
 

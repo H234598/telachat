@@ -20,7 +20,7 @@ make zipapp
 make linux-installer
 make linux-installer-smoke
 packaging/linux/install-telachat.sh --prefix /tmp/telachat-prefix --desktop-dir /tmp/telachat-desktop --zipapp dist/telachat.pyz
-python packaging/linux/package-cadence.py v0.68.0
+python packaging/linux/package-cadence.py v0.69.0
 man ./docs/man/telachat.1
 ```
 
@@ -71,8 +71,10 @@ telachat folders --clear-backend Arbeit
 telachat export SESSION_ID --json
 telachat import-session session.json --json
 telachat export-folder Arbeit --json
+telachat export-folder Arbeit --bundle
 telachat export-folder Arbeit --all --json
 telachat import-folder folder.json --json
+telachat import-folder folder.zip --dry-run --json
 telachat import-folder folder.json --dry-run --json
 telachat export-folder Arbeit -o /tmp/telachat-export
 telachat sessions --json

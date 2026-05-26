@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.69.0 - 2026-05-26
+
+- Adds `telachat export-folder --bundle`, which writes a portable ZIP with the
+  folder JSON export and a small manifest.
+- Lets `telachat import-folder` read those ZIP bundles directly while keeping
+  provider configuration and API keys out of the bundle.
+
 ## 0.68.0 - 2026-05-26
 
 - Adds a compact Tk/GTK chat-header copy button for the latest assistant

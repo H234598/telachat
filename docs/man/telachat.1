@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-26" "Telachat 0.68.0" "User Commands"
+.TH TELACHAT 1 "2026-05-26" "Telachat 0.69.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -113,13 +113,15 @@ structured output. Use \fB--dry-run\fR to validate and count without writing.
 .TP
 .B export-folder
 Export a selected folder as Markdown files, a single bundled Markdown file, or
-machine-readable JSON with \fB--json\fR. By default only active sessions are
-exported; use \fB--archived\fR or \fB--all\fR to include archived chats.
+machine-readable JSON with \fB--json\fR. Use \fB--bundle\fR to write a
+portable ZIP containing \fIfolder.json\fR and a manifest. By default only
+active sessions are exported; use \fB--archived\fR or \fB--all\fR to include
+archived chats.
 .TP
 .B import-folder
-Import one \fBtelachat.folder.v1\fR JSON export additively. Use
-\fB--folder\fR to choose a target folder and \fB--json\fR for structured output.
-Use \fB--dry-run\fR to validate and count without writing.
+Import one \fBtelachat.folder.v1\fR JSON export or folder ZIP bundle
+additively. Use \fB--folder\fR to choose a target folder and \fB--json\fR for
+structured output. Use \fB--dry-run\fR to validate and count without writing.
 .TP
 .B backup
 Create a local ZIP backup containing a consistent SQLite history copy,
@@ -192,7 +194,9 @@ telachat import-session session.json --folder Importe
 telachat export-folder Arbeit -o ./arbeit-export
 telachat export-folder Arbeit --single-file -o arbeit.md
 telachat export-folder Arbeit --json -o arbeit.json
+telachat export-folder Arbeit --bundle -o arbeit.zip
 telachat import-folder arbeit.json --folder Importiert
+telachat import-folder arbeit.zip --dry-run --json
 telachat import-folder arbeit.json --dry-run --json
 telachat backup -o ./backups
 telachat restore --dry-run ./backups/telachat-backup.zip

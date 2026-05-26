@@ -125,7 +125,6 @@ publication as best-effort and never as a blocking paid step.
 - Full config editor with validation.
 - Full Markdown rendering beyond plain text display.
 - Per-folder defaults for system prompt, model and attached knowledge/context.
-- Import bundles for a folder of chats without including API keys.
 - Tool/function-call viewer once a backend returns structured tool calls.
 
 Implemented in 0.66.0:
@@ -140,6 +139,11 @@ Implemented in 0.67.0:
 Implemented in 0.68.0:
 
 - Chat-header copy button for the latest assistant response in Tk and GTK.
+
+Implemented in 0.69.0:
+
+- Portable `export-folder --bundle` ZIPs that contain `folder.json` and a
+  manifest, plus direct `import-folder` support for those ZIPs.
 
 ## Sources
 

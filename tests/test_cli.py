@@ -1108,6 +1108,7 @@ stream = false
                 export_dir = Path(tmp) / "export"
                 bundle = Path(tmp) / "bundle.md"
                 folder_json = Path(tmp) / "folder.json"
+                folder_zip = Path(tmp) / "folder.zip"
                 store = ChatStore()
                 try:
                     work = store.create_folder(
@@ -1194,6 +1195,29 @@ stream = false
                 self.assertNotIn("Archivierter Projektplan", encoded)
                 self.assertNotIn("Nicht im Export", encoded)
                 self.assertNotIn("api_key", encoded)
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(["export-folder", "Arbeit", "--bundle", "-o", str(folder_zip)]),
+                        0,
+                    )
+                self.assertEqual(out.getvalue().strip(), str(folder_zip))
+                with zipfile.ZipFile(folder_zip) as archive:
+                    self.assertEqual(set(archive.namelist()), {"folder.json", "manifest.json"})
+                    bundle_payload = json.loads(archive.read("folder.json").decode("utf-8"))
+                    manifest = json.loads(archive.read("manifest.json").decode("utf-8"))
+                self.assertEqual(bundle_payload, payload)
+                self.assertEqual(manifest["format"], "telachat.folder-bundle.v1")
+                self.assertFalse(manifest["contains_api_keys"])
+                self.assertFalse(manifest["contains_config"])
+                self.assertEqual(manifest["counts"]["sessions"], 1)
+                self.assertEqual(manifest["counts"]["messages"], 2)
+
+                err = io.StringIO()
+                with redirect_stderr(err):
+                    self.assertEqual(main(["export-folder", "Arbeit", "--bundle", "--json"]), 1)
+                self.assertIn("--bundle kann nicht mit --json", err.getvalue())
 
                 out = io.StringIO()
                 with redirect_stdout(out):

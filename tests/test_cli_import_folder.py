@@ -5,6 +5,7 @@ import json
 import os
 import tempfile
 import unittest
+import zipfile
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
@@ -46,13 +47,17 @@ class CliImportFolderTests(unittest.TestCase):
                     store.close()
 
                 export_path = Path(tmp) / "folder.json"
+                bundle_path = Path(tmp) / "folder.zip"
                 with redirect_stdout(io.StringIO()):
                     self.assertEqual(main(["export-folder", "Arbeit", "--json", "-o", str(export_path)]), 0)
+                    self.assertEqual(main(["export-folder", "Arbeit", "--bundle", "-o", str(bundle_path)]), 0)
+                with zipfile.ZipFile(bundle_path) as archive:
+                    self.assertIn("folder.json", archive.namelist())
 
                 out = io.StringIO()
                 with redirect_stdout(out):
                     self.assertEqual(
-                        main(["import-folder", str(export_path), "--folder", "Importiert", "--json"]),
+                        main(["import-folder", str(bundle_path), "--folder", "Importiert", "--json"]),
                         0,
                     )
                 result = json.loads(out.getvalue())
