@@ -577,6 +577,31 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(finished, [(7, "OK: live-a, live-b")])
         self.assertEqual(app.root.after_calls[0][0], 100)
 
+    def test_tk_error_event_uses_copyable_error_dialog(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        events: queue.Queue[object] = queue.Queue()
+        events.put(("error", (9, RuntimeError("failed to load skill\nexceeds maximum"))))
+        finished: list[tuple[int, str]] = []
+        shown_errors: list[str] = []
+        app = SimpleNamespace(
+            events=events,
+            root=_FakeRoot(),
+            _poll_events=lambda: None,
+            operation_result_current=lambda operation_id: operation_id == 9,
+            finish_operation=lambda operation_id, status: finished.append(
+                (operation_id, status)
+            ),
+            show_error=lambda text: shown_errors.append(text),
+        )
+
+        with mock.patch.object(module.messagebox, "showerror") as showerror:
+            module.TkTelachatApp._poll_events(app)
+
+        self.assertEqual(finished, [(9, "Fehler")])
+        self.assertEqual(shown_errors, ["failed to load skill\nexceeds maximum"])
+        showerror.assert_not_called()
+        self.assertEqual(app.root.after_calls[0][0], 100)
+
     def test_tk_exit_alias_closes_window(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         root = _FakeRoot()
@@ -915,6 +940,35 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(result, module.GLib.SOURCE_REMOVE)
         self.assertEqual(refreshed, [["live-a", "live-b"]])
         self.assertEqual(finished, [(11, "OK: live-a, live-b")])
+
+    def test_gtk_error_uses_copyable_error_window(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        finished: list[tuple[int, str]] = []
+        shown_errors: list[str] = []
+        app = SimpleNamespace(
+            operation_result_current=lambda operation_id: operation_id == 12,
+            finish_operation=lambda operation_id, status: finished.append(
+                (operation_id, status)
+            ),
+            show_error=lambda text: shown_errors.append(text),
+        )
+
+        result = module.GtkTelachatApp._error(
+            app,
+            12,
+            RuntimeError("failed to load skill\nexceeds maximum"),
+        )
+
+        self.assertEqual(result, module.GLib.SOURCE_REMOVE)
+        self.assertEqual(finished, [(12, "Fehler")])
+        self.assertEqual(shown_errors, ["failed to load skill\nexceeds maximum"])
 
     def test_gtk_exit_alias_closes_window(self) -> None:
         with warnings.catch_warnings():

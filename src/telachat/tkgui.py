@@ -1712,13 +1712,55 @@ class TkTelachatApp:
                     if not self.operation_result_current(operation_id):
                         continue
                     self.finish_operation(operation_id, "Fehler")
-                    messagebox.showerror("Telachat", str(exc))
+                    self.show_error(str(exc))
         except queue.Empty:
             pass
         self.root.after(100, self._poll_events)
 
     def set_status(self, text: str) -> None:
         self.status.configure(text=text)
+
+    def show_error(self, text: str) -> None:
+        first_line = text.splitlines()[0] if text.splitlines() else "Unbekannter Fehler"
+        self.set_status("Fehler: " + first_line)
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Telachat Fehler")
+        dialog.transient(self.root)
+        dialog.minsize(520, 300)
+        dialog.columnconfigure(0, weight=1)
+        dialog.rowconfigure(0, weight=1)
+
+        frame = ttk.Frame(dialog, padding=12)
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(0, weight=1)
+
+        text_view = tk.Text(frame, wrap="word", height=12)
+        text_view.grid(row=0, column=0, sticky="nsew")
+        scrollbar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=text_view.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        text_view.configure(yscrollcommand=scrollbar.set)
+        text_view.insert("1.0", text)
+        text_view.configure(state="disabled")
+        text_view.focus_set()
+
+        buttons = ttk.Frame(frame)
+        buttons.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(10, 0))
+        buttons.columnconfigure(0, weight=1)
+        ttk.Button(
+            buttons,
+            text="Kopieren",
+            command=lambda: self.copy_to_clipboard(text),
+        ).grid(row=0, column=1, padx=(0, 8))
+        ttk.Button(buttons, text="Schliessen", command=dialog.destroy).grid(
+            row=0,
+            column=2,
+        )
+
+    def copy_to_clipboard(self, text: str) -> None:
+        self.root.clipboard_clear()
+        self.root.clipboard_append(text)
+        self.set_status("In Zwischenablage kopiert.")
 
     def begin_operation(self, text: str, prompt_draft: str | None = None) -> int:
         self.operation_counter += 1

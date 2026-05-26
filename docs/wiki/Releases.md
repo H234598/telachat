@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.55.0 - 2026-05-26
+
+- Fuegt in Tk und GTK kopierbare Fehlerfenster fuer Providerfehler hinzu,
+  damit lange Codex-/OpenAI-/HuggingFace-Fehlermeldungen markiert und kopiert
+  werden koennen.
+
 ## 0.54.3 - 2026-05-26
 
 - Ueberspringt die Linux-Shell-Starter-Ausfuehrung auf Windows-CI, behaelt die

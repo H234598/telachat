@@ -1723,10 +1723,54 @@ class GtkTelachatApp(Adw.Application):
         if not self.operation_result_current(operation_id):
             return GLib.SOURCE_REMOVE
         self.finish_operation(operation_id, "Fehler")
-        dialog = Adw.MessageDialog.new(self.window, "Telachat", str(exc))
-        dialog.add_response("ok", "OK")
-        dialog.present()
+        self.show_error(str(exc))
         return GLib.SOURCE_REMOVE
+
+    def show_error(self, text: str) -> None:
+        first_line = text.splitlines()[0] if text.splitlines() else "Unbekannter Fehler"
+        self.status.set_text("Fehler: " + first_line)
+        window = Gtk.Window(title="Telachat Fehler")
+        window.set_transient_for(self.window)
+        window.set_modal(True)
+        window.set_default_size(560, 340)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        box.set_margin_top(12)
+        box.set_margin_bottom(12)
+        box.set_margin_start(12)
+        box.set_margin_end(12)
+        window.set_child(box)
+
+        text_view = Gtk.TextView()
+        text_view.set_editable(False)
+        text_view.set_cursor_visible(True)
+        text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        text_view.get_buffer().set_text(text)
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_child(text_view)
+        scrolled.set_vexpand(True)
+        box.append(scrolled)
+
+        buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        buttons.set_halign(Gtk.Align.END)
+        copy = Gtk.Button(label="Kopieren")
+        copy.connect("clicked", lambda _button: self.copy_to_clipboard(text))
+        buttons.append(copy)
+        close = Gtk.Button(label="Schliessen")
+        close.connect("clicked", lambda _button: window.close())
+        buttons.append(close)
+        box.append(buttons)
+        window.present()
+
+    def copy_to_clipboard(self, text: str) -> None:
+        display = Gdk.Display.get_default()
+        if display is not None:
+            clipboard = display.get_clipboard()
+            try:
+                clipboard.set(text)
+            except (AttributeError, TypeError):
+                clipboard.set_content(Gdk.ContentProvider.new_for_value(text))
+            self.status.set_text("In Zwischenablage kopiert.")
 
 
 def main(argv: list[str] | None = None) -> int:

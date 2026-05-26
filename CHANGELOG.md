@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.55.0 - 2026-05-26
+
+- Adds copyable Tk and GTK error windows for provider failures, so long
+  Codex/OpenAI/HuggingFace error messages can be selected and copied.
+
 ## 0.54.3 - 2026-05-26
 
 - Skip the Linux shell launcher execution check on Windows CI while retaining
