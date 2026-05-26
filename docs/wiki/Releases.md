@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.54.2 - 2026-05-26
+
+- Macht die RPM-Build-Verzeichnisanlage POSIX-sh-kompatibel, damit
+  Ubuntu/dash-CI-Runner den erwarteten `dist/rpm/SOURCES`-Baum erzeugen.
+
 ## 0.54.1 - 2026-05-26
 
 - Macht RPM-Builds auf Nicht-RPM-CI-Hosts robuster, indem das Build-Script

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.54.2 - 2026-05-26
+
+- Make the RPM build directory setup POSIX-sh compatible so Ubuntu/dash CI
+  runners create the expected `dist/rpm/SOURCES` tree.
+
 ## 0.54.1 - 2026-05-26
 
 - Make RPM builds portable across non-RPM CI builders by letting the build

@@ -21,7 +21,13 @@ PY
 TOPDIR="$ROOT/dist/rpm"
 NAME="telachat"
 rm -rf "$TOPDIR"
-mkdir -p "$TOPDIR"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+mkdir -p \
+    "$TOPDIR/BUILD" \
+    "$TOPDIR/BUILDROOT" \
+    "$TOPDIR/RPMS" \
+    "$TOPDIR/SOURCES" \
+    "$TOPDIR/SPECS" \
+    "$TOPDIR/SRPMS"
 
 tar \
     --exclude-vcs \
