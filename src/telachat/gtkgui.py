@@ -36,7 +36,12 @@ from .controller import TelachatController
 from .model_choices import merge_model_choices
 from .skill_watchdog import set_runtime_skill_watchdog_enabled
 from .store import Message, Session
-from .templates import custom_template_variables, format_prompt_template_preview
+from .templates import (
+    custom_template_variables,
+    format_prompt_template_preview,
+    remember_template_values,
+    template_value_defaults,
+)
 from .themes import theme_by_name
 
 
@@ -67,6 +72,7 @@ class GtkTelachatApp(Adw.Application):
         self.header_icon_texture: Gdk.Texture | None = None
         self.folder_display_to_id: dict[str, str | None] = {}
         self.tag_filter_values: dict[str, str | None] = {"Alle Tags": None}
+        self.template_value_history: dict[str, dict[str, str]] = {}
         self.sort_keys = {
             "Neueste zuerst": "updated_desc",
             "Aelteste zuerst": "updated_asc",
@@ -932,6 +938,7 @@ class GtkTelachatApp(Adw.Application):
         except KeyError as exc:
             self.status.set_text(str(exc))
             return
+        remember_template_values(self.template_value_history, name, values)
         self.set_input_prompt(prompt)
         self.status.set_text(f"Vorlage eingesetzt: {name}")
 
@@ -990,10 +997,16 @@ class GtkTelachatApp(Adw.Application):
         box.set_margin_start(14)
         box.set_margin_end(14)
         dialog.set_child(box)
+        defaults = template_value_defaults(
+            self.template_value_history,
+            template_name,
+            variables,
+        )
         entries: dict[str, Gtk.Entry] = {}
         for variable in variables:
             box.append(Gtk.Label(label=variable, xalign=0))
             entry = Gtk.Entry()
+            entry.set_text(defaults.get(variable, ""))
             entries[variable] = entry
             box.append(entry)
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)

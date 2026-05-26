@@ -332,6 +332,7 @@ class GuiImportTests(unittest.TestCase):
             controller=controller,
             input_text=input_text,
             template_var=_FakeText("triage"),
+            template_value_history={},
             refresh_template_choices=lambda selected=None: None,
             ask_template_values=lambda name, variables: {"topic": "Login"},
             set_status=lambda text: statuses.append(text),
@@ -341,6 +342,7 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(input_text.get(), "Pruefe Login: Fehler beim Login")
         self.assertEqual(statuses, ["Vorlage eingesetzt: triage"])
+        self.assertEqual(app.template_value_history, {"triage": {"topic": "Login"}})
         self.assertEqual(
             controller.calls[-1],
             {
@@ -501,6 +503,7 @@ class GuiImportTests(unittest.TestCase):
             set_input_prompt=prompt.set_text,
             refresh_template_choices=lambda selected=None: None,
             show_template_values_dialog=values_dialog,
+            template_value_history={},
             status=status,
         )
         app.insert_template_with_values = lambda name, values: (  # type: ignore[attr-defined]
@@ -512,6 +515,7 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(dialogs, [("triage", ("topic",))])
         self.assertEqual(prompt.get_text(), "Pruefe Login: Fehler beim Login")
         self.assertEqual(status.get_text(), "Vorlage eingesetzt: triage")
+        self.assertEqual(app.template_value_history, {"triage": {"topic": "Login"}})
 
     def test_tk_refresh_sessions_uses_selected_sidebar_filters(self) -> None:
         module = importlib.import_module("telachat.tkgui")

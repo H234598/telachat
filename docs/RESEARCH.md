@@ -124,10 +124,14 @@ publication as best-effort and never as a blocking paid step.
 
 - Config editor with validation and secret redaction.
 - Markdown rendering with copy buttons.
-- Remembering recently used custom prompt-template variable values per template.
 - Per-folder defaults for system prompt, model and attached knowledge/context.
 - Import bundles for a folder of chats without including API keys.
 - Tool/function-call viewer once a backend returns structured tool calls.
+
+Implemented in 0.66.0:
+
+- Remembering recently used custom prompt-template variable values per template
+  during the current GUI session.
 
 ## Sources
 

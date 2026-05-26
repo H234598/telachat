@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.66.0 - 2026-05-26
+
+- Remembers recently used custom prompt-template variable values per template
+  during a Tk or GTK GUI session.
+- Prefills the next custom-variable dialog for the same template with those
+  remembered values.
+
 ## 0.65.1 - 2026-05-26
 
 - Adds `make linux-installer-smoke`, which tests the Linux installer with a

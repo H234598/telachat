@@ -7,7 +7,9 @@ from telachat.templates import (
     custom_template_variables,
     format_prompt_template_preview,
     is_template_variable_name,
+    remember_template_values,
     render_prompt_template,
+    template_value_defaults,
     template_variables,
 )
 
@@ -52,6 +54,20 @@ class PromptTemplateTests(unittest.TestCase):
             custom_template_variables("{date} {unknown} {input} {topic} {topic}"),
             ("topic", "unknown"),
         )
+
+    def test_template_value_history_filters_defaults_by_current_variables(self) -> None:
+        history: dict[str, dict[str, str]] = {}
+        remember_template_values(
+            history,
+            "triage",
+            {"topic": "Login", "audience": "Support"},
+        )
+
+        self.assertEqual(
+            template_value_defaults(history, "triage", ("topic", "missing")),
+            {"topic": "Login", "missing": ""},
+        )
+        self.assertEqual(template_value_defaults(history, "other", ("topic",)), {"topic": ""})
 
     def test_is_template_variable_name_validates_placeholder_names(self) -> None:
         self.assertTrue(is_template_variable_name("topic_2"))

@@ -128,6 +128,9 @@ usage, GTK and Tk include input/output/total token counts in the response status
 The shared command path includes `/edit-last TEXT`, which updates the latest
 user message and removes later messages before `/regen` creates a replacement
 answer.
+Prompt-template custom-variable dialogs remember the latest values per template
+for the current Tk or GTK GUI session, so repeated use of the same template is
+prefilled without writing those transient values into config or history.
 Tk and GTK start the Codex Skill watchdog once at launch only when
 `skill_watchdog_enabled = true`; it then repeats hourly in a daemon thread.
 The low-level background start is additionally gated by

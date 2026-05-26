@@ -1,4 +1,4 @@
-.TH TELACHAT-TK 1 "2026-05-26" "Telachat 0.65.1" "User Commands"
+.TH TELACHAT-TK 1 "2026-05-26" "Telachat 0.66.0" "User Commands"
 .SH NAME
 telachat-tk \- start the Tk desktop frontend for Telachat
 .SH SYNOPSIS
@@ -28,7 +28,9 @@ Prompt templates can be inserted from the sidebar. Right-click the template
 selector to preview a template with metadata in a copyable window, save the
 current composer text as a template, rename a template, or delete a saved
 template. If a template contains custom variables such as \fB{topic}\fR,
-Telachat asks for their values in one compact form before insertion.
+Telachat asks for their values in one compact form before insertion and
+prefills later dialogs for the same template with the most recent values from
+the current GUI session.
 .PP
 The prompt supports Slash-Command suggestions while typing. Press Tab to
 complete the current command or context values such as providers, models,

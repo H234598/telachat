@@ -28,6 +28,24 @@ def custom_template_variables(template: str) -> tuple[str, ...]:
     return tuple(sorted(found))
 
 
+def template_value_defaults(
+    history: dict[str, dict[str, str]],
+    template_name: str,
+    variables: tuple[str, ...],
+) -> dict[str, str]:
+    values = history.get(template_name, {})
+    return {name: values.get(name, "") for name in variables}
+
+
+def remember_template_values(
+    history: dict[str, dict[str, str]],
+    template_name: str,
+    values: dict[str, str],
+) -> None:
+    if values:
+        history[template_name] = dict(values)
+
+
 def format_prompt_template_preview(name: str, template: str) -> str:
     variables = template_variables(template)
     variable_text = ", ".join("{" + variable + "}" for variable in variables) or "keine"

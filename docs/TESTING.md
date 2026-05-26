@@ -19,7 +19,7 @@ make zipapp
 make linux-installer
 make linux-installer-smoke
 packaging/linux/install-telachat.sh --prefix /tmp/telachat-prefix --desktop-dir /tmp/telachat-desktop --zipapp dist/telachat.pyz
-python packaging/linux/package-cadence.py v0.65.1
+python packaging/linux/package-cadence.py v0.66.0
 man ./docs/man/telachat.1
 ```
 
@@ -131,7 +131,8 @@ secret-like header values are not included. GUI smoke and regression tests also
 cover construction of the slash-command autocomplete widgets, context-value
 completion from the prompt, visible
 archive/tag-filter propagation, Tk tag-filter selection preservation, and
-model-choice merge behavior after live model discovery. Controller and client
+model-choice merge behavior after live model discovery. Template tests cover
+session-local custom-variable value history for GUI dialogs. Controller and client
 tests verify that generation overrides reach the API profile and that Responses
 requests include temperature/top-p/max-output parameters. Controller and GUI
 tests also cover elapsed-time propagation for successful responses.

@@ -31,7 +31,12 @@ from .controller import TelachatController
 from .model_choices import merge_model_choices
 from .skill_watchdog import set_runtime_skill_watchdog_enabled
 from .store import Message, Session
-from .templates import custom_template_variables, format_prompt_template_preview
+from .templates import (
+    custom_template_variables,
+    format_prompt_template_preview,
+    remember_template_values,
+    template_value_defaults,
+)
 
 
 SIDEBAR_QUICK_ACTION_ROW = 18
@@ -69,6 +74,7 @@ class TkTelachatApp:
         self.expanded_folder_ids: set[str] = set()
         self.session_rows: list[tuple[str, str | None]] = []
         self.tag_display_to_value: dict[str, str | None] = {"Alle Tags": None}
+        self.template_value_history: dict[str, dict[str, str]] = {}
         self.sidebar_visible = True
         self.settings_visible = True
         self.sort_keys = {
@@ -1099,6 +1105,7 @@ class TkTelachatApp:
         except KeyError as exc:
             self.set_status(str(exc))
             return
+        remember_template_values(self.template_value_history, name, values)
         self.input_text.delete("1.0", tk.END)
         self.input_text.insert("1.0", prompt)
         self.set_status(f"Vorlage eingesetzt: {name}")
@@ -1110,6 +1117,11 @@ class TkTelachatApp:
     ) -> dict[str, str] | None:
         if not variables:
             return {}
+        defaults = template_value_defaults(
+            self.template_value_history,
+            template_name,
+            variables,
+        )
         result: dict[str, str] | None = None
         dialog = tk.Toplevel(self.root)
         dialog.title(f"Vorlage: {template_name}")
@@ -1127,7 +1139,7 @@ class TkTelachatApp:
         for variable in variables:
             row = len(value_vars)
             ttk.Label(frame, text=variable).grid(row=row, column=0, sticky="w", pady=(0, 8))
-            value_var = tk.StringVar()
+            value_var = tk.StringVar(value=defaults.get(variable, ""))
             value_vars[variable] = value_var
             entry = ttk.Entry(frame, textvariable=value_var)
             entry.grid(row=row, column=1, sticky="ew", padx=(10, 0), pady=(0, 8))

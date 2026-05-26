@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.66.0 - 2026-05-26
+
+- Merkt sich zuletzt genutzte Custom-Variablenwerte pro Prompt-Template
+  innerhalb einer Tk- oder GTK-GUI-Sitzung.
+- Fuellt den naechsten Custom-Variablen-Dialog derselben Vorlage mit diesen
+  Werten vor.
+
 ## 0.65.1 - 2026-05-26
 
 - Ergaenzt `make linux-installer-smoke`, das den Linux-Installer mit

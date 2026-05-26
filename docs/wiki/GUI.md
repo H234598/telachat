@@ -98,7 +98,9 @@ kopierbaren Vorschaufenster anzeigen: Tk ueber das Kontextmenue, GTK ueber
 Zeichenanzahl und erkannte Template-Variablen. Ab Version `0.64.0` fragen Tk
 und GTK Custom-Variablen wie `{topic}` per Dialog ab, bevor das Template in den
 Composer eingesetzt wird. Ab Version `0.64.1` nutzt Tk dafuer ein einzelnes
-kompaktes Formular statt mehrerer Einzelabfragen.
+kompaktes Formular statt mehrerer Einzelabfragen. Ab Version `0.66.0` merken
+sich Tk und GTK die zuletzt genutzten Custom-Variablenwerte pro Vorlage fuer
+die laufende GUI-Sitzung und fuellen den naechsten Dialog damit vor.
 
 Slash-Commands funktionieren ebenfalls:
 
