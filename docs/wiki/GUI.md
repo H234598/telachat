@@ -23,6 +23,8 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - Temperatur und maximale Antworttokens koennen pro Anfrage im rechten Bereich
   angepasst werden.
 - Nach erfolgreichen Antworten zeigt der Status die gemessene Antwortzeit.
+- Der Kopier-Button in der Chat-Kopfzeile kopiert die letzte KI-Antwort in die
+  Zwischenablage.
 - `Abbrechen` verwirft laufende Send-, Regenerate- oder Check-Ergebnisse und
   macht die GUI sofort wieder bedienbar. Bereits gestartete Provider-Requests
   koennen serverseitig trotzdem weiterlaufen. Bei abgebrochenen Send-Anfragen

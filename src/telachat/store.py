@@ -48,6 +48,14 @@ class Message:
     metadata: dict[str, object] = field(default_factory=dict)
 
 
+def latest_assistant_content(messages: Iterable[Message]) -> str | None:
+    latest: str | None = None
+    for message in messages:
+        if message.role == "assistant":
+            latest = message.content
+    return latest
+
+
 @dataclass(frozen=True)
 class HistoryImportSummary:
     folders: int

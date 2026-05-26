@@ -6,10 +6,28 @@ import threading
 import unittest
 from pathlib import Path
 
-from telachat.store import ChatStore, messages_for_api, normalize_tag, title_from_prompt
+from telachat.store import (
+    ChatStore,
+    Message,
+    latest_assistant_content,
+    messages_for_api,
+    normalize_tag,
+    title_from_prompt,
+)
 
 
 class StoreTests(unittest.TestCase):
+    def test_latest_assistant_content_returns_last_assistant_message(self) -> None:
+        messages = [
+            Message(1, "s", "user", "Frage", 1),
+            Message(2, "s", "assistant", "Erste Antwort", 2),
+            Message(3, "s", "system", "Notiz", 3),
+            Message(4, "s", "assistant", "Zweite Antwort", 4),
+        ]
+
+        self.assertEqual(latest_assistant_content(messages), "Zweite Antwort")
+        self.assertIsNone(latest_assistant_content(messages[:1]))
+
     def test_session_message_roundtrip(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             store = ChatStore(Path(tmp) / "history.sqlite3")

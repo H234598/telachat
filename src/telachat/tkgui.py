@@ -30,7 +30,7 @@ from .config import ConfigError, redact_secret
 from .controller import TelachatController
 from .model_choices import merge_model_choices
 from .skill_watchdog import set_runtime_skill_watchdog_enabled
-from .store import Message, Session
+from .store import Message, Session, latest_assistant_content
 from .templates import (
     custom_template_variables,
     format_prompt_template_preview,
@@ -308,13 +308,20 @@ class TkTelachatApp:
         )
         self.session_title.grid(row=0, column=1, sticky="ew")
         self.session_title.bind("<Double-Button-1>", self.on_title_double_click)
+        self.copy_last_button = ttk.Button(
+            top,
+            text="⧉",
+            width=3,
+            command=self.copy_latest_assistant_response,
+        )
+        self.copy_last_button.grid(row=0, column=2, sticky="e", padx=(8, 0))
         self.settings_toggle_button = ttk.Button(
             top,
             text="▶",
             width=2,
             command=self.toggle_settings,
         )
-        self.settings_toggle_button.grid(row=0, column=2, sticky="e", padx=(8, 0))
+        self.settings_toggle_button.grid(row=0, column=3, sticky="e", padx=(8, 0))
 
         self.chat_text = tk.Text(
             self.main,
@@ -2011,6 +2018,13 @@ class TkTelachatApp:
         self.root.clipboard_clear()
         self.root.clipboard_append(text)
         self.set_status("In Zwischenablage kopiert.")
+
+    def copy_latest_assistant_response(self) -> None:
+        text = latest_assistant_content(self.messages)
+        if text is None:
+            self.set_status("Keine KI-Antwort zum Kopieren.")
+            return
+        self.copy_to_clipboard(text)
 
     def begin_operation(self, text: str, prompt_draft: str | None = None) -> int:
         self.operation_counter += 1

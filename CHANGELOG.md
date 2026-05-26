@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.68.0 - 2026-05-26
+
+- Adds a compact Tk/GTK chat-header copy button for the latest assistant
+  response.
+- Shares latest-assistant-message selection logic between GUI frontends.
+
 ## 0.67.1 - 2026-05-26
 
 - Makes `config-check --profile NAME --show-redacted` limit the redacted TOML

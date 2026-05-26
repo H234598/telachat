@@ -123,7 +123,7 @@ publication as best-effort and never as a blocking paid step.
 ## Feature ideas kept for later
 
 - Full config editor with validation.
-- Markdown rendering with copy buttons.
+- Full Markdown rendering beyond plain text display.
 - Per-folder defaults for system prompt, model and attached knowledge/context.
 - Import bundles for a folder of chats without including API keys.
 - Tool/function-call viewer once a backend returns structured tool calls.
@@ -136,6 +136,10 @@ Implemented in 0.66.0:
 Implemented in 0.67.0:
 
 - Redacted read-only config view through `config-check --show-redacted`.
+
+Implemented in 0.68.0:
+
+- Chat-header copy button for the latest assistant response in Tk and GTK.
 
 ## Sources
 

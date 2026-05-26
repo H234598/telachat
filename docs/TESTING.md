@@ -20,7 +20,7 @@ make zipapp
 make linux-installer
 make linux-installer-smoke
 packaging/linux/install-telachat.sh --prefix /tmp/telachat-prefix --desktop-dir /tmp/telachat-desktop --zipapp dist/telachat.pyz
-python packaging/linux/package-cadence.py v0.67.1
+python packaging/linux/package-cadence.py v0.68.0
 man ./docs/man/telachat.1
 ```
 
@@ -146,6 +146,8 @@ single sessions.
 CLI JSON tests cover profiles, models, config-check, sessions, stats, context,
 templates, folders, and doctor while checking that secret values remain
 redacted.
+GUI tests cover copying the latest assistant response in both Tk and GTK
+without depending on a live provider.
 Restore tests verify dry-run counts, duplicate-safe imports, session ID
 rewrites, and folder-name reuse.
 Edit-last tests verify that the latest user message can be replaced and that

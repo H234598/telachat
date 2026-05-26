@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.68.0 - 2026-05-26
+
+- Ergaenzt in Tk und GTK einen kompakten Kopier-Button in der Chat-Kopfzeile.
+- Der Button kopiert die letzte KI-Antwort in die Zwischenablage und meldet,
+  wenn noch keine KI-Antwort im Chat liegt.
+
 ## 0.67.1 - 2026-05-26
 
 - Sorgt dafuer, dass `config-check --profile NAME --show-redacted` die

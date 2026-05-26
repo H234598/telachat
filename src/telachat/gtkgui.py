@@ -35,7 +35,7 @@ from .config import ConfigError, redact_secret
 from .controller import TelachatController
 from .model_choices import merge_model_choices
 from .skill_watchdog import set_runtime_skill_watchdog_enabled
-from .store import Message, Session
+from .store import Message, Session, latest_assistant_content
 from .templates import (
     custom_template_variables,
     format_prompt_template_preview,
@@ -292,6 +292,10 @@ class GtkTelachatApp(Adw.Application):
         title_click.connect("pressed", self.on_title_pressed)
         self.title_label.add_controller(title_click)
         top.append(self.title_label)
+        self.copy_last_button = Gtk.Button(label="⧉")
+        self.copy_last_button.set_tooltip_text("Letzte Antwort kopieren")
+        self.copy_last_button.connect("clicked", self.on_copy_latest_assistant_response)
+        top.append(self.copy_last_button)
 
         self.chat_view = Gtk.TextView()
         self.chat_view.add_css_class("telachat-text")
@@ -2014,6 +2018,13 @@ class GtkTelachatApp(Adw.Application):
             except (AttributeError, TypeError):
                 clipboard.set_content(Gdk.ContentProvider.new_for_value(text))
             self.status.set_text("In Zwischenablage kopiert.")
+
+    def on_copy_latest_assistant_response(self, _button: Gtk.Button | None = None) -> None:
+        text = latest_assistant_content(self.messages)
+        if text is None:
+            self.status.set_text("Keine KI-Antwort zum Kopieren.")
+            return
+        self.copy_to_clipboard(text)
 
 
 def main(argv: list[str] | None = None) -> int:

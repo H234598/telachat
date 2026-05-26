@@ -1021,6 +1021,31 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(root.clipboard, ["failed to load skill"])
         self.assertEqual(statuses, ["In Zwischenablage kopiert."])
 
+    def test_tk_copy_latest_assistant_response_uses_latest_answer(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        copied: list[str] = []
+        statuses: list[str] = []
+        app = SimpleNamespace(
+            messages=[
+                SimpleNamespace(role="assistant", content="Erste Antwort"),
+                SimpleNamespace(role="user", content="Danke"),
+                SimpleNamespace(role="assistant", content="Zweite Antwort"),
+            ],
+            copy_to_clipboard=lambda text: copied.append(text),
+            set_status=lambda text: statuses.append(text),
+        )
+
+        module.TkTelachatApp.copy_latest_assistant_response(app)
+
+        self.assertEqual(copied, ["Zweite Antwort"])
+        self.assertEqual(statuses, [])
+
+        app.messages = [SimpleNamespace(role="user", content="Nur Frage")]
+        module.TkTelachatApp.copy_latest_assistant_response(app)
+
+        self.assertEqual(copied, ["Zweite Antwort"])
+        self.assertEqual(statuses, ["Keine KI-Antwort zum Kopieren."])
+
     def test_tk_exit_alias_closes_window(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         root = _FakeRoot()
@@ -1538,6 +1563,37 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(clipboard.values, ["failed to load skill"])
         self.assertEqual(app.status.get_text(), "In Zwischenablage kopiert.")
+
+    def test_gtk_copy_latest_assistant_response_uses_latest_answer(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        copied: list[str] = []
+        app = SimpleNamespace(
+            messages=[
+                SimpleNamespace(role="assistant", content="Erste Antwort"),
+                SimpleNamespace(role="user", content="Danke"),
+                SimpleNamespace(role="assistant", content="Zweite Antwort"),
+            ],
+            copy_to_clipboard=lambda text: copied.append(text),
+            status=_FakeText(""),
+        )
+
+        module.GtkTelachatApp.on_copy_latest_assistant_response(app, None)
+
+        self.assertEqual(copied, ["Zweite Antwort"])
+        self.assertEqual(app.status.get_text(), "")
+
+        app.messages = [SimpleNamespace(role="user", content="Nur Frage")]
+        module.GtkTelachatApp.on_copy_latest_assistant_response(app, None)
+
+        self.assertEqual(copied, ["Zweite Antwort"])
+        self.assertEqual(app.status.get_text(), "Keine KI-Antwort zum Kopieren.")
 
     def test_gtk_exit_alias_closes_window(self) -> None:
         with warnings.catch_warnings():
