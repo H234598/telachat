@@ -10,6 +10,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
 
+from . import __version__
 from .config import Profile
 
 
@@ -177,7 +178,7 @@ class OpenAICompatClient:
         headers = {
             "Accept": "application/json, text/event-stream",
             "Content-Type": "application/json",
-            "User-Agent": "Telachat/0.1",
+            "User-Agent": f"Telachat/{__version__}",
         }
         api_key = self.profile.resolved_api_key()
         if api_key:

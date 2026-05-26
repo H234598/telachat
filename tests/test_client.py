@@ -7,6 +7,7 @@ from unittest import mock
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import ClassVar
 
+from telachat import __version__
 from telachat.client import (
     ChatResult,
     OpenAICompatClient,
@@ -19,6 +20,7 @@ from telachat.config import Profile
 
 class FakeOpenAIHandler(BaseHTTPRequestHandler):
     requests: ClassVar[list[dict[str, object]]] = []
+    request_headers: ClassVar[list[dict[str, str]]] = []
 
     def log_message(self, format: str, *args: object) -> None:
         return
@@ -36,6 +38,7 @@ class FakeOpenAIHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         body = json.loads(self.rfile.read(length).decode("utf-8"))
         self.requests.append(body)
+        self.request_headers.append(dict(self.headers))
         if body.get("stream"):
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
@@ -89,6 +92,7 @@ class ClientTests(unittest.TestCase):
 
     def setUp(self) -> None:
         FakeOpenAIHandler.requests.clear()
+        FakeOpenAIHandler.request_headers.clear()
 
     def profile(self, *, stream: bool = False) -> Profile:
         return Profile(
@@ -120,6 +124,15 @@ class ClientTests(unittest.TestCase):
                 cached_input_tokens=1,
                 reasoning_tokens=1,
             ),
+        )
+
+    def test_request_user_agent_uses_package_version(self) -> None:
+        client = OpenAICompatClient(self.profile(stream=False))
+        client.chat([{"role": "user", "content": "Hi"}])
+
+        self.assertEqual(
+            FakeOpenAIHandler.request_headers[-1]["User-Agent"],
+            f"Telachat/{__version__}",
         )
 
     def test_chat_completions_request_uses_profile_generation_parameters(self) -> None:
