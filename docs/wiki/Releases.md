@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.73.2 - 2026-05-26
+
+- Erweitert die Fehlerbehandlung fuer Provider ohne Kompatibilitaet bei
+  Generierungsparametern: Wird bei `/chat/completions` oder `/responses`
+  ein `unsupported` Fehler gemeldet, wird der Request mit bereinigten
+  Parametern wiederholt.
+
 ## 0.73.1 - 2026-05-26
 
 - Laesst GUI `/folder-backend PROFILE` das Default-Modell dieses Profils

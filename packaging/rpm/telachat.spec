@@ -57,6 +57,9 @@ sed "s|@TELACHAT_EXEC@|telachat-gui|g" packaging/linux/telachat.desktop.in \
 %{_mandir}/man1/telachat-gtk.1*
 
 %changelog
+* Tue May 26 2026 Teladi <teladi@example.invalid> - 0.73.2-1
+- Retry provider requests once after removing unsupported generation parameters.
+
 * Tue May 26 2026 Teladi <teladi@example.invalid> - 0.73.1-1
 - Use target profile default model for GUI folder-backend profile commands.
 

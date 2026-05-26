@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import socket
 import subprocess
+import re
 import time
 import urllib.error
 import urllib.request
@@ -76,7 +77,7 @@ class OpenAICompatClient:
             body["reasoning_effort"] = self.profile.reasoning_effort
         if use_stream:
             return self._stream_chat(body)
-        raw = self._request_json("POST", "/chat/completions", body)
+        raw = self._request_with_fallback("POST", "/chat/completions", body)
         return ChatResult(
             content=_extract_message_content(raw),
             raw=raw,
@@ -100,7 +101,7 @@ class OpenAICompatClient:
             body["top_p"] = self.profile.top_p
         if self.profile.reasoning_effort:
             body["reasoning"] = {"effort": self.profile.reasoning_effort}
-        raw = self._request_json("POST", "/responses", body)
+        raw = self._request_with_fallback("POST", "/responses", body)
         return ChatResult(
             content=_extract_response_text(raw),
             raw=raw,
@@ -135,7 +136,7 @@ class OpenAICompatClient:
         return ChatResult(content=content, raw={"provider": "codex-cli"})
 
     def _stream_chat(self, body: dict[str, Any]) -> Iterator[str]:
-        response = self._open("POST", "/chat/completions", body)
+        response = self._open_with_fallback("POST", "/chat/completions", body)
         try:
             for line in response:
                 text = line.decode("utf-8", errors="replace").strip()
@@ -155,6 +156,46 @@ class OpenAICompatClient:
                     yield token
         finally:
             response.close()
+
+    def _request_with_fallback(
+        self,
+        method: str,
+        path: str,
+        body: dict[str, Any],
+    ) -> dict[str, Any]:
+        current_body = dict(body)
+        last_error: ApiError | None = None
+        for _ in range(3):
+            try:
+                return self._request_json(method, path, current_body)
+            except ApiError as exc:
+                last_error = exc
+                reduced_body = _trim_unsupported_parameter(current_body, str(exc))
+                if reduced_body is None:
+                    raise
+                current_body = reduced_body
+        assert last_error is not None
+        raise last_error
+
+    def _open_with_fallback(
+        self,
+        method: str,
+        path: str,
+        body: dict[str, Any] | None,
+    ) -> Any:
+        current_body = dict(body or {})
+        last_error: ApiError | None = None
+        for _ in range(3):
+            try:
+                return self._open(method, path, current_body)
+            except ApiError as exc:
+                last_error = exc
+                reduced_body = _trim_unsupported_parameter(current_body, str(exc))
+                if reduced_body is None:
+                    raise
+                current_body = reduced_body
+        assert last_error is not None
+        raise last_error
 
     def _request_json(
         self, method: str, path: str, body: dict[str, Any] | None
@@ -216,6 +257,39 @@ class OpenAICompatClient:
                     continue
                 raise ApiError(f"API nicht erreichbar: {exc}") from exc
         raise ApiError(f"API nicht erreichbar: {last_error}")
+
+
+def _trim_unsupported_parameter(
+    body: dict[str, Any],
+    error_message: str,
+) -> dict[str, Any] | None:
+    lowered = error_message.lower()
+    if "unsupported" not in lowered:
+        return None
+    candidates: tuple[str, ...] = (
+        "temperature",
+        "top_p",
+        "max_tokens",
+        "max_output_tokens",
+        "reasoning_effort",
+        "reasoning",
+    )
+    for key in candidates:
+        if key not in body:
+            continue
+        if key in lowered:
+            reduced = dict(body)
+            reduced.pop(key, None)
+            return reduced
+        if re.search(rf"[\"'`] *{re.escape(key)} *[\"'`]", lowered):
+            reduced = dict(body)
+            reduced.pop(key, None)
+            return reduced
+        if re.search(rf"\b{re.escape(key)}\b", lowered):
+            reduced = dict(body)
+            reduced.pop(key, None)
+            return reduced
+    return None
 
 
 def _extract_message_content(payload: dict[str, Any]) -> str:

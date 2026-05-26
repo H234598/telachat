@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.73.2 - 2026-05-26
+
+- Adds resilient request retries for provider-specific parameter
+  incompatibilities: when `/chat/completions` or `/responses` return an
+  `unsupported` parameter error, Telachat retries once with the unsupported key
+  removed.
+
 ## 0.73.1 - 2026-05-26
 
 - Makes GUI `/folder-backend PROFILE` use that profile's default model instead

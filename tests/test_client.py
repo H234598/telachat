@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import json
 import threading
 import unittest
@@ -10,6 +11,7 @@ from typing import ClassVar
 from telachat import __version__
 from telachat.client import (
     ChatResult,
+    ApiError,
     OpenAICompatClient,
     TokenUsage,
     format_token_usage,
@@ -173,11 +175,96 @@ class ClientTests(unittest.TestCase):
         self.assertNotIn("temperature", body)
         self.assertNotIn("top_p", body)
 
+    def test_request_retries_without_unsupported_parameter(self) -> None:
+        client = OpenAICompatClient(self.profile(stream=False))
+        with mock.patch.object(
+            client,
+            "_request_json",
+            side_effect=[
+                ApiError("HTTP 400: Unsupported parameter: temperature"),
+                {
+                    "choices": [
+                        {"message": {"role": "assistant", "content": "Hello"}, "index": 0}
+                    ],
+                    "usage": {
+                        "prompt_tokens": 3,
+                        "completion_tokens": 2,
+                        "total_tokens": 5,
+                    },
+                },
+            ],
+        ) as request:
+            result = client.chat([{"role": "user", "content": "Hi"}])
+
+        self.assertIsInstance(result, ChatResult)
+        self.assertEqual(result.content, "Hello")
+        self.assertEqual(request.call_count, 2)
+        self.assertIn("temperature", request.call_args_list[0].args[2])
+        self.assertNotIn("temperature", request.call_args_list[1].args[2])
+
+    def test_request_retries_without_unsupported_top_p_parameter(self) -> None:
+        client = OpenAICompatClient(self.profile(stream=False))
+        with mock.patch.object(
+            client,
+            "_request_json",
+            side_effect=[
+                ApiError("HTTP 400: Unsupported parameter 'top_p'"),
+                {
+                    "choices": [
+                        {"message": {"role": "assistant", "content": "Hello"}, "index": 0}
+                    ],
+                    "usage": {
+                        "prompt_tokens": 3,
+                        "completion_tokens": 2,
+                        "total_tokens": 5,
+                    },
+                },
+            ],
+        ) as request:
+            result = client.chat([{"role": "user", "content": "Hi"}])
+
+        self.assertIsInstance(result, ChatResult)
+        self.assertEqual(result.content, "Hello")
+        self.assertEqual(request.call_count, 2)
+        self.assertIn("top_p", request.call_args_list[0].args[2])
+        self.assertNotIn("top_p", request.call_args_list[1].args[2])
+
     def test_stream_chat(self) -> None:
         client = OpenAICompatClient(self.profile(stream=True))
         result = client.chat([{"role": "user", "content": "Hi"}])
         self.assertNotIsInstance(result, ChatResult)
         self.assertEqual("".join(result), "Hello")
+
+    def test_stream_chat_retries_without_unsupported_parameter(self) -> None:
+        client = OpenAICompatClient(self.profile(stream=True))
+        payload = "\n".join(
+            [
+                "data: " + json.dumps({"choices": [{"delta": {"role": "assistant"}}]}),
+                "data: " + json.dumps(
+                    {"choices": [{"delta": {"content": "Hel"}, "finish_reason": None}]}
+                ),
+                "data: " + json.dumps(
+                    {"choices": [{"delta": {"content": "lo"}, "finish_reason": None}]}
+                ),
+                "data: [DONE]",
+                "",
+            ]
+        ).encode("utf-8")
+        with mock.patch.object(
+            client,
+            "_open",
+            side_effect=[
+                ApiError("HTTP 400: Unsupported parameter: top_p"),
+                io.BytesIO(payload),
+            ],
+        ) as request:
+            result = client.chat([{"role": "user", "content": "Hi"}])
+            chunks = list(result)
+
+        self.assertEqual("".join(chunks), "Hello")
+        self.assertEqual(request.call_count, 2)
+        self.assertIn("top_p", request.call_args_list[0].args[2])
+        self.assertNotIn("top_p", request.call_args_list[1].args[2])
 
     def test_codex_profile_uses_cli(self) -> None:
         profile = Profile(
