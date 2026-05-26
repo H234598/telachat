@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.59.0 - 2026-05-26
+
+- Adds GUI save-as-template actions so the current composer text can become a
+  reusable prompt template without editing `config.toml`.
+- Tk exposes the action as `Aus Eingabe speichern` in the template dropdown
+  context menu; GTK exposes it as `Speichern` below the template dropdown.
+
 ## 0.58.0 - 2026-05-26
 
 - Adds prompt-template management through `telachat templates --set`,

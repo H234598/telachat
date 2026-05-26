@@ -37,6 +37,12 @@ class _FakeController:
     def prompt_templates(self) -> dict[str, str]:
         return self.templates
 
+    def set_prompt_template(self, name: str, template: str) -> dict[str, str]:
+        clean_name = name.strip()
+        self.calls.append({"set_template": clean_name, "template": template})
+        self.templates[clean_name] = template
+        return self.templates
+
 
 class _FakeList:
     def delete(self, *_args: object) -> None:
@@ -237,6 +243,32 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(combo.cget("values"), ("summarize", "brief"))
         self.assertEqual(template_var.get(), "brief")
 
+    def test_tk_save_input_as_template_uses_composer_text(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        controller = _FakeController(templates={"summarize": "S"})
+        combo = _FakeCombo()
+        template_var = _FakeText("summarize")
+        statuses: list[str] = []
+        app = SimpleNamespace(
+            controller=controller,
+            input_text=_FakeText("Neuer Prompt {input}"),
+            root=object(),
+            template_combo=combo,
+            template_var=template_var,
+            refresh_template_choices=lambda selected=None: module.TkTelachatApp.refresh_template_choices(
+                app, selected
+            ),
+            set_status=lambda text: statuses.append(text),
+            show_error=lambda text: statuses.append(f"error:{text}"),
+        )
+
+        with mock.patch.object(module.simpledialog, "askstring", return_value="brief"):
+            module.TkTelachatApp.save_input_as_template(app)
+
+        self.assertEqual(controller.templates["brief"], "Neuer Prompt {input}")
+        self.assertEqual(template_var.get(), "brief")
+        self.assertEqual(statuses, ["Vorlage gespeichert: brief"])
+
     def test_gtk_gui_imports(self) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -286,6 +318,38 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(app.template_names, ["summarize", "brief"])
         self.assertEqual(dropdown.selected, 1)
+
+    def test_gtk_save_input_as_template_uses_composer_text(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        controller = _FakeController(templates={"summarize": "S"})
+        dropdown = _FakeDropdown()
+        status = _FakeText("")
+        app = SimpleNamespace(
+            controller=controller,
+            input_prompt=lambda: "Neuer Prompt {input}",
+            selected_template_name=lambda: "summarize",
+            template_dropdown=dropdown,
+            template_names=[],
+            status=status,
+            show_error=lambda text: status.set_text(f"error:{text}"),
+        )
+        app.refresh_template_choices = (
+            lambda selected=None: module.GtkTelachatApp.refresh_template_choices(app, selected)
+        )
+        app._entry_dialog = lambda **kwargs: kwargs["callback"]("brief")
+
+        module.GtkTelachatApp.on_save_input_as_template(app, object())
+
+        self.assertEqual(controller.templates["brief"], "Neuer Prompt {input}")
+        self.assertEqual(dropdown.selected, 1)
+        self.assertEqual(status.get_text(), "Vorlage gespeichert: brief")
 
     def test_tk_refresh_sessions_uses_selected_sidebar_filters(self) -> None:
         module = importlib.import_module("telachat.tkgui")

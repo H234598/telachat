@@ -89,6 +89,9 @@ wird in den Composer eingefuegt und kann vor dem Senden angepasst werden.
 Ab Version `0.58.0` koennen Templates direkt verwaltet werden: Tk bietet
 Umbenennen und Loeschen per Rechtsklick auf die Vorlagen-Auswahl, GTK zeigt
 dafuer eigene Buttons unter der Vorlagen-Auswahl.
+Ab Version `0.59.0` kann der aktuelle Composer-Text direkt als neues oder
+aktualisiertes Template gespeichert werden: in Tk ueber `Aus Eingabe speichern`
+im Kontextmenue, in GTK ueber `Speichern`.
 
 Slash-Commands funktionieren ebenfalls:
 

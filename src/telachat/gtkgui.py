@@ -204,6 +204,9 @@ class GtkTelachatApp(Adw.Application):
         template_row.append(insert_template_button)
         template_manage_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.sidebar.append(template_manage_row)
+        save_template_button = Gtk.Button(label="Speichern")
+        save_template_button.connect("clicked", self.on_save_input_as_template)
+        template_manage_row.append(save_template_button)
         rename_template_button = Gtk.Button(label="Umbenennen")
         rename_template_button.connect("clicked", self.on_rename_selected_template)
         template_manage_row.append(rename_template_button)
@@ -902,6 +905,29 @@ class GtkTelachatApp(Adw.Application):
             return
         self.set_input_prompt(prompt)
         self.status.set_text(f"Vorlage eingesetzt: {name}")
+
+    def on_save_input_as_template(self, _button: Gtk.Button) -> None:
+        template = self.input_prompt()
+        if not template:
+            self.status.set_text("Eingabe fuer Vorlage fehlt.")
+            return
+
+        def save(name: str) -> None:
+            try:
+                self.controller.set_prompt_template(name, template)
+            except ConfigError as exc:
+                self.show_error(str(exc))
+                return
+            clean_name = name.strip()
+            self.refresh_template_choices(clean_name)
+            self.status.set_text(f"Vorlage gespeichert: {clean_name}")
+
+        self._entry_dialog(
+            title="Vorlage speichern",
+            label="Vorlagenname",
+            initial=self.selected_template_name() or "",
+            callback=save,
+        )
 
     def on_rename_selected_template(self, _button: Gtk.Button) -> None:
         name = self.selected_template_name()

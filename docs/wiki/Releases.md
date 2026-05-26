@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.59.0 - 2026-05-26
+
+- Ergaenzt GUI-Aktionen, um den aktuellen Composer-Text direkt als
+  wiederverwendbares Prompt-Template zu speichern.
+- Tk bietet `Aus Eingabe speichern` im Kontextmenue der Vorlagen-Auswahl; GTK
+  zeigt `Speichern` unter der Vorlagen-Auswahl.
+
 ## 0.58.0 - 2026-05-26
 
 - Ergaenzt Prompt-Template-Verwaltung ueber `telachat templates --set`,

@@ -1077,13 +1077,36 @@ class TkTelachatApp:
 
     def show_template_context_menu(self, event: object) -> str:
         menu = tk.Menu(self.root, tearoff=False)
+        menu.add_command(label="Aus Eingabe speichern", command=self.save_input_as_template)
         menu.add_command(label="Umbenennen", command=self.rename_selected_template)
         menu.add_command(label="Loeschen", command=self.delete_selected_template)
         if not self.template_var.get():
-            menu.entryconfigure(0, state="disabled")
             menu.entryconfigure(1, state="disabled")
+            menu.entryconfigure(2, state="disabled")
         menu.tk_popup(int(getattr(event, "x_root", 0)), int(getattr(event, "y_root", 0)))
         return "break"
+
+    def save_input_as_template(self) -> None:
+        template = self.input_text.get("1.0", tk.END).strip()
+        if not template:
+            self.set_status("Eingabe fuer Vorlage fehlt.")
+            return
+        name = simpledialog.askstring(
+            "Vorlage speichern",
+            "Vorlagenname",
+            initialvalue=self.template_var.get() or "",
+            parent=self.root,
+        )
+        if not name:
+            return
+        try:
+            self.controller.set_prompt_template(name, template)
+        except ConfigError as exc:
+            self.show_error(str(exc))
+            return
+        clean_name = name.strip()
+        self.refresh_template_choices(clean_name)
+        self.set_status(f"Vorlage gespeichert: {clean_name}")
 
     def rename_selected_template(self) -> None:
         name = self.template_var.get()
