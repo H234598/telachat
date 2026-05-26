@@ -30,6 +30,10 @@ Expected outputs:
 - `dist\TelachatTk-Setup-<version>.exe`
 - `dist\TelachatTk-Setup-<version>.exe.sha256`
 
+If the Windows `python.exe` Microsoft Store alias is present but no real Python
+is installed behind it, the scripts ignore that unusable alias. When an existing
+`.venv-winbuild` is present, it is reused as a fallback interpreter.
+
 The script is intentionally Tk-only and excludes GTK modules. Run OpenAI-backed
 profiles by setting `OPENAI_API_KEY` in the user environment before starting
 Telachat.

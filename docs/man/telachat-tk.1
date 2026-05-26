@@ -1,4 +1,4 @@
-.TH TELACHAT-TK 1 "2026-05-25" "Telachat 0.44.0" "User Commands"
+.TH TELACHAT-TK 1 "2026-05-26" "Telachat 0.57.1" "User Commands"
 .SH NAME
 telachat-tk \- start the Tk desktop frontend for Telachat
 .SH SYNOPSIS
@@ -18,11 +18,16 @@ The System pane exposes a Theme selector. The persistent value is stored in
 \fIconfig.toml\fR as \fBtheme\fR and can be temporarily overridden with
 \fBTELACHAT_THEME\fR. If the persistent value is \fBsystem\fR,
 \fBTELACHAT_SYSTEM_THEME\fR can force the detected palette for one process.
-The composer also accepts \fB/theme NAME\fR.
+The \fBOptionen\fR menu opens persistent settings for theme, app icon,
+chat background, header validation, and the Skill watchdog. The composer also
+accepts \fB/theme NAME\fR.
+Use \fB/models\fR to show configured model choices or \fB/models live\fR to run
+the live model check and refresh available model choices.
 Use \fB/find TEXT\fR to search within the currently loaded conversation.
 .PP
 The prompt supports Slash-Command suggestions while typing. Press Tab to
-complete the current command and Shift+Enter to send a message.
+complete the current command, Shift+Enter to send a message, and Ctrl+/ to
+show keyboard shortcuts.
 Use \fB/edit-last TEXT\fR to replace the latest user message and remove the
 following answer before regenerating.
 Use \fB/fork [TITLE]\fR to copy the current conversation into a new independent
@@ -38,9 +43,14 @@ Use \fB/archive\fR, \fB/unarchive\fR, and \fB/archives\fR to hide completed
 chats from normal lists and inspect the archive.
 The sidebar archive filter switches the chat list between active, archived,
 and all chats.
+The chat list shows folders as expandable rows. Double-click a folder to open
+or close it; right-click sessions, folders, or empty space for the context
+menu. Creating a new chat asks for the conversation name before the session is
+stored.
 The sidebar tag filter narrows the chat list by saved tag and shows current tag
 counts.
-The System pane also exposes per-request temperature and max-token controls.
+The System pane also exposes per-request temperature, max-token controls, and
+the persistent profile-header validation switch.
 Successful replies report elapsed response time in the status area.
 The Abbrechen button makes the UI usable again while a send, regenerate, or
 Check worker is still running and ignores its late result. Already-started

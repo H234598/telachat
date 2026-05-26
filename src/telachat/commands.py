@@ -29,6 +29,7 @@ class ContextEstimate:
 
 SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/help", "/help", "Befehle anzeigen", aliases=("/hilfe",)),
+    SlashCommand("/shortcuts", "/shortcuts", "Tastenkuerzel anzeigen", aliases=("/keys",)),
     SlashCommand("/new", "/new [Titel]", "Neue Session starten", aliases=("/neu",)),
     SlashCommand("/rename", "/rename TITLE", "Aktuellen Chat umbenennen"),
     SlashCommand("/delete", "/delete", "Aktuellen Chat loeschen"),
@@ -63,6 +64,7 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/search", "/search TEXT", "Chatliste durchsuchen"),
     SlashCommand("/find", "/find TEXT", "Aktuelle Unterhaltung durchsuchen"),
     SlashCommand("/provider", "/provider NAME", "Provider wechseln"),
+    SlashCommand("/models", "/models [live]", "Modelle anzeigen oder live abfragen"),
     SlashCommand("/model", "/model NAME", "Modell wechseln"),
     SlashCommand("/theme", "/theme [NAME]", "GUI-Theme anzeigen/wechseln"),
     SlashCommand("/permissions", "/permissions", "Provider und Secret-Quellen anzeigen"),
@@ -77,11 +79,28 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/exit", "/exit", "Chat beenden", aliases=("/quit", "/q")),
 )
 
+KEYBOARD_SHORTCUTS: tuple[tuple[str, str], ...] = (
+    ("Shift+Enter", "Nachricht senden"),
+    ("Ctrl+Enter", "Nachricht senden"),
+    ("Tab", "Slash-Befehl vervollstaendigen"),
+    ("Esc", "Slash-Vorschlaege ausblenden"),
+    ("Ctrl+/", "Tastenkuerzel anzeigen"),
+    ("Doppelklick auf Titel", "Aktuelle Unterhaltung umbenennen"),
+)
+
 
 def slash_command_help() -> str:
     width = max(len(item.usage) for item in SLASH_COMMANDS)
     return "\n".join(
         f"{item.usage:<{width}}  {item.description}" for item in SLASH_COMMANDS
+    )
+
+
+def keyboard_shortcut_help() -> str:
+    width = max(len(keys) for keys, _description in KEYBOARD_SHORTCUTS)
+    return "\n".join(
+        f"{keys:<{width}}  {description}"
+        for keys, description in KEYBOARD_SHORTCUTS
     )
 
 
@@ -122,6 +141,15 @@ def format_stats_lines(stats: object, *, include_database: bool = True) -> list[
             ),
         ]
     )
+    usage_records = getattr(stats, "usage_records", 0)
+    if usage_records:
+        lines.append(
+            "Token-Nutzung: "
+            f"{usage_records} Antworten, "
+            f"{getattr(stats, 'usage_input_tokens', 0)} in, "
+            f"{getattr(stats, 'usage_output_tokens', 0)} out, "
+            f"{getattr(stats, 'usage_total_tokens', 0)} total"
+        )
     return lines
 
 

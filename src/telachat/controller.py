@@ -3,8 +3,18 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, replace
 
-from .client import ChatResult, OpenAICompatClient, TokenUsage
-from .config import AppConfig, Profile, load_config, set_config_theme
+from .client import ChatResult, OpenAICompatClient, TokenUsage, token_usage_record
+from .config import (
+    AppConfig,
+    ConfigError,
+    Profile,
+    load_config,
+    set_config_app_icon,
+    set_config_chat_background_image,
+    set_config_header_validation,
+    set_config_skill_watchdog_enabled,
+    set_config_theme,
+)
 from .store import (
     ChatStore,
     Folder,
@@ -14,6 +24,7 @@ from .store import (
     messages_for_api,
     title_from_prompt,
 )
+from .templates import render_prompt_template
 from .themes import Theme, normalize_theme_name, theme_by_name, theme_labels
 
 
@@ -57,6 +68,32 @@ class TelachatController:
         self.config = replace(load_config(self.config.path), theme=theme_name)
         return self.theme()
 
+    def set_app_icon(self, name: str) -> str:
+        icon = set_config_app_icon(name, self.config.path)
+        self.config = load_config(self.config.path)
+        return self.config.app_icon
+
+    def set_chat_background_image(self, path: str) -> str:
+        background = set_config_chat_background_image(path, self.config.path)
+        self.config = load_config(self.config.path)
+        return self.config.chat_background_image or background
+
+    def set_header_validation(self, enabled: bool) -> bool:
+        previous = self.config.validate_profile_headers
+        set_config_header_validation(enabled, self.config.path)
+        try:
+            self.config = load_config(self.config.path)
+        except ConfigError:
+            set_config_header_validation(previous, self.config.path)
+            self.config = load_config(self.config.path)
+            raise
+        return self.config.validate_profile_headers
+
+    def set_skill_watchdog_enabled(self, enabled: bool) -> bool:
+        set_config_skill_watchdog_enabled(enabled, self.config.path)
+        self.config = load_config(self.config.path)
+        return self.config.skill_watchdog_enabled
+
     def prompt_templates(self) -> dict[str, str]:
         return self.config.prompt_templates
 
@@ -66,10 +103,7 @@ class TelachatController:
         except KeyError as exc:
             available = ", ".join(sorted(self.config.prompt_templates)) or "<keine>"
             raise KeyError(f"Prompt-Template '{name}' fehlt. Verfuegbar: {available}") from exc
-        if "{input}" in template:
-            return template.replace("{input}", text.strip())
-        clean = text.strip()
-        return f"{template}\n\n{clean}".strip() if clean else template
+        return render_prompt_template(template, text)
 
     def list_sessions(
         self,
@@ -176,7 +210,10 @@ class TelachatController:
         clean_profile = default_profile.strip()
         clean_model = default_model.strip()
         if clean_profile:
-            self.config.profile(clean_profile).with_overrides(model=clean_model or None)
+            profile = self.config.profile(clean_profile).with_overrides(
+                model=clean_model or None
+            )
+            clean_profile = profile.name
         elif clean_model:
             self.config.profile(None).with_overrides(model=clean_model)
         return clean_profile, clean_model
@@ -300,7 +337,12 @@ class TelachatController:
         else:
             answer = "".join(result)
             usage = None
-        self.store.add_message(session.id, "assistant", answer)
+        self.store.add_message(
+            session.id,
+            "assistant",
+            answer,
+            metadata=_assistant_message_metadata(usage),
+        )
         return ChatPayload(
             session=session,
             messages=self.store.messages(session.id),
@@ -343,7 +385,12 @@ class TelachatController:
         else:
             answer = "".join(result)
             usage = None
-        self.store.add_message(session.id, "assistant", answer)
+        self.store.add_message(
+            session.id,
+            "assistant",
+            answer,
+            metadata=_assistant_message_metadata(usage),
+        )
         updated = self.store.get_session(session.id) or session
         return ChatPayload(
             session=updated,
@@ -378,3 +425,8 @@ class TelachatController:
 
     def export_markdown(self, session_id: str) -> str:
         return self.store.export_markdown(session_id)
+
+
+def _assistant_message_metadata(usage: TokenUsage | None) -> dict[str, object] | None:
+    record = token_usage_record(usage)
+    return {"usage": record} if record else None

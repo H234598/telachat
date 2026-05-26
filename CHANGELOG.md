@@ -1,5 +1,172 @@
 # Changelog
 
+## Unreleased
+
+## 0.57.1 - 2026-05-26
+
+- Restores the visible `Neu` sidebar action in Tk and GTK while keeping
+  `Regenerieren` and `Check` available as quick actions.
+- Aligns Tk sidebar row constants so the session list keeps the grow weight
+  after the extra quick-action row.
+
+## 0.57.0 - 2026-05-26
+
+- Adds shared keyboard-shortcut help for CLI, Tk, and GTK via `/shortcuts`
+  and alias `/keys`.
+- Adds `Ctrl+/` in the GUI prompt to open the shortcut overview.
+
+## 0.56.0 - 2026-05-26
+
+- Reworks the Tk and GTK chat header into a compact centered title with
+  left/right arrow pane toggles.
+- Lets users rename the current conversation by double-clicking the centered
+  title.
+- Moves the visible sidebar `Regenerieren` action into the old `Neu` position;
+  new conversations remain available through the menu, slash command, and
+  context flows.
+- Adds `AGENTS.md` as a compact repository guide for future contributors and
+  coding agents.
+
+## 0.55.0 - 2026-05-26
+
+- Adds copyable Tk and GTK error windows for provider failures, so long
+  Codex/OpenAI/HuggingFace error messages can be selected and copied.
+
+## 0.54.3 - 2026-05-26
+
+- Skip the Linux shell launcher execution check on Windows CI while retaining
+  the installer coverage on POSIX hosts.
+- Preserve the runtime `$SNAP` mount variable in generated snap wrappers and
+  add a regression test for it.
+
+## 0.54.2 - 2026-05-26
+
+- Make the RPM build directory setup POSIX-sh compatible so Ubuntu/dash CI
+  runners create the expected `dist/rpm/SOURCES` tree.
+
+## 0.54.1 - 2026-05-26
+
+- Make RPM builds portable across non-RPM CI builders by letting the build
+  script skip RPM database dependency checks while keeping spec metadata.
+- Improve the Linux packaging regression test so remote RPM build failures show
+  captured stdout and stderr.
+
+## 0.54.0 - 2026-05-26
+
+- Add a distro-tolerant Linux installer that installs the zipapp, launchers,
+  manpages, a Freedesktop desktop entry, an icon, and an optional desktop
+  shortcut under a configurable prefix.
+- Add RPM packaging and a periodic Linux release packaging workflow.
+- Add a Snapcraft recipe for optional snap builds when Snapcraft is available.
+
+## 0.53.1 - 2026-05-26
+
+- Restore the Skill watchdog's safe opt-in default after the 0.53.0 release regression.
+- Keep the low-level background watchdog gated by `TELACHAT_ENABLE_SKILL_WATCHDOG=1` so tests and GUI startup cannot mutate external Codex skill files unless explicitly enabled.
+
+## 0.53.0 - 2026-05-26
+
+- Add a Tk folder/session explorer view with expandable folder rows.
+- Add a Tk right-click context menu for session, folder, and empty-list actions.
+- Make the Tk and GTK New actions ask for a conversation name before creating the chat.
+- Add the Tk/GTK Skill watchdog option to the new preferences flow.
+
+## 0.52.1 - 2026-05-26
+
+- Temporarily restore the Skill watchdog's safe default: new configs keep it off unless explicitly enabled.
+- Keep default configuration generation compatible with Python 3.11.
+
+## 0.52.0 - 2026-05-26
+
+- Add a real Tk options menu and GTK preferences window for persistent GUI settings.
+- Persist `app_icon`, `chat_background_image`, and `skill_watchdog_enabled` in `config.toml`.
+- Import the provided SVG icons, ship PNG renderings for desktop use, and add an hourly random icon mode.
+- Keep the Skill watchdog default-on in Tk/GTK while adding a GUI/config opt-out.
+
+## 0.51.1 - 2026-05-26
+
+- Correct Skill watchdog documentation to match the implemented default-on Tk/GTK startup behavior.
+
+## 0.51.0 - 2026-05-26
+
+- Add metallic/glass-inspired GUI themes: `graphite-glass`, `liquid-chrome`, `black-ice`, and `brushed-steel`.
+- Start the Tk/GTK Skill watchdog by default, while keeping `TELACHAT_DISABLE_SKILL_WATCHDOG=1` as the opt-out.
+
+## 0.50.0 - 2026-05-26
+
+- Add a Codex Skill watchdog command and Tk/GTK startup watcher that compacts oversized Skill frontmatter descriptions while preserving the Skill body.
+
+## 0.49.0 - 2026-05-26
+
+- Remove the duplicate default `tki` provider while keeping it as a legacy alias for stored sessions and folder backends.
+- Show the HuggingFace model alias `TKI` while sending the real Qwen model ID to the API.
+- Let profiles omit `temperature` and `top_p` from API requests; the OpenAI Responses profile disables both by default for GPT-5.x compatibility.
+- Harden Windows packaging around unusable Microsoft Store Python aliases and add a reusable Windows test script.
+- Add versioned Windows portable ZIP and NSIS installer outputs with SHA256 sidecar files.
+- Add Windows CI packaging coverage and release upload validation without raw wildcard uploads.
+- Keep Windows escape-like path tests inside temporary directories.
+
+## 0.48.1 - 2026-05-25
+
+- Add direct GUI regression coverage for `/models` and `/models live` in both Tk and GTK frontends.
+- Validate configured profile header names and values before they are sent with API requests.
+- Add a persistent `validate_profile_headers` option plus Tk/GTK settings controls to relax strict standard header-name validation for intentionally unusual providers while still rejecting control characters.
+
+## 0.48.0 - 2026-05-25
+
+- Add `/models [live]` to the shared slash-command catalog, CLI chat, and both desktop frontends.
+- Show configured models for the active provider without a network call, or run the existing live model check with `/models live`.
+- Add completion and regression coverage for the new interactive model command.
+- Include direct correction coverage so the release-upload guard follows PowerShell continuation lines.
+
+## 0.47.5 - 2026-05-25
+
+- Ignore negative token-usage counts when formatting or persisting provider usage metadata.
+- Keep valid zero token counts in structured usage records while avoiding misleading text output.
+- Add regression coverage for invalid usage metadata in both local stats and client formatting.
+
+## 0.47.4 - 2026-05-25
+
+- Return a stored metadata copy from `ChatStore.add_message()` so later caller-side dictionary mutations cannot affect the returned message state.
+- Add regression coverage proving saved message metadata stays isolated from input and returned metadata mutations.
+
+## 0.47.3 - 2026-05-25
+
+- Add regression coverage proving assistant usage metadata survives session forks.
+- Add regression coverage proving additive history imports preserve stored usage metadata.
+- Add regression coverage proving deleted assistant messages keep their usage metadata.
+
+## 0.47.2 - 2026-05-25
+
+- Add workflow regression coverage that rejects raw wildcards passed directly to `gh release upload`.
+- Guard the Windows packaging release-upload path so assets must be resolved and validated before upload.
+
+## 0.47.1 - 2026-05-25
+
+- Add a legacy SQLite migration for old `messages` tables that do not yet have the `metadata` column.
+- Cover the migration so token-usage metadata can be stored safely on older local histories.
+
+## 0.47.0 - 2026-05-25
+
+- Persist provider token-usage metadata on saved assistant messages when usage is available.
+- Aggregate stored input/output/total token counts in `telachat stats` and `stats --json` without exposing message content.
+- Reuse the shared token-usage record helper across CLI/controller storage and JSON output.
+
+## 0.46.0 - 2026-05-25
+
+- Add built-in prompt-template variables: `{date}`, `{time}`, and `{datetime}` in addition to `{input}`.
+- Report referenced built-in variables in `telachat templates --json`.
+- Share prompt-template rendering between CLI and GUI/controller paths.
+
+## 0.45.1 - 2026-05-25
+
+- Add regression coverage for `telachat ask --json --save` session persistence and quiet stderr.
+
+## 0.45.0 - 2026-05-25
+
+- Add `telachat ask --json` for scriptable one-shot answers with provider, model, and usage metadata.
+- Add tracked-source secret-shape hygiene coverage.
+
 ## 0.44.0 - 2026-05-25
 
 - Surface provider token usage from Chat Completions and Responses results in GUI response status and `doctor --json --chat`.

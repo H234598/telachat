@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 from telachat.client import TokenUsage
+from telachat.config import ConfigError
 
 
 class _FakeController:
@@ -22,12 +23,18 @@ class _FakeController:
     def list_tags(self) -> list[tuple[str, int]]:
         return self.tags
 
+    def list_folders(self) -> list[object]:
+        return []
+
     def stats(self) -> object:
         return _fake_stats()
 
 
 class _FakeList:
     def delete(self, *_args: object) -> None:
+        return None
+
+    def insert(self, *_args: object) -> None:
         return None
 
     def get_row_at_index(self, _index: int) -> object | None:
@@ -74,6 +81,17 @@ class _FakeCombo:
         raise KeyError(key)
 
 
+class _FakeBoolVar:
+    def __init__(self, value: bool) -> None:
+        self.value = value
+
+    def get(self) -> bool:
+        return self.value
+
+    def set(self, value: bool) -> None:
+        self.value = value
+
+
 class _FakeDropdown:
     def __init__(self) -> None:
         self.selected = -1
@@ -115,10 +133,20 @@ class _FakeWindow:
         self.closed = True
 
 
+class _FakeVisible:
+    def __init__(self, visible: bool) -> None:
+        self.visible = visible
+
+    def get_visible(self) -> bool:
+        return self.visible
+
+
 class _FakeRoot:
     def __init__(self) -> None:
         self.destroyed = False
         self.after_calls: list[tuple[int, object]] = []
+        self.clipboard: list[str] = []
+        self.clipboard_cleared = False
 
     def destroy(self) -> None:
         self.destroyed = True
@@ -126,24 +154,61 @@ class _FakeRoot:
     def after(self, delay_ms: int, callback: object) -> None:
         self.after_calls.append((delay_ms, callback))
 
+    def clipboard_clear(self) -> None:
+        self.clipboard_cleared = True
+        self.clipboard.clear()
+
+    def clipboard_append(self, text: str) -> None:
+        self.clipboard.append(text)
+
 
 class _FakeButton:
     def __init__(self) -> None:
         self.state = ""
         self.sensitive = True
+        self.label = ""
 
     def configure(self, **kwargs: object) -> None:
         if "state" in kwargs:
             self.state = str(kwargs["state"])
+        if "text" in kwargs:
+            self.label = str(kwargs["text"])
 
     def set_sensitive(self, value: bool) -> None:
         self.sensitive = value
+
+    def set_label(self, value: str) -> None:
+        self.label = value
+
+
+class _FakeCheckButton:
+    def __init__(self, active: bool) -> None:
+        self.active = active
+
+    def get_active(self) -> bool:
+        return self.active
+
+    def set_active(self, value: bool) -> None:
+        self.active = value
 
 
 class GuiImportTests(unittest.TestCase):
     def test_tk_gui_imports(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         self.assertTrue(hasattr(module, "TkTelachatApp"))
+
+    def test_tk_sidebar_quick_actions_include_visible_new_session(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+
+        self.assertEqual(module.sidebar_quick_action_labels(), ("Neu", "Regenerieren", "Check"))
+        self.assertEqual(
+            module.sidebar_quick_action_method_names(),
+            ("new_session", "regenerate_active_session", "doctor"),
+        )
+        for method_name in module.sidebar_quick_action_method_names():
+            self.assertTrue(hasattr(module.TkTelachatApp, method_name))
+        self.assertEqual(module.SIDEBAR_FOLDER_ACTION_ROW, module.SIDEBAR_QUICK_ACTION_ROW + 2)
+        self.assertEqual(module.SIDEBAR_SESSION_LIST_ROW, module.SIDEBAR_FOLDER_PROMPT_ROW + 1)
 
     def test_gtk_gui_imports(self) -> None:
         with warnings.catch_warnings():
@@ -155,6 +220,24 @@ class GuiImportTests(unittest.TestCase):
                     self.skipTest("PyGObject is not installed in this environment")
                 raise
         self.assertTrue(hasattr(module, "GtkTelachatApp"))
+
+    def test_gtk_sidebar_quick_actions_include_visible_new_session(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+
+        self.assertEqual(module.sidebar_quick_action_labels(), ("Neu", "Regenerieren", "Check"))
+        self.assertEqual(
+            module.sidebar_quick_action_method_names(),
+            ("on_new", "on_regenerate_active_session", "on_doctor"),
+        )
+        for method_name in module.sidebar_quick_action_method_names():
+            self.assertTrue(hasattr(module.GtkTelachatApp, method_name))
 
     def test_tk_refresh_sessions_uses_selected_sidebar_filters(self) -> None:
         module = importlib.import_module("telachat.tkgui")
@@ -168,6 +251,8 @@ class GuiImportTests(unittest.TestCase):
             selected_folder_id=lambda: "__all__",
             selected_archive_filter=lambda: "archived",
             selected_tag_filter=lambda: "projekt",
+            session_rows=[],
+            _insert_grouped_session_rows=lambda: None,
         )
 
         module.TkTelachatApp.refresh_sessions(app)
@@ -370,6 +455,40 @@ class GuiImportTests(unittest.TestCase):
 
         self.assertEqual(status, "Antwort in 1.2s | Tokens: 13 in/18 out, 31 total")
 
+    def test_tk_update_active_title_uses_plain_center_title(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        app = object.__new__(module.TkTelachatApp)
+        app.active_session = SimpleNamespace(title="Projekt Alpha")
+        app.session_title = _FakeText("")
+
+        module.TkTelachatApp.update_active_title(app)
+
+        self.assertEqual(app.session_title.get_text(), "Projekt Alpha")
+
+    def test_tk_title_double_click_starts_rename(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        calls: list[str] = []
+        app = SimpleNamespace(rename_active_session=lambda: calls.append("rename"))
+
+        result = module.TkTelachatApp.on_title_double_click(app, object())
+
+        self.assertEqual(result, "break")
+        self.assertEqual(calls, ["rename"])
+
+    def test_tk_sync_pane_toggle_buttons_sets_directional_labels(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        app = SimpleNamespace(
+            sidebar_visible=False,
+            settings_visible=True,
+            sidebar_toggle_button=_FakeButton(),
+            settings_toggle_button=_FakeButton(),
+        )
+
+        module.TkTelachatApp._sync_pane_toggle_buttons(app)
+
+        self.assertEqual(app.sidebar_toggle_button.label, "▶")
+        self.assertEqual(app.settings_toggle_button.label, "▶")
+
     def test_tk_cancelled_request_ignores_late_result(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         app = object.__new__(module.TkTelachatApp)
@@ -453,12 +572,99 @@ class GuiImportTests(unittest.TestCase):
         self.assertNotIn("Geheimer Projektplan", showinfo.call_args.args[1])
         self.assertEqual(app.statuses[-1], "Kontext ca. 4 Tokens | 1/2 Nachrichten")
 
+    def test_tk_shortcuts_command_shows_keyboard_help(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+
+        app = SimpleNamespace()
+        app.show_shortcuts = lambda: module.TkTelachatApp.show_shortcuts(app)
+
+        with mock.patch.object(module.messagebox, "showinfo") as showinfo:
+            module.TkTelachatApp.handle_command(app, "/keys")
+
+        showinfo.assert_called_once()
+        self.assertEqual(showinfo.call_args.args[0], "Telachat Tastenkuerzel")
+        self.assertIn("Shift+Enter", showinfo.call_args.args[1])
+        self.assertIn("Ctrl+/", showinfo.call_args.args[1])
+
+    def test_tk_shortcut_opens_keyboard_help(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        calls: list[str] = []
+        app = SimpleNamespace(show_shortcuts=lambda: calls.append("shortcuts"))
+
+        result = module.TkTelachatApp._show_shortcuts_from_shortcut(app, object())
+
+        self.assertEqual(result, "break")
+        self.assertEqual(calls, ["shortcuts"])
+
     def test_tk_doctor_command_starts_existing_check(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         calls: list[str] = []
         app = SimpleNamespace(doctor=lambda: calls.append("doctor"))
 
         module.TkTelachatApp.handle_command(app, "/doctor")
+
+        self.assertEqual(calls, ["doctor"])
+
+    def test_tk_header_validation_toggle_updates_status(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        calls: list[bool] = []
+        controller = SimpleNamespace(
+            config=SimpleNamespace(validate_profile_headers=True),
+            set_header_validation=lambda enabled: calls.append(enabled) or enabled,
+        )
+        statuses: list[str] = []
+        app = SimpleNamespace(
+            controller=controller,
+            header_validation_var=_FakeBoolVar(False),
+            set_status=lambda text: statuses.append(text),
+        )
+
+        module.TkTelachatApp.on_header_validation_changed(app)
+
+        self.assertEqual(calls, [False])
+        self.assertFalse(app.header_validation_var.get())
+        self.assertEqual(statuses, ["Header-Pruefung: aus"])
+
+    def test_tk_header_validation_toggle_rolls_back_on_error(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+
+        def fail(_enabled: bool) -> bool:
+            raise ConfigError("Header kaputt")
+
+        app = SimpleNamespace(
+            controller=SimpleNamespace(
+                config=SimpleNamespace(validate_profile_headers=True),
+                set_header_validation=fail,
+            ),
+            header_validation_var=_FakeBoolVar(False),
+            statuses=[],
+        )
+        app.set_status = lambda text: app.statuses.append(text)
+
+        module.TkTelachatApp.on_header_validation_changed(app)
+
+        self.assertTrue(app.header_validation_var.get())
+        self.assertEqual(app.statuses, ["Header kaputt"])
+
+    def test_tk_models_command_lists_configured_models(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        combo = _FakeCombo()
+        combo.configure(values=["base-model", "backup-model"])
+        app = SimpleNamespace(model_combo=combo)
+
+        with mock.patch.object(module.messagebox, "showinfo") as showinfo:
+            module.TkTelachatApp.handle_command(app, "/models")
+
+        showinfo.assert_called_once()
+        self.assertEqual(showinfo.call_args.args[0], "Telachat Modelle")
+        self.assertEqual(showinfo.call_args.args[1], "base-model\nbackup-model")
+
+    def test_tk_models_live_command_starts_existing_check(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        calls: list[str] = []
+        app = SimpleNamespace(doctor=lambda: calls.append("doctor"))
+
+        module.TkTelachatApp.handle_command(app, "/models live")
 
         self.assertEqual(calls, ["doctor"])
 
@@ -482,6 +688,43 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(refreshed, [["live-a", "live-b"]])
         self.assertEqual(finished, [(7, "OK: live-a, live-b")])
         self.assertEqual(app.root.after_calls[0][0], 100)
+
+    def test_tk_error_event_uses_copyable_error_dialog(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        events: queue.Queue[object] = queue.Queue()
+        events.put(("error", (9, RuntimeError("failed to load skill\nexceeds maximum"))))
+        finished: list[tuple[int, str]] = []
+        shown_errors: list[str] = []
+        app = SimpleNamespace(
+            events=events,
+            root=_FakeRoot(),
+            _poll_events=lambda: None,
+            operation_result_current=lambda operation_id: operation_id == 9,
+            finish_operation=lambda operation_id, status: finished.append(
+                (operation_id, status)
+            ),
+            show_error=lambda text: shown_errors.append(text),
+        )
+
+        with mock.patch.object(module.messagebox, "showerror") as showerror:
+            module.TkTelachatApp._poll_events(app)
+
+        self.assertEqual(finished, [(9, "Fehler")])
+        self.assertEqual(shown_errors, ["failed to load skill\nexceeds maximum"])
+        showerror.assert_not_called()
+        self.assertEqual(app.root.after_calls[0][0], 100)
+
+    def test_tk_copy_to_clipboard_updates_clipboard_and_status(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        root = _FakeRoot()
+        statuses: list[str] = []
+        app = SimpleNamespace(root=root, set_status=lambda text: statuses.append(text))
+
+        module.TkTelachatApp.copy_to_clipboard(app, "failed to load skill")
+
+        self.assertTrue(root.clipboard_cleared)
+        self.assertEqual(root.clipboard, ["failed to load skill"])
+        self.assertEqual(statuses, ["In Zwischenablage kopiert."])
 
     def test_tk_exit_alias_closes_window(self) -> None:
         module = importlib.import_module("telachat.tkgui")
@@ -537,6 +780,65 @@ class GuiImportTests(unittest.TestCase):
         )
 
         self.assertEqual(status, "Antwort in 2.0s | Tokens: 21 in/8 out, 29 total")
+
+    def test_gtk_update_active_title_uses_plain_center_title(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        app = SimpleNamespace(
+            active_session=SimpleNamespace(title="Projekt Alpha"),
+            title_label=_FakeText(""),
+        )
+
+        module.GtkTelachatApp.update_active_title(app)
+
+        self.assertEqual(app.title_label.get_text(), "Projekt Alpha")
+
+    def test_gtk_title_double_click_starts_rename(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        calls: list[object] = []
+        button = object()
+        app = SimpleNamespace(
+            send_button=button,
+            on_rename_active_session=lambda clicked: calls.append(clicked),
+        )
+
+        module.GtkTelachatApp.on_title_pressed(app, object(), 2, 0.0, 0.0)
+
+        self.assertEqual(calls, [button])
+
+    def test_gtk_sync_pane_toggle_buttons_sets_directional_labels(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        app = SimpleNamespace(
+            sidebar=_FakeVisible(False),
+            settings=_FakeVisible(True),
+            sidebar_toggle_button=_FakeButton(),
+            settings_toggle_button=_FakeButton(),
+        )
+
+        module.GtkTelachatApp.sync_pane_toggle_buttons(app)
+
+        self.assertEqual(app.sidebar_toggle_button.label, "▶")
+        self.assertEqual(app.settings_toggle_button.label, "▶")
 
     def test_gtk_cancelled_request_ignores_late_result(self) -> None:
         with warnings.catch_warnings():
@@ -673,6 +975,37 @@ class GuiImportTests(unittest.TestCase):
         self.assertTrue(created[0].presented)
         self.assertEqual(app.status.get_text(), "Kontext ca. 4 Tokens | 1/2 Nachrichten")
 
+    def test_gtk_shortcuts_command_shows_keyboard_help(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        created: list[_FakeDialog] = []
+
+        class FakeMessageDialog:
+            @staticmethod
+            def new(_parent: object, title: str, body: str) -> _FakeDialog:
+                dialog = _FakeDialog(title, body)
+                created.append(dialog)
+                return dialog
+
+        app = SimpleNamespace(window=object(), status=_FakeText(""))
+        app.show_shortcuts = lambda: module.GtkTelachatApp.show_shortcuts(app)
+
+        with mock.patch.object(module.Adw, "MessageDialog", FakeMessageDialog):
+            module.GtkTelachatApp.handle_command(app, "/shortcuts")
+
+        self.assertEqual(len(created), 1)
+        self.assertEqual(created[0].title, "Telachat Tastenkuerzel")
+        self.assertIn("Shift+Enter", created[0].body)
+        self.assertIn("Ctrl+/", created[0].body)
+        self.assertEqual(created[0].responses, [("ok", "OK")])
+        self.assertTrue(created[0].presented)
+
     def test_gtk_doctor_command_starts_existing_check(self) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -686,6 +1019,116 @@ class GuiImportTests(unittest.TestCase):
         app = SimpleNamespace(doctor=lambda: calls.append("doctor"))
 
         module.GtkTelachatApp.handle_command(app, "/doctor")
+
+        self.assertEqual(calls, ["doctor"])
+
+    def test_gtk_header_validation_toggle_updates_status(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        calls: list[bool] = []
+        button = _FakeCheckButton(False)
+        app = SimpleNamespace(
+            controller=SimpleNamespace(
+                config=SimpleNamespace(validate_profile_headers=True),
+                set_header_validation=lambda enabled: calls.append(enabled) or enabled,
+            ),
+            header_validation_check=button,
+            status=_FakeText(""),
+        )
+        app._sync_header_validation_check = (
+            lambda enabled: module.GtkTelachatApp._sync_header_validation_check(app, enabled)
+        )
+
+        module.GtkTelachatApp.on_header_validation_toggled(app, button)
+
+        self.assertEqual(calls, [False])
+        self.assertFalse(button.get_active())
+        self.assertFalse(getattr(app, "_syncing_header_validation", False))
+        self.assertEqual(app.status.get_text(), "Header-Pruefung: aus")
+
+    def test_gtk_header_validation_toggle_rolls_back_on_error(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+
+        def fail(_enabled: bool) -> bool:
+            raise ConfigError("Header kaputt")
+
+        button = _FakeCheckButton(False)
+        app = SimpleNamespace(
+            controller=SimpleNamespace(
+                config=SimpleNamespace(validate_profile_headers=True),
+                set_header_validation=fail,
+            ),
+            header_validation_check=button,
+            status=_FakeText(""),
+        )
+        app._sync_header_validation_check = (
+            lambda enabled: module.GtkTelachatApp._sync_header_validation_check(app, enabled)
+        )
+
+        module.GtkTelachatApp.on_header_validation_toggled(app, button)
+
+        self.assertTrue(button.get_active())
+        self.assertFalse(getattr(app, "_syncing_header_validation", False))
+        self.assertEqual(app.status.get_text(), "Header kaputt")
+
+    def test_gtk_models_command_lists_configured_models(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        created: list[_FakeDialog] = []
+
+        class FakeMessageDialog:
+            @staticmethod
+            def new(_parent: object, title: str, body: str) -> _FakeDialog:
+                dialog = _FakeDialog(title, body)
+                created.append(dialog)
+                return dialog
+
+        app = SimpleNamespace(
+            model_names=["base-model", "backup-model"],
+            window=object(),
+        )
+
+        with mock.patch.object(module.Adw, "MessageDialog", FakeMessageDialog):
+            module.GtkTelachatApp.handle_command(app, "/models")
+
+        self.assertEqual(len(created), 1)
+        self.assertEqual(created[0].title, "Telachat Modelle")
+        self.assertEqual(created[0].body, "base-model\nbackup-model")
+        self.assertEqual(created[0].responses, [("ok", "OK")])
+        self.assertTrue(created[0].presented)
+
+    def test_gtk_models_live_command_starts_existing_check(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        calls: list[str] = []
+        app = SimpleNamespace(doctor=lambda: calls.append("doctor"))
+
+        module.GtkTelachatApp.handle_command(app, "/models live")
 
         self.assertEqual(calls, ["doctor"])
 
@@ -711,6 +1154,72 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(result, module.GLib.SOURCE_REMOVE)
         self.assertEqual(refreshed, [["live-a", "live-b"]])
         self.assertEqual(finished, [(11, "OK: live-a, live-b")])
+
+    def test_gtk_error_uses_copyable_error_window(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        finished: list[tuple[int, str]] = []
+        shown_errors: list[str] = []
+        app = SimpleNamespace(
+            operation_result_current=lambda operation_id: operation_id == 12,
+            finish_operation=lambda operation_id, status: finished.append(
+                (operation_id, status)
+            ),
+            show_error=lambda text: shown_errors.append(text),
+        )
+
+        result = module.GtkTelachatApp._error(
+            app,
+            12,
+            RuntimeError("failed to load skill\nexceeds maximum"),
+        )
+
+        self.assertEqual(result, module.GLib.SOURCE_REMOVE)
+        self.assertEqual(finished, [(12, "Fehler")])
+        self.assertEqual(shown_errors, ["failed to load skill\nexceeds maximum"])
+
+    def test_gtk_copy_to_clipboard_updates_clipboard_and_status(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+
+        class FakeClipboard:
+            def __init__(self) -> None:
+                self.values: list[str] = []
+
+            def set(self, text: str) -> None:
+                self.values.append(text)
+
+        class FakeDisplay:
+            def __init__(self, clipboard: FakeClipboard) -> None:
+                self.clipboard = clipboard
+
+            def get_clipboard(self) -> FakeClipboard:
+                return self.clipboard
+
+        clipboard = FakeClipboard()
+        app = SimpleNamespace(status=_FakeText(""))
+
+        with mock.patch.object(
+            module.Gdk.Display,
+            "get_default",
+            return_value=FakeDisplay(clipboard),
+        ):
+            module.GtkTelachatApp.copy_to_clipboard(app, "failed to load skill")
+
+        self.assertEqual(clipboard.values, ["failed to load skill"])
+        self.assertEqual(app.status.get_text(), "In Zwischenablage kopiert.")
 
     def test_gtk_exit_alias_closes_window(self) -> None:
         with warnings.catch_warnings():

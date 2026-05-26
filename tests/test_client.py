@@ -7,12 +7,20 @@ from unittest import mock
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import ClassVar
 
-from telachat.client import ChatResult, OpenAICompatClient, TokenUsage, format_token_usage
+from telachat import __version__
+from telachat.client import (
+    ChatResult,
+    OpenAICompatClient,
+    TokenUsage,
+    format_token_usage,
+    token_usage_record,
+)
 from telachat.config import Profile
 
 
 class FakeOpenAIHandler(BaseHTTPRequestHandler):
     requests: ClassVar[list[dict[str, object]]] = []
+    request_headers: ClassVar[list[dict[str, str]]] = []
 
     def log_message(self, format: str, *args: object) -> None:
         return
@@ -30,6 +38,7 @@ class FakeOpenAIHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         body = json.loads(self.rfile.read(length).decode("utf-8"))
         self.requests.append(body)
+        self.request_headers.append(dict(self.headers))
         if body.get("stream"):
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
@@ -83,6 +92,7 @@ class ClientTests(unittest.TestCase):
 
     def setUp(self) -> None:
         FakeOpenAIHandler.requests.clear()
+        FakeOpenAIHandler.request_headers.clear()
 
     def profile(self, *, stream: bool = False) -> Profile:
         return Profile(
@@ -116,6 +126,15 @@ class ClientTests(unittest.TestCase):
             ),
         )
 
+    def test_request_user_agent_uses_package_version(self) -> None:
+        client = OpenAICompatClient(self.profile(stream=False))
+        client.chat([{"role": "user", "content": "Hi"}])
+
+        self.assertEqual(
+            FakeOpenAIHandler.request_headers[-1]["User-Agent"],
+            f"Telachat/{__version__}",
+        )
+
     def test_chat_completions_request_uses_profile_generation_parameters(self) -> None:
         profile = Profile(
             **{
@@ -129,11 +148,30 @@ class ClientTests(unittest.TestCase):
         result = OpenAICompatClient(profile).chat([{"role": "user", "content": "Hi"}])
 
         self.assertIsInstance(result, ChatResult)
+        self.assertEqual(FakeOpenAIHandler.requests[-1]["model"], "demo-model")
         self.assertEqual(FakeOpenAIHandler.requests[-1]["temperature"], 0.42)
         self.assertEqual(FakeOpenAIHandler.requests[-1]["top_p"], 0.66)
         self.assertEqual(FakeOpenAIHandler.requests[-1]["max_tokens"], 123)
         self.assertEqual(FakeOpenAIHandler.requests[-1]["reasoning_effort"], "low")
         self.assertEqual(FakeOpenAIHandler.requests[-1]["stream"], False)
+
+    def test_request_can_omit_sampling_parameters_and_resolve_model_alias(self) -> None:
+        profile = Profile(
+            **{
+                **self.profile(stream=False).__dict__,
+                "model": "Friendly",
+                "model_aliases": {"Friendly": "real-model"},
+                "send_temperature": False,
+                "send_top_p": False,
+            }
+        )
+        result = OpenAICompatClient(profile).chat([{"role": "user", "content": "Hi"}])
+
+        self.assertIsInstance(result, ChatResult)
+        body = FakeOpenAIHandler.requests[-1]
+        self.assertEqual(body["model"], "real-model")
+        self.assertNotIn("temperature", body)
+        self.assertNotIn("top_p", body)
 
     def test_stream_chat(self) -> None:
         client = OpenAICompatClient(self.profile(stream=True))
@@ -212,6 +250,31 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(body["top_p"], 0.55)
         self.assertEqual(body["reasoning"], {"effort": "high"})
 
+    def test_responses_request_can_omit_sampling_parameters(self) -> None:
+        profile = Profile(
+            **{
+                **self.profile(stream=False).__dict__,
+                "api_mode": "responses",
+                "model": "Display",
+                "model_aliases": {"Display": "api-model"},
+                "send_temperature": False,
+                "send_top_p": False,
+            }
+        )
+        client = OpenAICompatClient(profile)
+        with mock.patch.object(
+            client,
+            "_request_json",
+            return_value={"output_text": "Response OK"},
+        ) as request:
+            result = client.chat([{"role": "user", "content": "Hi"}])
+
+        self.assertIsInstance(result, ChatResult)
+        body = request.call_args.args[2]
+        self.assertEqual(body["model"], "api-model")
+        self.assertNotIn("temperature", body)
+        self.assertNotIn("top_p", body)
+
     def test_usage_summary_formatting(self) -> None:
         usage = TokenUsage(
             input_tokens=13,
@@ -225,7 +288,30 @@ class ClientTests(unittest.TestCase):
             format_token_usage(usage),
             "Tokens: 13 in/18 out, 31 total, 5 cached, 4 reasoning",
         )
+        self.assertEqual(
+            token_usage_record(usage),
+            {
+                "cached_input_tokens": 5,
+                "input_tokens": 13,
+                "output_tokens": 18,
+                "reasoning_tokens": 4,
+                "total_tokens": 31,
+            },
+        )
         self.assertEqual(format_token_usage(None), "")
+        self.assertEqual(token_usage_record(None), {})
+        malformed = TokenUsage(
+            input_tokens=-1,
+            output_tokens=0,
+            total_tokens=-5,
+            cached_input_tokens=-2,
+            reasoning_tokens=0,
+        )
+        self.assertEqual(format_token_usage(malformed), "Tokens: 0 out")
+        self.assertEqual(
+            token_usage_record(malformed),
+            {"output_tokens": 0, "reasoning_tokens": 0},
+        )
 
 
 if __name__ == "__main__":

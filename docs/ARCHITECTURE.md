@@ -25,13 +25,21 @@
 - `telachat.cli`
   - `init`, `profiles`, `models`, `config-check`, `theme`, `ask`, `chat`,
     `sessions`, `stats`, `archive`, `unarchive`, `tags`, `export`,
-    `export-folder`, `backup`, `restore`, `doctor`.
+    `export-folder`, `backup`, `restore`, `doctor`, `skill-watchdog`.
   - Interactive `chat` installs optional Readline completion for slash commands
     and context values when stdin is a TTY.
+- `telachat.skill_watchdog`
+  - Scans local Codex skill roots, compacts oversized frontmatter
+    `description` fields, preserves full skill bodies, and writes sidecar
+    backups before changing a Skill file.
 - `telachat.commands`
   - Shared slash-command catalog for CLI help and GUI autocomplete.
   - Theme names are completed from the central theme catalog for `/theme`.
   - Current-chat match formatting is shared by CLI and GUI `/find`.
+- `telachat.templates`
+  - Shared prompt-template renderer for CLI and GUI/controller paths.
+  - Expands built-in variables such as `{input}`, `{date}`, `{time}`, and
+    `{datetime}`.
 - `telachat.controller`
   - Shared application service for GUI frontends.
   - Applies transient GUI generation overrides without rewriting config or
@@ -72,11 +80,11 @@ Default path:
 Default profile:
 
 ```toml
-[profiles.tki]
-label = "TKI"
+[profiles.huggingface]
+label = "HuggingFace"
 base_url = "https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1"
 api_key = "envfile:/home/teladi/.config/telachat/qwen.env#TELACHAT_QWEN_API_KEY"
-model = "Qwen/Qwen2.5-1.5B-Instruct"
+model = "TKI"
 ```
 
 GUI theme:
@@ -87,7 +95,8 @@ theme = "system"
 
 Allowed themes are `system`, `light`, `dark`, `high-contrast`,
 `solarized-light`, `solarized-dark`, `nord`, `dracula`, `gruvbox`, `ocean`,
-`forest`, and `rose`. `TELACHAT_THEME` overrides the config for one process and
+`forest`, `rose`, `graphite-glass`, `liquid-chrome`, `black-ice`, and
+`brushed-steel`. `TELACHAT_THEME` overrides the config for one process and
 is useful for wrappers, test launches, and temporary desktop-specific starts.
 When the saved theme is `system`, `TELACHAT_SYSTEM_THEME` can force the detected
 palette for one process without changing the config. GTK maps `system`, `light`,
@@ -96,8 +105,8 @@ Telachat-specific CSS tokens. Tk uses the same token palette directly.
 
 Additional built-in profiles:
 
-- `openai`: OpenAI `/v1` Responses API using an env/envfile key, default model `gpt-5.5`, `reasoning_effort = "high"`, with GPT-5.x model options.
-- `huggingface`: Hugging Face Space `/v1`, model list centered on Qwen.
+- `huggingface`: Hugging Face Space `/v1`, default profile and model label `TKI`, mapped internally to the Qwen API model. Legacy `tki` profile references resolve to this profile.
+- `openai`: OpenAI `/v1` Responses API using an env/envfile key, default model `gpt-5.5`, `reasoning_effort = "high"`, with GPT-5.x model options and sampling parameters disabled by default.
 - `codex`: local `codex exec` bridge. This is not OpenAI-compatible HTTP.
 
 GUI frontends expose profiles as providers and `Profile.models` as the second
@@ -115,11 +124,23 @@ usage, GTK and Tk include input/output/total token counts in the response status
 The shared command path includes `/edit-last TEXT`, which updates the latest
 user message and removes later messages before `/regen` creates a replacement
 answer.
+Tk and GTK start the Codex Skill watchdog once at launch only when
+`skill_watchdog_enabled = true`; it then repeats hourly in a daemon thread.
+The low-level background start is additionally gated by
+`TELACHAT_ENABLE_SKILL_WATCHDOG=1`, and
+`TELACHAT_DISABLE_SKILL_WATCHDOG=1` disables it even then. This keeps oversized
+plugin descriptions below the local Codex loader limit without deleting the
+detailed Skill body.
 `/fork [TITLE]` and `telachat fork` copy a session into an independent history
 branch while preserving provider, model, folder, system prompt, and messages.
 Saved sessions store both provider and model. Loading a session restores those
 selectors in GTK/Tk and `telachat chat --session` uses the saved model unless a
 CLI override is given.
+Linux installation is zipapp-first: the generic installer and RPM both place a
+single `telachat.pyz` under the install prefix plus tiny launcher scripts for
+CLI, Tk, GTK and GUI-auto mode. This keeps the app portable across distros while
+still using Freedesktop desktop entries, hicolor icons and manpages where those
+standards exist.
 Folders can store a default system prompt and an optional default backend
 (`default_profile`, `default_model`). New chats created inside such a folder
 inherit that prompt/backend unless the caller explicitly overrides the prompt,
@@ -140,7 +161,7 @@ telachat --version
 telachat profiles
 telachat profiles --json
 telachat models
-telachat models --live -p tki
+telachat models --live -p huggingface
 telachat models --json
 telachat config-check
 telachat config-check --strict
@@ -158,6 +179,7 @@ telachat doctor
 telachat doctor --chat
 telachat doctor --json --chat
 telachat ask "Hallo"
+telachat ask --json "Hallo"
 telachat chat
 telachat-gtk
 telachat-tk
@@ -207,9 +229,15 @@ presets for LM Studio, Ollama, and Jan. They are normal profiles and may fail
 `config-check --profile NAME --strict` narrows strict secret validation to one
 profile, which is useful when optional provider presets are intentionally not
 configured.
+Configured extra headers are validated by default with
+`validate_profile_headers = true`. The option is global because header parsing
+happens while loading TOML, before provider-specific runtime state exists. The
+switch relaxes only strict standard-name validation; control characters and
+non-portable or parser-unsafe names remain rejected. Tk and GTK expose the same
+switch in the right settings pane.
 `profiles`, `models`, `config-check`, `sessions`, `stats`, `context`,
-`templates`, `folders`, `export`, `export-folder`, and `doctor` also support
-`--json` for agent/script consumption. JSON output is redacted where it
+`templates`, `folders`, `ask`, `export`, `export-folder`, and `doctor` also
+support `--json` for agent/script consumption. JSON output is redacted where it
 contains provider configuration;
 folder system prompts are
 included only when `folders --show-system --json` is requested or when exporting
@@ -217,15 +245,17 @@ that folder as a portable data bundle. Folder backend defaults are not secrets
 and are included in folder JSON whenever they are configured.
 
 `stats` is read-only and does not include message content. It counts sessions,
-messages by role, folders, tag assignments, profile usage, and model usage so a
-local database can be inspected quickly from scripts.
+messages by role, folders, tag assignments, profile usage, model usage, and
+stored provider token usage so a local database can be inspected quickly from
+scripts.
 
 `context` is also read-only and content-free. It estimates one session's next
 request size from the system prompt, the configured history-message window, and
 message lengths, reporting character counts and a coarse token estimate.
 
 `templates --json` returns a compact inventory of configured prompt templates:
-name, first-line preview, size metadata, and whether `{input}` is used.
+name, first-line preview, size metadata, whether `{input}` is used, and the
+supported variables referenced by the template.
 
 Sessions can also carry normalized tags in the `session_tags` table. Tags are
 many-to-one labels independent of folders; session search can match tags,

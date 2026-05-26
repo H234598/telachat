@@ -16,6 +16,9 @@ make check
 make compile
 make test3
 make zipapp
+make linux-installer
+packaging/linux/install-telachat.sh --prefix /tmp/telachat-prefix --desktop-dir /tmp/telachat-desktop --zipapp dist/telachat.pyz
+python packaging/linux/package-cadence.py v0.57.1
 man ./docs/man/telachat.1
 ```
 
@@ -26,13 +29,23 @@ sandbox. No external API key is needed.
 `git diff --check`; `make test3` repeats the suite three times to catch state
 leaks.
 
+## GitHub Actions checkout
+
+The Linux and Windows workflows use an inline anonymous `git fetch` checkout
+instead of `actions/checkout`. On 2026-05-26, GitHub-hosted runners returned
+HTTP 403 during the token-backed fetch with `remote: Your account is suspended`,
+while an unauthenticated fetch of this public repository still worked. If the
+repository becomes private, replace the inline checkout with a working service
+token or restore `actions/checkout` after the GitHub account/token issue is
+resolved.
+
 ## Live endpoint tests
 
 ```sh
 telachat doctor
 telachat --version
 telachat models
-telachat models --live -p tki --json
+telachat models --live -p huggingface --json
 telachat config-check
 telachat config-check --strict
 telachat config-check --json
@@ -43,12 +56,13 @@ telachat backup -o /tmp/telachat-backups
 telachat restore --dry-run /tmp/telachat-backups/FILE.zip
 telachat doctor --chat
 telachat doctor --json --chat
-telachat config-check --profile tki --strict
+telachat config-check --profile huggingface --strict
+telachat skill-watchdog --json
 python3 dist/telachat.pyz config-check --profile jan --json --strict
 telachat templates
 telachat folders --show-system
 telachat folders --json --show-system
-telachat folders --set-backend Arbeit tki Qwen/Qwen2.5-1.5B-Instruct
+telachat folders --set-backend Arbeit huggingface TKI
 telachat folders --clear-backend Arbeit
 telachat export SESSION_ID --json
 telachat import-session session.json --json
@@ -78,7 +92,7 @@ telachat-gtk
 telachat-tk
 ```
 
-Live tests use the active profile from `config.toml`, currently `tki`.
+Live tests use the active profile from `config.toml`, currently `huggingface`.
 `doctor --chat` and `ask` send prompts to the configured API.
 The GUI commands require a graphical desktop session.
 OpenAI live tests require `OPENAI_API_KEY`.
@@ -97,8 +111,9 @@ migration, OpenAI Responses `reasoning.effort`, interactive CLI completion
 candidates, offline config checks with secret redaction, and documented
 terminal slash-command actions, including `/theme` and `/find`. Theme tests
 cover config persistence, env overrides, system-palette detection, CLI setting,
-and controller persistence. Config tests validate profile booleans and API
-modes. `/stats` and `/context` tests cover shared content-free formatters plus
+and controller persistence. Config tests validate profile booleans, API modes,
+and the `validate_profile_headers` option. `/stats` and `/context` tests cover
+shared content-free formatters plus
 terminal, Tk, and GTK prompt paths. `/doctor` prompt tests cover terminal
 `/models` output, local secret-source errors, and GUI dispatch to the existing
 Check action.
@@ -117,6 +132,8 @@ model-choice merge behavior after live model discovery. Controller and client
 tests verify that generation overrides reach the API profile and that Responses
 requests include temperature/top-p/max-output parameters. Controller and GUI
 tests also cover elapsed-time propagation for successful responses.
+Skill-watchdog tests cover compacting oversized Skill descriptions, preserving
+the body, backup creation, CLI JSON output, and unchanged/skipped files.
 Store and CLI tests cover content-free local statistics for sessions, messages,
 folders, tags, profiles, and models, plus content-free context estimates for
 single sessions.
@@ -140,7 +157,7 @@ completion, and `/archive` slash-command behavior.
 ## Expected default live configuration
 
 ```text
-Profile: tki / TKI
+Profile: huggingface / TKI
 API: https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1
 Model: Qwen/Qwen2.5-1.5B-Instruct
 Key: local envfile `/home/teladi/.config/telachat/qwen.env`

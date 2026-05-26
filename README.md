@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.44.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.57.1`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -25,7 +25,8 @@ stehen in `VERSIONING.md`.
 
 ```sh
 cd /home/teladi/telachat
-make install
+make zipapp
+packaging/linux/install-telachat.sh --prefix "$HOME/.local"
 telachat --version
 telachat init
 telachat models
@@ -38,9 +39,13 @@ telachat backup
 telachat doctor --json
 ```
 
-Der Wrapper wird nach `~/.local/bin/telachat` installiert, Manpages nach
-`~/.local/share/man/man1`. Falls der Befehl in einer Shell nicht gefunden wird,
-pruefe, ob `~/.local/bin` im `PATH` steht.
+Der Linux-Installer installiert das Zipapp nach `~/.local/lib/telachat`, die
+Starter nach `~/.local/bin`, Manpages nach `~/.local/share/man/man1`, einen
+Freedesktop-Menueintrag, das Icon und eine Desktop-Verknuepfung. Falls der
+Befehl in einer Shell nicht gefunden wird, pruefe, ob `~/.local/bin` im `PATH`
+steht. Fuer einfache Quellcheckout-Installationen funktioniert weiterhin
+`make install`; fuer Release-Artefakte sind `make linux-installer` und
+`make linux-rpm` vorgesehen.
 
 ## Schnellstart
 
@@ -94,6 +99,7 @@ Im Texteingabefeld funktioniert auch eine kleine Kommandozeile:
 `Shift+Enter` schickt die Nachricht ab, normales `Enter` bleibt fuer
 Zeilenumbrueche. Beim Tippen von Slash-Befehlen zeigen GTK und Tk sofort
 Vorschlaege; `Tab` vervollstaendigt den aktuellen Befehl.
+Mit `/shortcuts` oder `Ctrl+/` zeigt Telachat die wichtigsten Tastenkuerzel.
 Mit `/edit-last TEXT` wird die letzte Nutzernachricht ersetzt und die danach
 liegende KI-Antwort entfernt; `/regen` erzeugt danach eine neue Antwort.
 Mit `/fork [TITLE]` wird die aktuelle Unterhaltung als neuer Chat kopiert, so
@@ -101,6 +107,7 @@ dass Varianten ausprobiert werden koennen, ohne den Originalverlauf zu aendern.
 
 ```text
 /help
+/shortcuts
 /new
 /rename TITLE
 /delete
@@ -131,6 +138,7 @@ dass Varianten ausprobiert werden koennen, ohne den Originalverlauf zu aendern.
 /find TEXT
 /provider NAME
 /model NAME
+/models [live]
 /permissions
 /left
 /system
@@ -177,19 +185,26 @@ und eine einfache Tokenschaetzung.
 
 Fuer Skripte und Agenten liefern `profiles --json`, `models --json`,
 `config-check --json`, `sessions --json`, `stats --json`, `context --json`,
-`templates --json`, `folders --json`, `export --json`, `export-folder --json`
-und `doctor --json` strukturierte Daten; Provider-/Secret-Konfiguration bleibt
-redaktiert.
+`templates --json`, `folders --json`, `ask --json`, `export --json`,
+`export-folder --json` und `doctor --json` strukturierte Daten;
+Provider-/Secret-Konfiguration bleibt redaktiert.
+Wenn Provider Usage-Daten melden, speichert Telachat diese an Assistant-
+Nachrichten und `stats` fasst Input-/Output-/Total-Tokens content-frei zusammen.
 
-GUI-Themes werden dauerhaft ueber `theme = "system"` in `config.toml`
-gesteuert. Verfuegbar sind unter anderem `system`, `light`, `dark`,
+GUI-Optionen werden dauerhaft im Kopf von `config.toml` gespeichert:
+`theme`, `app_icon`, `chat_background_image`, `validate_profile_headers` und
+`skill_watchdog_enabled`. Tk hat dafuer ein echtes Menue
+`Optionen -> Einstellungen...`; GTK hat eine Preferences-Schaltflaeche in der
+Titelleiste. Verfuegbare Themes sind unter anderem `system`, `light`, `dark`,
 `high-contrast`, `solarized-light`, `solarized-dark`, `nord`, `dracula`,
-`gruvbox`, `ocean`, `forest` und `rose`. Temporär kann das Umfeld
+`gruvbox`, `ocean`, `forest`, `rose`, `graphite-glass`, `liquid-chrome`,
+`black-ice` und `brushed-steel`. Temporär kann das Umfeld
 uebersteuern, z.B. `TELACHAT_THEME=dark telachat-tk`. Wenn `theme = "system"`
 aktiv ist, nutzt Telachat uebliche Desktop-/Terminal-Hinweise; mit
 `TELACHAT_SYSTEM_THEME=solarized-dark` kann nur die System-Erkennung fuer einen
-Prozess fixiert werden. Die GUIs haben zusaetzlich eine Theme-Auswahl im
-Systembereich.
+Prozess fixiert werden. `app_icon = "random"` waehlt sofort ein importiertes
+Icon und rotiert danach stuendlich. `chat_background_image` speichert einen
+lokalen Bildpfad fuer das Chatmodul.
 
 ```sh
 telachat theme
@@ -223,6 +238,7 @@ telachat tags SESSION_ID --add projekt --add review
 telachat tags SESSION_ID --remove review
 telachat tags --json
 telachat fork SESSION_ID --title "Variante A"
+telachat ask --json "Kurze Antwort bitte"
 telachat export SESSION_ID --json
 telachat import-session session.json --folder Importe
 telachat export-folder Arbeit -o ./arbeit-export
@@ -236,6 +252,11 @@ telachat backup -o telachat-backup.zip
 telachat restore --dry-run telachat-backup.zip
 telachat restore telachat-backup.zip
 ```
+
+In der Tk-GUI zeigt die linke Chatliste Ordner als aufklappbare Zeilen.
+Doppelklick klappt einen Ordner auf oder zu; Rechtsklick oeffnet Aktionen fuer
+Chat, Ordner oder freien Listenraum. Der Neu-Befehl fragt vor dem Anlegen nach
+dem Namen der Unterhaltung.
 
 `backup` erzeugt ein ZIP mit konsistenter `history.sqlite3`, redaktierter
 `config.redacted.toml` und `manifest.json`. Envfiles und rohe Secret-Werte
@@ -252,35 +273,44 @@ verwalten:
 telachat folders
 telachat folders --create Arbeit --system "Antworte knapp und projektbezogen."
 telachat folders --set-system Arbeit "Nutze den Projektkontext."
-telachat folders --set-backend Arbeit tki Qwen/Qwen2.5-1.5B-Instruct
+telachat folders --set-backend Arbeit huggingface TKI
 telachat folders --clear-backend Arbeit
 telachat folders --show-system
 telachat folders --json --show-system
 ```
 
 Prompt-Templates kommen aus `[prompt_templates]` in `config.toml` und koennen
-per CLI oder GUI eingesetzt werden:
+per CLI oder GUI eingesetzt werden. Unterstuetzte Platzhalter sind `{input}`,
+`{date}`, `{time}` und `{datetime}`:
 
 ```sh
 telachat templates
 telachat templates --json
 telachat --version
 telachat models
-telachat models --live -p tki --json
+telachat models --live -p huggingface --json
 telachat config-check
 telachat config-check --strict
-telachat config-check --profile tki --strict
+telachat config-check --profile huggingface --strict
 telachat config-check --json
 telachat stats --json
 telachat doctor --json --chat
+telachat skill-watchdog --json
 telachat ask --template summarize "Langer Text..."
 ```
 
 `models` zeigt konfigurierte Modelle pro Profil; mit `--live -p PROFILE` fragt
 es `/models` fuer ein Zielprofil ab. `config-check` prueft lokale Provider,
 Modelle und Secret-Quellen ohne
-Netzwerk/API-Anfrage. Secret-Werte werden nicht ausgegeben; `--strict` gibt
-einen Fehlercode zurueck, wenn eine nicht-lokale Secret-Quelle fehlt.
+Netzwerk/API-Anfrage und zeigt den Status der globalen Profil-Header-Pruefung.
+Secret-Werte werden nicht ausgegeben; `--strict` gibt einen Fehlercode zurueck,
+wenn eine nicht-lokale Secret-Quelle fehlt.
+`skill-watchdog` kuerzt ueberlange Codex-Skill-Frontmatter-`description`-
+Felder auf Loader-kompatible Laenge, legt Backups als
+`SKILL.md.telachat-watchdog.bak` an und laesst den Skill-Body erhalten. Tk/GTK
+starten den Lauf nur mit `skill_watchdog_enabled = true`; neue
+Konfigurationen bleiben sicher aus. `TELACHAT_DISABLE_SKILL_WATCHDOG=1`
+deaktiviert ihn auch dann.
 
 Manpages:
 
@@ -290,31 +320,35 @@ man telachat-tk
 man telachat-gtk
 ```
 
-## Voreingestelltes TKI-Profil
+## Voreingestelltes HuggingFace-Profil
 
 ```toml
-[profiles.tki]
-label = "TKI"
+[profiles.huggingface]
+label = "HuggingFace"
 base_url = "https://haggfraise-qwen2-5-1-5b-instruct-free.hf.space/v1"
 api_key = "env:TELACHAT_QWEN_API_KEY"
-model = "Qwen/Qwen2.5-1.5B-Instruct"
+model = "TKI"
+models = ["TKI", "Qwen/Qwen2.5-1.5B-Instruct", "qwen2-5-1-5b-instruct-free"]
 temperature = 0.2
 top_p = 0.9
 max_tokens = 512
 timeout_seconds = 300
 stream = true
 api_mode = "chat_completions"
+
+[profiles.huggingface.model_aliases]
+TKI = "Qwen/Qwen2.5-1.5B-Instruct"
 ```
 
-Das Modell wird mit seinem echten Qwen-Namen angesprochen. Der Space erwartet
-inzwischen einen Bearer-Key; auf diesem Host liegt der lokale Wert in
+Der sichtbare Modellname `TKI` wird intern auf die echte Qwen-ID gemappt. Der
+Space erwartet inzwischen einen Bearer-Key; auf diesem Host liegt der lokale Wert in
 `~/.config/telachat/qwen.env` und wird per
 `envfile:~/.config/telachat/qwen.env#TELACHAT_QWEN_API_KEY` referenziert.
 
 Weitere Standardprofile:
 
-- `openai`: allgemeine OpenAI-API-Anbindung mit `env:OPENAI_API_KEY`, `gpt-5.5`, Responses API, `reasoning_effort = "high"` und GPT-5.x-Modelloptionen.
-- `huggingface`: dein Hugging-Face/Qwen-Space mit Qwen-Modellnamen.
+- `huggingface`: dein Hugging-Face/Qwen-Space; alte `tki`-Referenzen werden als Kompatibilitaetsalias auf dieses Profil aufgeloest.
+- `openai`: allgemeine OpenAI-API-Anbindung mit `env:OPENAI_API_KEY`, `gpt-5.5`, Responses API, `reasoning_effort = "high"` und GPT-5.x-Modelloptionen. Sampling-Parameter werden standardmaessig nicht gesendet, weil GPT-5.x-Responses-Modelle `temperature` je nach Modell nicht akzeptieren.
 - `lmstudio`: lokaler LM-Studio-Server unter `http://localhost:1234/v1`, Modell-ID lokal anpassen.
 - `ollama`: lokaler Ollama-OpenAI-Endpunkt unter `http://localhost:11434/v1`, Modell vorher mit Ollama bereitstellen.
 - `jan`: lokaler Jan-API-Server unter `http://127.0.0.1:1337/v1`, API-Key ueber `TELACHAT_JAN_API_KEY`.
@@ -368,6 +402,16 @@ HTTP-Referer = "https://local.telachat"
 X-Title = "Telachat"
 ```
 
+Telachat prueft Headernamen und Headerwerte standardmaessig vor dem Senden.
+Fuer absichtlich ungewoehnliche Provider kann die strikte Standard-HTTP-
+Pruefung global in `config.toml` oder in den GUI-Einstellungen abgeschaltet
+werden. Grundlegende Sicherheitschecks gegen Steuerzeichen in Headerwerten
+und nicht-portable oder parser-gefaehrliche Headernamen bleiben aktiv:
+
+```toml
+validate_profile_headers = false
+```
+
 ## Tests und Build
 
 ```sh
@@ -394,3 +438,6 @@ Weitere Dokumentation:
 - `doctor --chat` sendet eine echte Testnachricht an das konfigurierte Profil.
 - Streaming wird unterstuetzt. Wenn ein Backend nur einen kompletten Chunk
   liefert, zeigt Telachat trotzdem korrekt die Antwort an.
+
+
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/H234598/telachat?utm_source=oss&utm_medium=github&utm_campaign=H234598%2Ftelachat&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)

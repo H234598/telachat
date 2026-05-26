@@ -9,9 +9,9 @@ telachat --version
 telachat init
 telachat profiles
 telachat models
-telachat models --live -p tki --json
+telachat models --live -p huggingface --json
 telachat config-check
-telachat config-check --profile tki --strict
+telachat config-check --profile huggingface --strict
 telachat config-check --json
 telachat theme
 telachat templates
@@ -20,16 +20,20 @@ telachat stats
 telachat doctor
 telachat doctor --json --chat
 telachat doctor --chat
+telachat skill-watchdog --json
 telachat ask "Deine Frage"
 telachat chat
 telachat backup -o ./backups
 telachat restore --dry-run ./backups/telachat-backup.zip
+packaging/linux/install-telachat.sh --prefix "$HOME/.local"
+make linux-installer
+make linux-rpm
 ```
 
 ## Provider und Template
 
 ```sh
-telachat ask -p tki "Hallo"
+telachat ask -p huggingface -m TKI "Hallo"
 telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
 telachat ask --template explain "SQLite WAL"
 ```
@@ -39,6 +43,16 @@ telachat ask --template explain "SQLite WAL"
 abgefragt. `telachat config-check` prueft lokale Profile, Modelle und
 Secret-Quellen ohne API-Anfrage. `telachat config-check --strict` liefert einen
 Fehlercode, wenn eine nicht-lokale Secret-Quelle fehlt.
+Die Ausgabe zeigt auch, ob die globale Profil-Header-Pruefung aktiv ist.
+`telachat skill-watchdog` kuerzt ueberlange Codex-Skill-Frontmatter-
+`description`-Felder, legt `SKILL.md.telachat-watchdog.bak` an und bewahrt den
+Skill-Body. Tk und GTK starten denselben Watchdog nur mit
+`skill_watchdog_enabled = true` einmal direkt und danach stuendlich im
+Hintergrund; neue Konfigurationen bleiben aus.
+`TELACHAT_DISABLE_SKILL_WATCHDOG=1` deaktiviert ihn auch dann.
+`packaging/linux/install-telachat.sh` installiert Zipapp, Starter, Manpages,
+Desktopdatei, Icon und optionale Desktop-Verknuepfung unter einem waehlbaren
+Prefix.
 `telachat theme [NAME]` zeigt oder setzt das persistente GUI-Theme. Fuer
 temporäre Starts kann `TELACHAT_THEME=dark telachat-tk` genutzt werden. Bei
 `theme = "system"` kann `TELACHAT_SYSTEM_THEME=solarized-dark` nur die
@@ -53,6 +67,8 @@ SQLite-Datenbank. Mit `--dry-run` wird nur gezaehlt.
 `export --json`, `export-folder --json` und `doctor --json` liefern
 strukturierte Daten fuer Skripte und Agenten; Provider-/Secret-Konfiguration
 bleibt redaktiert.
+`stats` enthaelt keine Nachrichtentexte und fasst gespeicherte Provider-Usage-
+Metadaten nur als Token-Zaehler zusammen.
 
 ## Sessions
 
@@ -82,7 +98,7 @@ telachat tags --json
 telachat fork SESSION_ID --title "Variante A"
 telachat folders --create Projekt --system "Projektkontext"
 telachat folders --set-system Projekt "Neuer Projektkontext"
-telachat folders --set-backend Projekt tki Qwen/Qwen2.5-1.5B-Instruct
+telachat folders --set-backend Projekt huggingface TKI
 telachat folders --clear-backend Projekt
 telachat folders --show-system
 telachat folders --json --show-system
@@ -102,6 +118,7 @@ telachat import-folder projekt.json --dry-run --json
 Im interaktiven Chat funktionieren unter anderem:
 
 ```text
+/shortcuts
 /new
 /rename TITLE
 /delete
@@ -136,6 +153,7 @@ Im interaktiven Chat funktionieren unter anderem:
 Wenn `telachat chat` in einem echten Terminal laeuft, vervollstaendigt `Tab`
 Slash-Befehle und Kontextwerte wie Provider, Modelle, Templates, Ordner,
 Session-Referenzen und Sortiermodi.
+`/shortcuts` zeigt die wichtigsten Tastaturbefehle.
 `/edit-last TEXT` ersetzt die letzte Nutzernachricht, entfernt danach liegende
 Antworten und laesst dich mit `/regen` neu generieren.
 `/fork [TITLE]` kopiert den aktuellen Chat in eine neue Session und laedt diese

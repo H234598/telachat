@@ -22,13 +22,22 @@ class StoreTests(unittest.TestCase):
                 )
                 self.assertEqual(session.model, "Qwen/Qwen2.5-1.5B-Instruct")
                 store.add_message(session.id, "user", "Hallo")
-                store.add_message(session.id, "assistant", "Hi")
+                store.add_message(
+                    session.id,
+                    "assistant",
+                    "Hi",
+                    metadata={"usage": {"input_tokens": 4, "output_tokens": 2}},
+                )
                 messages = store.messages(session.id)
                 self.assertEqual([m.role for m in messages], ["user", "assistant"])
                 deleted = store.delete_last_assistant_message(session.id)
                 self.assertIsNotNone(deleted)
                 assert deleted is not None
                 self.assertEqual(deleted.content, "Hi")
+                self.assertEqual(
+                    deleted.metadata,
+                    {"usage": {"input_tokens": 4, "output_tokens": 2}},
+                )
                 self.assertEqual([m.role for m in store.messages(session.id)], ["user"])
                 self.assertIsNone(store.delete_last_assistant_message(session.id))
                 store.add_message(session.id, "assistant", "Hi")
@@ -63,6 +72,37 @@ class StoreTests(unittest.TestCase):
 
                 store.delete_session(session.id)
                 self.assertEqual(store.messages(session.id), [])
+            finally:
+                store.close()
+
+    def test_add_message_returns_metadata_copy(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                session = store.create_session(
+                    title="Metadata Copy",
+                    profile="tki",
+                    system_prompt="System",
+                )
+                metadata = {"usage": {"input_tokens": 1}}
+
+                message = store.add_message(
+                    session.id,
+                    "assistant",
+                    "Hi",
+                    metadata=metadata,
+                )
+                metadata["usage"]["input_tokens"] = 99
+                usage = message.metadata["usage"]
+                self.assertIsInstance(usage, dict)
+                assert isinstance(usage, dict)
+                usage["output_tokens"] = 2
+
+                self.assertEqual(usage["input_tokens"], 1)
+                self.assertEqual(
+                    store.messages(session.id)[0].metadata,
+                    {"usage": {"input_tokens": 1}},
+                )
             finally:
                 store.close()
 
@@ -163,7 +203,12 @@ class StoreTests(unittest.TestCase):
                     folder_id=folder.id,
                 )
                 store.add_message(session.id, "user", "Frage")
-                store.add_message(session.id, "assistant", "Antwort")
+                store.add_message(
+                    session.id,
+                    "assistant",
+                    "Antwort",
+                    metadata={"usage": {"input_tokens": 8, "output_tokens": 5}},
+                )
                 store.set_session_pinned(session.id, True)
                 store.set_session_tags(session.id, ["Projekt", "#Review Notes"])
                 store.set_session_archived(session.id, True)
@@ -179,9 +224,14 @@ class StoreTests(unittest.TestCase):
                 self.assertFalse(fork.pinned)
                 self.assertFalse(fork.archived)
                 self.assertEqual(fork.tags, ("projekt", "review-notes"))
+                fork_messages = store.messages(fork.id)
                 self.assertEqual(
-                    [(message.role, message.content) for message in store.messages(fork.id)],
+                    [(message.role, message.content) for message in fork_messages],
                     [("user", "Frage"), ("assistant", "Antwort")],
+                )
+                self.assertEqual(
+                    fork_messages[-1].metadata,
+                    {"usage": {"input_tokens": 8, "output_tokens": 5}},
                 )
                 store.edit_last_user_message(fork.id, "Andere Frage")
                 self.assertEqual(
@@ -389,6 +439,8 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual(stats.message_roles, ())
                 self.assertEqual(stats.session_profiles, ())
                 self.assertEqual(stats.session_models, ())
+                self.assertEqual(stats.usage_records, 0)
+                self.assertEqual(stats.usage_total_tokens, 0)
             finally:
                 store.close()
 
@@ -416,7 +468,20 @@ class StoreTests(unittest.TestCase):
                     system_prompt="System",
                 )
                 store.add_message(active.id, "user", "Geheimer Inhalt")
-                store.add_message(active.id, "assistant", "Antwort")
+                assistant = store.add_message(
+                    active.id,
+                    "assistant",
+                    "Antwort",
+                    metadata={
+                        "usage": {
+                            "input_tokens": 21,
+                            "output_tokens": 8,
+                            "total_tokens": 29,
+                            "cached_input_tokens": 3,
+                            "reasoning_tokens": 2,
+                        }
+                    },
+                )
                 store.add_message(unfiled.id, "system", "Systemnotiz")
                 store.add_message(archived.id, "user", "Archivnotiz")
                 store.set_session_pinned(active.id, True)
@@ -425,7 +490,19 @@ class StoreTests(unittest.TestCase):
                 store.set_session_tags(unfiled.id, ["Projekt"])
 
                 stats = store.stats()
+                messages = store.messages(active.id)
 
+                self.assertEqual(
+                    assistant.metadata["usage"],
+                    {
+                        "input_tokens": 21,
+                        "output_tokens": 8,
+                        "total_tokens": 29,
+                        "cached_input_tokens": 3,
+                        "reasoning_tokens": 2,
+                    },
+                )
+                self.assertEqual(messages[-1].metadata, assistant.metadata)
                 self.assertEqual(stats.sessions_total, 3)
                 self.assertEqual(stats.sessions_active, 2)
                 self.assertEqual(stats.sessions_archived, 1)
@@ -443,7 +520,64 @@ class StoreTests(unittest.TestCase):
                     dict(stats.session_models),
                     {"": 1, "Qwen/Qwen2.5-1.5B-Instruct": 1, "gpt-5.5": 1},
                 )
+                self.assertEqual(stats.usage_records, 1)
+                self.assertEqual(stats.usage_input_tokens, 21)
+                self.assertEqual(stats.usage_output_tokens, 8)
+                self.assertEqual(stats.usage_total_tokens, 29)
+                self.assertEqual(stats.usage_cached_input_tokens, 3)
+                self.assertEqual(stats.usage_reasoning_tokens, 2)
                 self.assertNotIn("Geheimer Inhalt", repr(stats))
+            finally:
+                store.close()
+
+    def test_stats_ignores_invalid_usage_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ChatStore(Path(tmp) / "history.sqlite3")
+            try:
+                session = store.create_session(
+                    title="Usage Edge",
+                    profile="openai",
+                    system_prompt="System",
+                )
+                store.add_message(
+                    session.id,
+                    "assistant",
+                    "Teilweise gueltig",
+                    metadata={
+                        "usage": {
+                            "input_tokens": True,
+                            "output_tokens": -5,
+                            "total_tokens": "10",
+                            "cached_input_tokens": 3,
+                        }
+                    },
+                )
+                store.add_message(
+                    session.id,
+                    "assistant",
+                    "Falsche Struktur",
+                    metadata={"usage": ["nicht", "zaehlen"]},
+                )
+                corrupt = store.add_message(
+                    session.id,
+                    "assistant",
+                    "Kaputte JSON-Metadaten",
+                    metadata={"usage": {"input_tokens": 100}},
+                )
+                store.db.execute(
+                    "UPDATE messages SET metadata = ? WHERE id = ?",
+                    ("{", corrupt.id),
+                )
+                store.db.commit()
+
+                stats = store.stats()
+
+                self.assertEqual(stats.usage_records, 1)
+                self.assertEqual(stats.usage_input_tokens, 0)
+                self.assertEqual(stats.usage_output_tokens, 0)
+                self.assertEqual(stats.usage_total_tokens, 0)
+                self.assertEqual(stats.usage_cached_input_tokens, 3)
+                self.assertEqual(stats.usage_reasoning_tokens, 0)
             finally:
                 store.close()
 
@@ -464,7 +598,12 @@ class StoreTests(unittest.TestCase):
                     folder_id=source_folder.id,
                 )
                 source.add_message(source_session.id, "user", "Frage")
-                source.add_message(source_session.id, "assistant", "Antwort")
+                source.add_message(
+                    source_session.id,
+                    "assistant",
+                    "Antwort",
+                    metadata={"usage": {"input_tokens": 6, "output_tokens": 4}},
+                )
                 source.set_session_tags(source_session.id, ["Import", "Projekt"])
                 source.set_session_archived(source_session.id, True)
                 existing_folder = target.create_folder(
@@ -499,9 +638,14 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual(imported[0].folder_id, existing_folder.id)
                 self.assertTrue(imported[0].archived)
                 self.assertEqual(imported[0].tags, ("import", "projekt"))
+                imported_messages = target.messages(imported[0].id)
                 self.assertEqual(
-                    [message.content for message in target.messages(imported[0].id)],
+                    [message.content for message in imported_messages],
                     ["Frage", "Antwort"],
+                )
+                self.assertEqual(
+                    imported_messages[-1].metadata,
+                    {"usage": {"input_tokens": 6, "output_tokens": 4}},
                 )
                 self.assertEqual(len(target.list_folders()), 1)
             finally:
@@ -613,6 +757,82 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual(session.model, "")
                 updated = store.update_session_backend(session.id, "openai", "gpt-5.5")
                 self.assertEqual(updated.model, "gpt-5.5")
+            finally:
+                store.close()
+
+    def test_legacy_database_adds_message_metadata_column(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "history.sqlite3"
+            db = sqlite3.connect(path)
+            try:
+                db.execute(
+                    """
+                    CREATE TABLE sessions (
+                        id TEXT PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        profile TEXT NOT NULL,
+                        model TEXT NOT NULL DEFAULT '',
+                        system_prompt TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        folder_id TEXT,
+                        pinned INTEGER NOT NULL DEFAULT 0,
+                        archived INTEGER NOT NULL DEFAULT 0
+                    )
+                    """
+                )
+                db.execute(
+                    """
+                    CREATE TABLE messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+                        role TEXT NOT NULL CHECK(role IN ('user', 'assistant', 'system')),
+                        content TEXT NOT NULL,
+                        created_at INTEGER NOT NULL
+                    )
+                    """
+                )
+                db.execute(
+                    """
+                    INSERT INTO sessions(
+                        id, title, profile, model, system_prompt,
+                        created_at, updated_at, folder_id, pinned, archived
+                    )
+                    VALUES ('legacy-usage', 'Legacy Usage', 'openai', 'gpt-5.5', 'System', 1, 1, NULL, 0, 0)
+                    """
+                )
+                db.execute(
+                    """
+                    INSERT INTO messages(session_id, role, content, created_at)
+                    VALUES ('legacy-usage', 'assistant', 'Alte Antwort', 1)
+                    """
+                )
+                db.commit()
+            finally:
+                db.close()
+
+            store = ChatStore(path)
+            try:
+                messages = store.messages("legacy-usage")
+                self.assertEqual(len(messages), 1)
+                self.assertEqual(messages[0].metadata, {})
+                store.add_message(
+                    "legacy-usage",
+                    "assistant",
+                    "Neue Antwort",
+                    metadata={
+                        "usage": {
+                            "input_tokens": 3,
+                            "output_tokens": 2,
+                            "total_tokens": 5,
+                        }
+                    },
+                )
+                stats = store.stats()
+                self.assertEqual(stats.usage_records, 1)
+                self.assertEqual(stats.usage_input_tokens, 3)
+                self.assertEqual(stats.usage_output_tokens, 2)
+                self.assertEqual(stats.usage_total_tokens, 5)
             finally:
                 store.close()
 

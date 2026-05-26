@@ -10,6 +10,19 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path))
 Set-Location $Root
 
+function Test-Python {
+    param([string]$Candidate)
+    if (-not $Candidate) {
+        return $false
+    }
+    try {
+        & $Candidate -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)" *> $null
+        return $LASTEXITCODE -eq 0
+    } catch {
+        return $false
+    }
+}
+
 function Resolve-Python {
     param([string]$Requested)
     if ($Requested) {
@@ -17,16 +30,27 @@ function Resolve-Python {
         if (-not $Command) {
             throw "Requested Python was not found: $Requested"
         }
+        if (-not (Test-Python $Command.Source)) {
+            throw "Requested Python is not usable: $Requested"
+        }
         return $Command.Source
     }
+
     $Command = Get-Command python.exe -ErrorAction SilentlyContinue
-    if ($Command) {
+    if ($Command -and (Test-Python $Command.Source)) {
         return $Command.Source
     }
+
     $PyLauncher = Get-Command py.exe -ErrorAction SilentlyContinue
-    if ($PyLauncher) {
+    if ($PyLauncher -and (Test-Python $PyLauncher.Source)) {
         return $PyLauncher.Source
     }
+
+    $VenvPython = Join-Path $Root ".venv-winbuild\Scripts\python.exe"
+    if ((Test-Path $VenvPython) -and (Test-Python $VenvPython)) {
+        return (Resolve-Path $VenvPython).Path
+    }
+
     throw "python.exe not found in PATH"
 }
 
@@ -94,7 +118,7 @@ if (Test-Path dist) {
 $ResolvedPython = (Resolve-Path $PythonExe).Path
 $ResolvedVenvPython = if (Test-Path $VenvPython) { (Resolve-Path $VenvPython).Path } else { $null }
 if ($ResolvedVenvPython -and ($ResolvedPython -ieq $ResolvedVenvPython)) {
-    Write-Host "Reusing existing .venv-winbuild because -Python points to its interpreter."
+    Write-Host "Reusing existing .venv-winbuild interpreter."
 } else {
     Invoke-Native $PythonExe -m venv .venv-winbuild
 }

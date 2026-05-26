@@ -40,16 +40,19 @@ class CliTests(unittest.TestCase):
                 with redirect_stdout(out):
                     self.assertEqual(main(["profiles"]), 0)
                 text = out.getvalue()
-                self.assertIn("tki", text)
-                self.assertIn("Qwen/Qwen2.5-1.5B-Instruct", text)
+                self.assertIn("huggingface", text)
+                self.assertIn("TKI", text)
                 self.assertNotIn("sk-", text)
 
                 out = io.StringIO()
                 with redirect_stdout(out):
                     self.assertEqual(main(["profiles", "--json"]), 0)
                 payload = json.loads(out.getvalue())
-                self.assertEqual(payload["default_profile"], "tki")
-                self.assertTrue(any(profile["name"] == "tki" for profile in payload["profiles"]))
+                self.assertEqual(payload["default_profile"], "huggingface")
+                self.assertTrue(
+                    any(profile["name"] == "huggingface" for profile in payload["profiles"])
+                )
+                self.assertFalse(any(profile["name"] == "tki" for profile in payload["profiles"]))
                 self.assertNotIn("sk-", out.getvalue())
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
@@ -175,7 +178,18 @@ class CliTests(unittest.TestCase):
                         system_prompt="System",
                     )
                     store.add_message(session.id, "user", "Geheimer Projektplan")
-                    store.add_message(session.id, "assistant", "Antwort")
+                    store.add_message(
+                        session.id,
+                        "assistant",
+                        "Antwort",
+                        metadata={
+                            "usage": {
+                                "input_tokens": 11,
+                                "output_tokens": 5,
+                                "total_tokens": 16,
+                            }
+                        },
+                    )
                     store.add_message(archived.id, "user", "Archivnotiz")
                     store.set_session_pinned(session.id, True)
                     store.set_session_archived(archived.id, True)
@@ -193,6 +207,17 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(payload["sessions"]["pinned"], 1)
                 self.assertEqual(payload["sessions"]["unfiled"], 1)
                 self.assertEqual(payload["messages"]["total"], 3)
+                self.assertEqual(
+                    payload["usage"],
+                    {
+                        "cached_input_tokens": 0,
+                        "input_tokens": 11,
+                        "output_tokens": 5,
+                        "reasoning_tokens": 0,
+                        "records": 1,
+                        "total_tokens": 16,
+                    },
+                )
                 self.assertEqual(payload["tags"]["assignments"], 1)
                 self.assertEqual(payload["folders"]["with_system_prompt"], 1)
                 self.assertEqual(
@@ -208,6 +233,7 @@ class CliTests(unittest.TestCase):
                 text = out.getvalue()
                 self.assertIn("Sessions: 2 gesamt", text)
                 self.assertIn("Nachrichten: 3 gesamt", text)
+                self.assertIn("Token-Nutzung: 1 Antworten, 11 in, 5 out, 16 total", text)
                 self.assertIn("Profile: openai=1, tki=1", text)
                 self.assertNotIn("Geheimer Projektplan", text)
 
@@ -353,7 +379,26 @@ class CliTests(unittest.TestCase):
                 )
                 self.assertIn("preview", summarize)
                 self.assertTrue(summarize["has_input_placeholder"])
+                self.assertEqual(summarize["variables"], ["input"])
                 self.assertGreater(summarize["characters"], 0)
+
+                config_path = Path(os.environ["XDG_CONFIG_HOME"]) / "telachat" / "config.toml"
+                config_text = config_path.read_text(encoding="utf-8")
+                config_path.write_text(
+                    config_text.replace(
+                        "\n[profiles.",
+                        '\ndaily = "Heute {date} um {time}: {input}"\n\n[profiles.',
+                        1,
+                    ),
+                    encoding="utf-8",
+                )
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["templates", "--json"]), 0)
+                payload = json.loads(out.getvalue())
+                daily = next(item for item in payload["templates"] if item["name"] == "daily")
+                self.assertTrue(daily["has_input_placeholder"])
+                self.assertEqual(daily["variables"], ["input", "date", "time"])
 
                 out = io.StringIO()
                 with redirect_stdout(out), mock.patch(
@@ -367,6 +412,61 @@ class CliTests(unittest.TestCase):
                 messages = run_chat.call_args.args[1]
                 self.assertIn("Projektstand", messages[-1]["content"])
                 self.assertIn("Fasse", messages[-1]["content"])
+
+                out = io.StringIO()
+                with redirect_stdout(out), mock.patch(
+                    "telachat.cli.OpenAICompatClient",
+                ) as client_cls:
+                    client_cls.return_value.chat.return_value = ChatResult(
+                        "JSON OK",
+                        {},
+                        usage=TokenUsage(input_tokens=9, output_tokens=3, total_tokens=12),
+                    )
+                    self.assertEqual(
+                        main(["ask", "--json", "--template", "summarize", "Projektstand"]),
+                        0,
+                    )
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["answer"], "JSON OK")
+                self.assertEqual(payload["model"], "TKI")
+                self.assertEqual(
+                    payload["usage"],
+                    {"input_tokens": 9, "output_tokens": 3, "total_tokens": 12},
+                )
+                self.assertEqual(client_cls.return_value.chat.call_args.kwargs["stream"], False)
+
+                out = io.StringIO()
+                err = io.StringIO()
+                with redirect_stdout(out), redirect_stderr(err), mock.patch(
+                    "telachat.cli.OpenAICompatClient",
+                ) as client_cls:
+                    client_cls.return_value.chat.return_value = ChatResult(
+                        "Gespeichert",
+                        {},
+                        usage=TokenUsage(input_tokens=4, output_tokens=2, total_tokens=6),
+                    )
+                    self.assertEqual(main(["ask", "--json", "--save", "Bitte merken"]), 0)
+                payload = json.loads(out.getvalue())
+                self.assertEqual(payload["answer"], "Gespeichert")
+                self.assertIn("saved_session_id", payload)
+                self.assertEqual(
+                    payload["usage"],
+                    {"input_tokens": 4, "output_tokens": 2, "total_tokens": 6},
+                )
+                self.assertEqual("", err.getvalue())
+                store = ChatStore()
+                try:
+                    messages = store.messages(str(payload["saved_session_id"]))
+                finally:
+                    store.close()
+                self.assertEqual(
+                    [(message.role, message.content) for message in messages],
+                    [("user", "Bitte merken"), ("assistant", "Gespeichert")],
+                )
+                self.assertEqual(
+                    messages[-1].metadata["usage"],
+                    {"input_tokens": 4, "output_tokens": 2, "total_tokens": 6},
+                )
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
@@ -410,6 +510,9 @@ model = "demo"
                         0,
                     )
                 payload = json.loads(out.getvalue())
+                self.assertEqual(payload["app_icon"], "system")
+                self.assertEqual(payload["chat_background_image"], "")
+                self.assertFalse(payload["skill_watchdog_enabled"])
                 self.assertEqual(payload["missing_secrets"], 1)
                 profiles = {profile["name"]: profile for profile in payload["profiles"]}
                 self.assertEqual(profiles["missing"]["api_key"], "env:TELACHAT_MISSING_TEST_KEY")
@@ -703,9 +806,33 @@ stream = false
                 with redirect_stdout(out):
                     self.assertEqual(main(["config-check"]), 0)
                 self.assertIn("Theme: dark", out.getvalue())
+                self.assertIn("Header validation: on", out.getvalue())
             finally:
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
+
+    def test_skill_watchdog_command_compacts_oversized_descriptions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            skill = Path(tmp) / "plugin" / "skills" / "demo" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text(
+                "---\nname: demo\ndescription: |\n  "
+                + ("x" * 1100)
+                + "\n---\n# Demo\n",
+                encoding="utf-8",
+            )
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                self.assertEqual(
+                    main(["skill-watchdog", "--root", str(Path(tmp)), "--json"]),
+                    0,
+                )
+
+            payload = json.loads(out.getvalue())
+            self.assertEqual(payload["compacted"], 1)
+            self.assertEqual(payload["errors"], [])
+            self.assertIn("Telachat-safe", skill.read_text(encoding="utf-8"))
 
     def test_folders_command_manages_system_prompts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -763,7 +890,7 @@ stream = false
                 self.assertEqual(payload["folders"][0]["name"], "Projekt")
                 self.assertTrue(payload["folders"][0]["has_system_prompt"])
                 self.assertTrue(payload["folders"][0]["has_default_backend"])
-                self.assertEqual(payload["folders"][0]["default_profile"], "tki")
+                self.assertEqual(payload["folders"][0]["default_profile"], "huggingface")
                 self.assertEqual(payload["folders"][0]["default_model"], "qwen-alt")
                 self.assertNotIn("system_prompt", payload["folders"][0])
 
@@ -1091,7 +1218,15 @@ X-Test-Header = "yes"
                 self.assertEqual(manifest["counts"]["sessions"], 1)
                 self.assertEqual(manifest["counts"]["messages"], 1)
                 self.assertEqual(manifest["theme"], "system")
+                self.assertEqual(manifest["app_icon"], "system")
+                self.assertEqual(manifest["chat_background_image"], "")
+                self.assertTrue(manifest["validate_profile_headers"])
+                self.assertFalse(manifest["skill_watchdog_enabled"])
                 self.assertEqual(parsed["theme"], "system")
+                self.assertEqual(parsed["app_icon"], "system")
+                self.assertEqual(parsed["chat_background_image"], "")
+                self.assertTrue(parsed["validate_profile_headers"])
+                self.assertFalse(parsed["skill_watchdog_enabled"])
 
                 restore_data = Path(tmp) / "restore-data"
                 os.environ["XDG_DATA_HOME"] = str(restore_data)
@@ -1335,6 +1470,7 @@ X-Test-Header = "yes"
                     self.assertIn("/archive ", cli_completion_candidates("/ar", cfg, store))
                     self.assertIn("openai ", cli_completion_candidates("/provider op", cfg, store))
                     self.assertIn("gpt-5.5 ", cli_completion_candidates("/model gpt", cfg, store))
+                    self.assertIn("live ", cli_completion_candidates("/models li", cfg, store))
                     self.assertIn("summarize ", cli_completion_candidates("/template su", cfg, store))
                     self.assertIn("dracula ", cli_completion_candidates("/theme dr", cfg, store))
                     self.assertIn("Arbeit ", cli_completion_candidates("/move Ar", cfg, store))
@@ -1375,6 +1511,9 @@ X-Test-Header = "yes"
                     "builtins.input",
                     side_effect=[
                         "/provider openai",
+                        "/models",
+                        "/models live",
+                        "/shortcuts",
                         "/model gpt-5.5",
                         "/doctor",
                         "/theme dracula",
@@ -1400,6 +1539,9 @@ X-Test-Header = "yes"
                     self.assertEqual(main(["chat", "--no-stream"]), 0)
                 text = out.getvalue()
                 self.assertIn("Aktiv: openai", text)
+                self.assertIn("/models: configured (gpt-5.5", text)
+                self.assertIn("/models: live (gpt-test)", text)
+                self.assertIn("Shift+Enter", text)
                 self.assertIn("Modell: gpt-5.5", text)
                 self.assertIn("/models: ok (gpt-test)", text)
                 self.assertIn("Theme gesetzt: dracula", text)

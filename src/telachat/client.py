@@ -10,6 +10,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
 
+from . import __version__
 from .config import Profile
 
 
@@ -62,13 +63,15 @@ class OpenAICompatClient:
             return self._responses_chat(messages)
         use_stream = self.profile.stream if stream is None else stream
         body = {
-            "model": self.profile.model,
+            "model": self.profile.api_model,
             "messages": messages,
-            "temperature": self.profile.temperature,
-            "top_p": self.profile.top_p,
             "max_tokens": self.profile.max_tokens,
             "stream": bool(use_stream),
         }
+        if self.profile.send_temperature:
+            body["temperature"] = self.profile.temperature
+        if self.profile.send_top_p:
+            body["top_p"] = self.profile.top_p
         if self.profile.reasoning_effort:
             body["reasoning_effort"] = self.profile.reasoning_effort
         if use_stream:
@@ -82,7 +85,7 @@ class OpenAICompatClient:
 
     def _responses_chat(self, messages: list[dict[str, str]]) -> ChatResult:
         body = {
-            "model": self.profile.model,
+            "model": self.profile.api_model,
             "input": [
                 {"role": item["role"], "content": item["content"]}
                 for item in messages
@@ -90,9 +93,11 @@ class OpenAICompatClient:
                 and item.get("content")
             ],
             "max_output_tokens": self.profile.max_tokens,
-            "temperature": self.profile.temperature,
-            "top_p": self.profile.top_p,
         }
+        if self.profile.send_temperature:
+            body["temperature"] = self.profile.temperature
+        if self.profile.send_top_p:
+            body["top_p"] = self.profile.top_p
         if self.profile.reasoning_effort:
             body["reasoning"] = {"effort": self.profile.reasoning_effort}
         raw = self._request_json("POST", "/responses", body)
@@ -177,7 +182,7 @@ class OpenAICompatClient:
         headers = {
             "Accept": "application/json, text/event-stream",
             "Content-Type": "application/json",
-            "User-Agent": "Telachat/0.1",
+            "User-Agent": f"Telachat/{__version__}",
         }
         api_key = self.profile.resolved_api_key()
         if api_key:
@@ -316,7 +321,7 @@ def _usage_detail_int(
 def _int_or_none(value: Any) -> int | None:
     if isinstance(value, bool):
         return None
-    if isinstance(value, int):
+    if isinstance(value, int) and value >= 0:
         return value
     return None
 
@@ -325,21 +330,43 @@ def format_token_usage(usage: TokenUsage | None) -> str:
     if usage is None:
         return ""
     parts: list[str] = []
-    if usage.input_tokens is not None and usage.output_tokens is not None:
-        parts.append(f"{usage.input_tokens} in/{usage.output_tokens} out")
-    elif usage.input_tokens is not None:
-        parts.append(f"{usage.input_tokens} in")
-    elif usage.output_tokens is not None:
-        parts.append(f"{usage.output_tokens} out")
-    if usage.total_tokens is not None:
-        parts.append(f"{usage.total_tokens} total")
-    if usage.cached_input_tokens:
-        parts.append(f"{usage.cached_input_tokens} cached")
-    if usage.reasoning_tokens:
-        parts.append(f"{usage.reasoning_tokens} reasoning")
+    input_tokens = _int_or_none(usage.input_tokens)
+    output_tokens = _int_or_none(usage.output_tokens)
+    total_tokens = _int_or_none(usage.total_tokens)
+    cached_input_tokens = _int_or_none(usage.cached_input_tokens)
+    reasoning_tokens = _int_or_none(usage.reasoning_tokens)
+    if input_tokens is not None and output_tokens is not None:
+        parts.append(f"{input_tokens} in/{output_tokens} out")
+    elif input_tokens is not None:
+        parts.append(f"{input_tokens} in")
+    elif output_tokens is not None:
+        parts.append(f"{output_tokens} out")
+    if total_tokens is not None:
+        parts.append(f"{total_tokens} total")
+    if cached_input_tokens:
+        parts.append(f"{cached_input_tokens} cached")
+    if reasoning_tokens:
+        parts.append(f"{reasoning_tokens} reasoning")
     if not parts:
         return ""
     return "Tokens: " + ", ".join(parts)
+
+
+def token_usage_record(usage: TokenUsage | None) -> dict[str, int]:
+    if usage is None:
+        return {}
+    record: dict[str, int] = {}
+    for name, value in (
+        ("input_tokens", usage.input_tokens),
+        ("output_tokens", usage.output_tokens),
+        ("total_tokens", usage.total_tokens),
+        ("cached_input_tokens", usage.cached_input_tokens),
+        ("reasoning_tokens", usage.reasoning_tokens),
+    ):
+        clean = _int_or_none(value)
+        if clean is not None:
+            record[name] = clean
+    return record
 
 
 def _read_error_body(exc: urllib.error.HTTPError) -> str:

@@ -35,6 +35,28 @@ class ControllerTests(unittest.TestCase):
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_header_validation_can_be_changed_through_controller(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                controller = TelachatController()
+                try:
+                    self.assertTrue(controller.config.validate_profile_headers)
+                    self.assertFalse(controller.set_header_validation(False))
+                    self.assertFalse(controller.config.validate_profile_headers)
+                    config_text = (Path(tmp) / "config" / "telachat" / "config.toml").read_text(
+                        encoding="utf-8"
+                    )
+                    self.assertIn("validate_profile_headers = false", config_text)
+                finally:
+                    controller.close()
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_apply_prompt_template(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")
@@ -143,6 +165,10 @@ class ControllerTests(unittest.TestCase):
                     self.assertEqual(
                         [(message.role, message.content) for message in payload.messages],
                         [("user", "Hallo"), ("assistant", "Neu")],
+                    )
+                    self.assertEqual(
+                        payload.messages[-1].metadata["usage"],
+                        {"input_tokens": 7, "output_tokens": 3, "total_tokens": 10},
                     )
                     sent_messages = client_cls.return_value.chat.call_args.args[0]
                     self.assertEqual(
@@ -345,6 +371,11 @@ class ControllerTests(unittest.TestCase):
                     self.assertIsNotNone(stored)
                     assert stored is not None
                     self.assertEqual(stored.model, "demo-large")
+                    messages = controller.store.messages(payload.session.id)
+                    self.assertEqual(
+                        messages[-1].metadata["usage"],
+                        {"input_tokens": 5, "output_tokens": 4, "total_tokens": 9},
+                    )
                 finally:
                     controller.close()
             finally:

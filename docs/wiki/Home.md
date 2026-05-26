@@ -1,7 +1,8 @@
 # Telachat
 
 Telachat ist ein lokaler Desktop- und CLI-Client fuer OpenAI-kompatible
-Chat-APIs. Der Standard auf diesem Rechner ist das Hugging-Face/TKI-Profil,
+Chat-APIs. Der Standard auf diesem Rechner ist das Hugging-Face-Profil mit
+dem Modellalias `TKI`,
 zusaetzlich gibt es Profile fuer OpenAI und eine lokale Codex-Bridge.
 
 ## Schnellstart

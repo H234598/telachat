@@ -13,6 +13,9 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - Links: Provider, Modell, Chats, Ordner, Tagfilter, Suche und Sortierung.
 - Mitte: Chatverlauf und Eingabe.
 - Rechts: Systemprompt sowie Temperatur- und Token-Limit-Regler.
+- Tk nutzt `Optionen -> Einstellungen...`; GTK nutzt die Preferences-
+  Schaltflaeche in der Titelleiste. Dort liegen Theme, Icon, Chat-Hintergrund,
+  Header-Pruefung und Skill-Watchdog-Schalter.
 - Linke Seite und Systemprompt sind einklappbar.
 - Die Seitenbreiten sind per Splitter anpassbar.
 - Der Archivfilter `Aktiv / Archiv / Alle` sitzt in der linken Seitenleiste.
@@ -29,6 +32,7 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
   Modellauswahl mit den gemeldeten IDs.
 - `Shift+Enter` sendet eine Nachricht.
 - `Enter` fuegt einen Zeilenumbruch ein.
+- `Ctrl+/` zeigt die Tastenkuerzel-Uebersicht.
 - Slash-Befehle zeigen beim Tippen Vorschlaege.
 - `Tab` vervollstaendigt den aktuellen Slash-Befehl.
 - `/edit-last TEXT` ersetzt die letzte Nutzernachricht und entfernt die danach
@@ -46,6 +50,10 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 ## Chatverwaltung
 
 - Chats koennen in Ordner verschoben werden.
+- In Tk erscheinen Ordner als aufklappbare Zeilen in der Chatliste.
+  Doppelklick klappt Ordner auf oder zu; Rechtsklick oeffnet Aktionen fuer
+  Chat, Ordner oder freien Listenraum.
+- `Neu` fragt vor dem Anlegen nach dem Namen der Unterhaltung.
 - Chats koennen Tags tragen; die Tags erscheinen in der Chatliste und sind
   direkt ueber den Tagfilter auswaehlbar.
 - Chats koennen archiviert werden; der sichtbare Archivfilter wechselt
@@ -59,14 +67,20 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 
 ## Themes
 
-- Beide GUIs nutzen denselben Theme-Katalog.
+- Beide GUIs nutzen denselben Theme-Katalog und dieselbe persistente
+  Optionenbasis in `config.toml`.
 - `system` folgt soweit moeglich Desktop-/Terminal-Hinweisen.
 - `TELACHAT_THEME` uebersteuert das gespeicherte Theme fuer einen Prozess.
 - `TELACHAT_SYSTEM_THEME` fixiert nur die System-Erkennung fuer einen Prozess.
 - Verfuegbare Paletten: `light`, `dark`, `high-contrast`, `solarized-light`,
-  `solarized-dark`, `nord`, `dracula`, `gruvbox`, `ocean`, `forest`, `rose`.
+  `solarized-dark`, `nord`, `dracula`, `gruvbox`, `ocean`, `forest`, `rose`,
+  `graphite-glass`, `liquid-chrome`, `black-ice`, `brushed-steel`.
 - Der Prompt-Befehl `/theme dracula` nutzt denselben gespeicherten Wert wie der
-  Theme-Waehler im Systembereich.
+  Optionen-Dialog.
+- `app_icon = "random"` waehlt sofort eines der importierten Icons und rotiert
+  danach stuendlich. Tk setzt damit das Fenstericon, GTK zeigt es in der
+  Titelleiste.
+- `chat_background_image` speichert einen lokalen Bildpfad fuer das Chatmodul.
 
 ## Prompt-Templates
 

@@ -6,7 +6,7 @@ import threading
 import time
 import uuid
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from .paths import db_path
@@ -45,6 +45,7 @@ class Message:
     role: str
     content: str
     created_at: int
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -72,6 +73,12 @@ class StoreStats:
     message_roles: tuple[tuple[str, int], ...]
     session_profiles: tuple[tuple[str, int], ...]
     session_models: tuple[tuple[str, int], ...]
+    usage_records: int = 0
+    usage_input_tokens: int = 0
+    usage_output_tokens: int = 0
+    usage_total_tokens: int = 0
+    usage_cached_input_tokens: int = 0
+    usage_reasoning_tokens: int = 0
 
 
 class ChatStore:
@@ -180,6 +187,14 @@ class ChatStore:
             if "default_model" not in folder_columns:
                 self.db.execute(
                     "ALTER TABLE folders ADD COLUMN default_model TEXT NOT NULL DEFAULT ''"
+                )
+            message_columns = {
+                row["name"]
+                for row in self.db.execute("PRAGMA table_info(messages)").fetchall()
+            }
+            if "metadata" not in message_columns:
+                self.db.execute(
+                    "ALTER TABLE messages ADD COLUMN metadata TEXT NOT NULL DEFAULT '{}'"
                 )
 
     def create_session(
@@ -405,6 +420,14 @@ class ChatStore:
                 ORDER BY lower(model) ASC
                 """
             ).fetchall()
+            usage_rows = self.db.execute(
+                """
+                SELECT metadata
+                FROM messages
+                WHERE role = 'assistant'
+                """
+            ).fetchall()
+            usage = _usage_totals_from_rows(usage_rows)
             return StoreStats(
                 database_path=str(self.path),
                 sessions_total=_row_int(session_row, "total"),
@@ -421,6 +444,12 @@ class ChatStore:
                 message_roles=_count_pairs(message_roles, "role"),
                 session_profiles=_count_pairs(session_profiles, "profile"),
                 session_models=_count_pairs(session_models, "model"),
+                usage_records=usage["records"],
+                usage_input_tokens=usage["input_tokens"],
+                usage_output_tokens=usage["output_tokens"],
+                usage_total_tokens=usage["total_tokens"],
+                usage_cached_input_tokens=usage["cached_input_tokens"],
+                usage_reasoning_tokens=usage["reasoning_tokens"],
             )
 
     def set_session_tags(self, session_id: str, tags: Iterable[str]) -> list[str]:
@@ -741,19 +770,27 @@ class ChatStore:
     ) -> Message:
         with self._lock:
             now = int(time.time())
+            metadata_text = json.dumps(metadata or {}, sort_keys=True)
             cur = self.db.execute(
                 """
                 INSERT INTO messages(session_id, role, content, created_at, metadata)
                 VALUES (?, ?, ?, ?, ?)
                 """,
-                (session_id, role, content, now, json.dumps(metadata or {}, sort_keys=True)),
+                (session_id, role, content, now, metadata_text),
             )
             self.db.execute(
                 "UPDATE sessions SET updated_at = ? WHERE id = ?",
                 (now, session_id),
             )
             self.db.commit()
-            return Message(int(cur.lastrowid), session_id, role, content, now)
+            return Message(
+                int(cur.lastrowid),
+                session_id,
+                role,
+                content,
+                now,
+                _json_object(metadata_text),
+            )
 
     def messages(self, session_id: str, *, limit: int | None = None) -> list[Message]:
         with self._lock:
@@ -838,7 +875,7 @@ class ChatStore:
                 (now, session_id),
             )
             self.db.commit()
-            return Message(message.id, session_id, "user", clean, message.created_at)
+            return Message(message.id, session_id, "user", clean, message.created_at, message.metadata)
 
     def import_history_database(
         self,
@@ -1105,6 +1142,53 @@ def _count_pairs(rows: Iterable[sqlite3.Row], label_key: str) -> tuple[tuple[str
     return tuple((str(row[label_key] or ""), int(row["total"] or 0)) for row in rows)
 
 
+def _json_object(raw: object) -> dict[str, object]:
+    if not isinstance(raw, str) or not raw.strip():
+        return {}
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _metadata_int(raw: object) -> int:
+    if isinstance(raw, bool) or not isinstance(raw, int):
+        return 0
+    return max(raw, 0)
+
+
+def _usage_totals_from_rows(rows: Iterable[sqlite3.Row]) -> dict[str, int]:
+    totals = {
+        "records": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "cached_input_tokens": 0,
+        "reasoning_tokens": 0,
+    }
+    for row in rows:
+        metadata = _json_object(row["metadata"] if "metadata" in row.keys() else "{}")
+        usage = metadata.get("usage")
+        if not isinstance(usage, dict):
+            continue
+        has_usage = False
+        for key in (
+            "input_tokens",
+            "output_tokens",
+            "total_tokens",
+            "cached_input_tokens",
+            "reasoning_tokens",
+        ):
+            value = _metadata_int(usage.get(key))
+            if value:
+                has_usage = True
+            totals[key] += value
+        if has_usage:
+            totals["records"] += 1
+    return totals
+
+
 def _session_from_row(row: sqlite3.Row, *, tags: Iterable[str] | None = None) -> Session:
     return Session(
         id=row["id"],
@@ -1140,4 +1224,5 @@ def _message_from_row(row: sqlite3.Row) -> Message:
         role=row["role"],
         content=row["content"],
         created_at=row["created_at"],
+        metadata=_json_object(row["metadata"] if "metadata" in row.keys() else "{}"),
     )

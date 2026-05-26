@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 
 from . import __version__
-from .client import ApiError, ChatResult, OpenAICompatClient
+from .client import ApiError, ChatResult, OpenAICompatClient, token_usage_record
 from .commands import (
     ContextEstimate,
     canonical_slash_command,
@@ -23,6 +23,7 @@ from .commands import (
     format_context_lines,
     format_message_matches,
     format_stats_lines,
+    keyboard_shortcut_help,
     slash_command_help,
     slash_command_name_suggestions,
 )
@@ -37,6 +38,7 @@ from .config import (
 )
 from .defaults import APP_TITLE
 from .paths import config_path, db_path, state_dir
+from .skill_watchdog import DEFAULT_DESCRIPTION_LIMIT, run_skill_watchdog
 from .store import (
     ChatStore,
     Folder,
@@ -47,6 +49,7 @@ from .store import (
     normalize_tag,
     title_from_prompt,
 )
+from .templates import render_prompt_template, template_variables
 from .themes import theme_labels
 
 
@@ -133,6 +136,25 @@ def build_parser() -> argparse.ArgumentParser:
     p_theme.add_argument("theme", nargs="?", metavar="NAME", help="Theme-Name oder Alias")
     p_theme.set_defaults(func=cmd_theme)
 
+    p_skill_watchdog = sub.add_parser(
+        "skill-watchdog",
+        help="Codex-Skill-Beschreibungen auf Loader-kompatible Laenge kuerzen",
+    )
+    p_skill_watchdog.add_argument(
+        "--root",
+        action="append",
+        type=Path,
+        help="Skill-Wurzel scannen; mehrfach moeglich",
+    )
+    p_skill_watchdog.add_argument(
+        "--max-description",
+        type=int,
+        default=DEFAULT_DESCRIPTION_LIMIT,
+        help=f"Maximale description-Laenge (Standard: {DEFAULT_DESCRIPTION_LIMIT})",
+    )
+    p_skill_watchdog.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
+    p_skill_watchdog.set_defaults(func=cmd_skill_watchdog)
+
     p_templates = sub.add_parser("templates", help="Prompt-Templates anzeigen")
     p_templates.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_templates.set_defaults(func=cmd_templates)
@@ -173,6 +195,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_ask.add_argument("--stdin", action="store_true", help="Prompt aus stdin lesen")
     p_ask.add_argument("--save", action="store_true", help="Frage und Antwort speichern")
     p_ask.add_argument("--template", "-t", help="Prompt-Template auf den Prompt anwenden")
+    p_ask.add_argument("--json", action="store_true", help="Antwort maschinenlesbar ausgeben")
     p_ask.set_defaults(func=cmd_ask)
 
     p_chat = sub.add_parser("chat", help="Interaktiven Chat starten")
@@ -488,6 +511,10 @@ def cmd_config_check(args: argparse.Namespace) -> int:
                     "sqlite": str(db_path()),
                     "default_profile": cfg.default_profile,
                     "theme": cfg.theme,
+                    "app_icon": cfg.app_icon,
+                    "chat_background_image": cfg.chat_background_image,
+                    "validate_profile_headers": cfg.validate_profile_headers,
+                    "skill_watchdog_enabled": cfg.skill_watchdog_enabled,
                     "profile_filter": args.profile,
                     "prompt_templates": len(cfg.prompt_templates),
                     "missing_secrets": missing,
@@ -503,6 +530,10 @@ def cmd_config_check(args: argparse.Namespace) -> int:
     print(f"SQLite: {db_path()}")
     print(f"Default profile: {cfg.default_profile}")
     print(f"Theme: {cfg.theme}")
+    print(f"App icon: {cfg.app_icon}")
+    print(f"Chat background: {cfg.chat_background_image or '-'}")
+    print(f"Header validation: {'on' if cfg.validate_profile_headers else 'off'}")
+    print(f"Skill watchdog: {'on' if cfg.skill_watchdog_enabled else 'off'}")
     if args.profile:
         print(f"Profile filter: {args.profile}")
     for row in profile_rows:
@@ -530,6 +561,32 @@ def cmd_theme(args: argparse.Namespace) -> int:
         marker = "*" if name == cfg.theme else " "
         print(f"{marker} {name:{width}} {label}")
     return 0
+
+
+def cmd_skill_watchdog(args: argparse.Namespace) -> int:
+    roots = tuple(args.root or ())
+    result = run_skill_watchdog(
+        roots or None,
+        description_limit=max(128, int(args.max_description)),
+    )
+    payload = {
+        "scanned": result.scanned,
+        "compacted": result.compacted,
+        "unchanged": result.unchanged,
+        "skipped": result.skipped,
+        "errors": list(result.errors),
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 1 if result.errors else 0
+    print(
+        "Skill-Watchdog: "
+        f"{result.compacted} gekuerzt, {result.unchanged} unveraendert, "
+        f"{result.skipped} uebersprungen, {len(result.errors)} Fehler."
+    )
+    for error in result.errors:
+        print(f"Fehler: {error}", file=sys.stderr)
+    return 1 if result.errors else 0
 
 
 def cmd_templates(args: argparse.Namespace) -> int:
@@ -562,12 +619,16 @@ def cmd_folders(args: argparse.Namespace) -> int:
     store = ChatStore()
     try:
         if args.create:
-            _validate_folder_backend(cfg, args.profile or "", args.model or "")
+            profile_name, model = _validate_folder_backend(
+                cfg,
+                args.profile or "",
+                args.model or "",
+            )
             folder = store.create_folder(
                 args.create,
                 system_prompt=args.system or "",
-                default_profile=args.profile or "",
-                default_model=args.model or "",
+                default_profile=profile_name,
+                default_model=model,
             )
             if not args.json:
                 print(f"Ordner bereit: {folder.id} {folder.name}")
@@ -583,7 +644,7 @@ def cmd_folders(args: argparse.Namespace) -> int:
             folder_ref = args.set_backend[0]
             profile_name = args.set_backend[1]
             model = args.set_backend[2] if len(args.set_backend) == 3 else ""
-            _validate_folder_backend(cfg, profile_name, model)
+            profile_name, model = _validate_folder_backend(cfg, profile_name, model)
             folder_id = _resolve_real_folder(store, folder_ref)
             folder = store.update_folder_backend(folder_id, profile_name, model)
             if not args.json:
@@ -642,7 +703,14 @@ def cmd_ask(args: argparse.Namespace) -> int:
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt},
     ]
-    response = _run_chat(profile, messages, stream=not args.no_stream)
+    saved_session_id: str | None = None
+    if args.json:
+        result = OpenAICompatClient(profile, retries=1).chat(messages, stream=False)
+        assert isinstance(result, ChatResult)
+        response = result.content
+    else:
+        result = None
+        response = _run_chat(profile, messages, stream=not args.no_stream)
     if args.save:
         store = ChatStore()
         try:
@@ -653,10 +721,30 @@ def cmd_ask(args: argparse.Namespace) -> int:
                 system_prompt=system_prompt,
             )
             store.add_message(session.id, "user", prompt)
-            store.add_message(session.id, "assistant", response)
-            print(f"\n[gespeichert: {session.id}]", file=sys.stderr)
+            store.add_message(
+                session.id,
+                "assistant",
+                response,
+                metadata=_assistant_message_metadata(result if isinstance(result, ChatResult) else None),
+            )
+            saved_session_id = session.id
+            if not args.json:
+                print(f"\n[gespeichert: {session.id}]", file=sys.stderr)
         finally:
             store.close()
+    if args.json:
+        assert isinstance(result, ChatResult)
+        payload: dict[str, object] = {
+            "answer": response,
+            "profile": profile.name,
+            "model": profile.model,
+        }
+        usage = _usage_record(result)
+        if usage:
+            payload["usage"] = usage
+        if saved_session_id:
+            payload["saved_session_id"] = saved_session_id
+        print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
 
 
@@ -904,31 +992,28 @@ def _profile_record(name: str, profile: Profile, *, is_default: bool) -> dict[st
         "api_key": redact_secret(profile.api_key),
         "model": profile.model,
         "models": profile.models or [profile.model],
+        "model_aliases": profile.model_aliases or {},
         "temperature": profile.temperature,
         "top_p": profile.top_p,
         "max_tokens": profile.max_tokens,
         "reasoning_effort": profile.reasoning_effort,
         "timeout_seconds": profile.timeout_seconds,
         "stream": profile.stream,
+        "send_temperature": profile.send_temperature,
+        "send_top_p": profile.send_top_p,
     }
 
 
 def _usage_record(result: ChatResult) -> dict[str, int] | None:
-    usage = result.usage
-    if usage is None:
-        return None
-    record = {
-        name: value
-        for name, value in (
-            ("input_tokens", usage.input_tokens),
-            ("output_tokens", usage.output_tokens),
-            ("total_tokens", usage.total_tokens),
-            ("cached_input_tokens", usage.cached_input_tokens),
-            ("reasoning_tokens", usage.reasoning_tokens),
-        )
-        if value is not None
-    }
+    record = token_usage_record(result.usage)
     return record or None
+
+
+def _assistant_message_metadata(result: ChatResult | None) -> dict[str, object] | None:
+    if result is None:
+        return None
+    usage = token_usage_record(result.usage)
+    return {"usage": usage} if usage else None
 
 
 def _model_record(
@@ -982,6 +1067,14 @@ def _stats_record(stats: StoreStats) -> dict[str, object]:
                 {"role": role, "messages": count}
                 for role, count in stats.message_roles
             ],
+        },
+        "usage": {
+            "records": stats.usage_records,
+            "input_tokens": stats.usage_input_tokens,
+            "output_tokens": stats.usage_output_tokens,
+            "total_tokens": stats.usage_total_tokens,
+            "cached_input_tokens": stats.usage_cached_input_tokens,
+            "reasoning_tokens": stats.usage_reasoning_tokens,
         },
         "folders": {
             "total": stats.folders_total,
@@ -1038,7 +1131,8 @@ def _template_record(name: str, template: str) -> dict[str, object]:
         "preview": preview,
         "lines": len(lines),
         "characters": len(template),
-        "has_input_placeholder": "{input}" in template,
+        "has_input_placeholder": "input" in template_variables(template),
+        "variables": list(template_variables(template)),
     }
 
 
@@ -1067,13 +1161,15 @@ def _cli_tag(tag: object) -> str:
         raise ConfigError(str(exc)) from exc
 
 
-def _validate_folder_backend(cfg: AppConfig, profile_name: str, model: str) -> None:
+def _validate_folder_backend(cfg: AppConfig, profile_name: str, model: str) -> tuple[str, str]:
     clean_profile = profile_name.strip()
     clean_model = model.strip()
     if clean_profile:
-        cfg.profile(clean_profile).with_overrides(model=clean_model or None)
+        profile = cfg.profile(clean_profile).with_overrides(model=clean_model or None)
+        clean_profile = profile.name
     elif clean_model:
         cfg.profile(None).with_overrides(model=clean_model)
+    return clean_profile, clean_model
 
 
 def _message_record(message: object) -> dict[str, object]:
@@ -1729,6 +1825,8 @@ def cli_completion_candidates(line: str, cfg: object, store: ChatStore) -> list[
         return _completion_matches(sorted(cfg.profiles), prefix)
     if command == "/model":
         return _completion_matches(_configured_models(cfg), prefix)
+    if command == "/models":
+        return _completion_matches(["live"], prefix)
     if command == "/template":
         return _completion_matches(sorted(cfg.prompt_templates), prefix)
     if command == "/theme":
@@ -1823,6 +1921,8 @@ def _handle_command(
         return False, cfg, profile, system_prompt, session
     if command == "/help":
         print(slash_command_help())
+    elif command == "/shortcuts":
+        print(keyboard_shortcut_help())
     elif command == "/new":
         title = rest or "Neue Unterhaltung"
         session = store.create_session(
@@ -1870,6 +1970,19 @@ def _handle_command(
             print(f"/models: Fehler ({exc})", file=sys.stderr)
         else:
             print(f"/models: ok ({', '.join(models) if models else 'keine IDs gemeldet'})")
+    elif command == "/models":
+        if rest and rest.lower() != "live":
+            print("Nutzung: /models [live]")
+        elif rest.lower() == "live":
+            try:
+                models = OpenAICompatClient(profile, retries=1).list_models()
+            except (ApiError, ConfigError, OSError) as exc:
+                print(f"/models: Fehler ({exc})", file=sys.stderr)
+            else:
+                print(f"/models: live ({', '.join(models) if models else 'keine IDs gemeldet'})")
+        else:
+            models = profile.models or [profile.model]
+            print(f"/models: configured ({', '.join(models) if models else 'keine konfiguriert'})")
     elif command == "/archives":
         items = store.list_sessions(20, archive="archived")
         if not items:
@@ -2177,10 +2290,7 @@ def _apply_prompt_template(cfg: object, name: str, text: str = "") -> str:
         raise ConfigError(
             f"Prompt-Template '{name}' existiert nicht. Verfuegbar: {available}"
         ) from exc
-    clean = text.strip()
-    if "{input}" in template:
-        return template.replace("{input}", clean)
-    return f"{template}\n\n{clean}".strip() if clean else template
+    return render_prompt_template(template, text)
 
 
 def _folder_export_title(store: ChatStore, folder: str, folder_id: str | None) -> str:
@@ -2250,13 +2360,20 @@ def _backup_manifest(cfg: object, backup_db: Path) -> dict[str, object]:
         "database_path": str(db_path()),
         "default_profile": cfg.default_profile,
         "theme": cfg.theme,
+        "app_icon": cfg.app_icon,
+        "chat_background_image": cfg.chat_background_image,
+        "validate_profile_headers": cfg.validate_profile_headers,
+        "skill_watchdog_enabled": cfg.skill_watchdog_enabled,
         "profiles": {
             name: {
                 "api_mode": profile.api_mode,
                 "base_url": profile.base_url,
                 "model": profile.model,
                 "models": list(profile.models or [profile.model]),
+                "model_aliases": dict(profile.model_aliases or {}),
                 "api_key": redact_secret(profile.api_key),
+                "send_temperature": profile.send_temperature,
+                "send_top_p": profile.send_top_p,
             }
             for name, profile in sorted(cfg.profiles.items())
         },
@@ -2279,6 +2396,10 @@ def _redacted_config_toml(cfg: object) -> str:
         "# Secret values are not included.",
         f"default_profile = {_toml_string(cfg.default_profile)}",
         f"theme = {_toml_string(cfg.theme)}",
+        f"app_icon = {_toml_string(cfg.app_icon)}",
+        f"chat_background_image = {_toml_string(cfg.chat_background_image)}",
+        f"validate_profile_headers = {str(cfg.validate_profile_headers).lower()}",
+        f"skill_watchdog_enabled = {str(cfg.skill_watchdog_enabled).lower()}",
         f"default_system_prompt = {_toml_string(cfg.default_system_prompt)}",
         f"max_history_messages = {cfg.max_history_messages}",
         "",
@@ -2307,6 +2428,8 @@ def _redacted_config_toml(cfg: object) -> str:
         lines.append(f"timeout_seconds = {profile.timeout_seconds}")
         lines.append(f"stream = {str(profile.stream).lower()}")
         lines.append(f"api_mode = {_toml_string(profile.api_mode)}")
+        lines.append(f"send_temperature = {str(profile.send_temperature).lower()}")
+        lines.append(f"send_top_p = {str(profile.send_top_p).lower()}")
         if profile.extra_headers:
             lines.append("")
             lines.append(f"[profiles.{_toml_key(name)}.headers]")
@@ -2314,6 +2437,11 @@ def _redacted_config_toml(cfg: object) -> str:
                 lines.append(
                     f"{_toml_key(header)} = {_toml_string(_redacted_header_value(header, value))}"
                 )
+        if profile.model_aliases:
+            lines.append("")
+            lines.append(f"[profiles.{_toml_key(name)}.model_aliases]")
+            for alias, model in sorted(profile.model_aliases.items()):
+                lines.append(f"{_toml_key(alias)} = {_toml_string(model)}")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 

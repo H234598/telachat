@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-25" "Telachat 0.44.0" "User Commands"
+.TH TELACHAT 1 "2026-05-26" "Telachat 0.57.1" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -32,20 +32,23 @@ Show configured model IDs per profile without network access. Use
 Check local configuration, model metadata, and secret references without an API
 request. Use \fB--profile NAME\fR to check one profile. Use \fB--strict\fR to
 fail when checked non-Codex provider secret sources are missing. Use
-\fB--json\fR for redacted structured output.
+\fB--json\fR for redacted structured output. The output also reports whether
+global profile-header validation is enabled.
 .TP
 .B theme
 Show or set the persistent GUI theme. Supported themes are \fIsystem\fR,
 \fIlight\fR, \fIdark\fR, \fIhigh-contrast\fR, \fIsolarized-light\fR,
 \fIsolarized-dark\fR, \fInord\fR, \fIdracula\fR, \fIgruvbox\fR, \fIocean\fR,
-\fIforest\fR, and \fIrose\fR. The environment variable \fBTELACHAT_THEME\fR
+\fIforest\fR, \fIrose\fR, \fIgraphite-glass\fR, \fIliquid-chrome\fR,
+\fIblack-ice\fR, and \fIbrushed-steel\fR. The environment variable \fBTELACHAT_THEME\fR
 overrides the config for one process; \fBTELACHAT_SYSTEM_THEME\fR only fixes
 system-palette detection for one process.
 The same setting can be changed inside interactive chat with \fB/theme NAME\fR.
 .TP
 .B templates
-List configured prompt templates. Use \fB--json\fR for a structured template
-inventory with preview and size metadata.
+List configured prompt templates. Templates support \fB{input}\fR,
+\fB{date}\fR, \fB{time}\fR, and \fB{datetime}\fR. Use \fB--json\fR for a
+structured template inventory with preview, size, and variable metadata.
 .TP
 .B folders
 List or manage chat folders, folder-level system prompts, and optional
@@ -54,7 +57,8 @@ or \fB--clear-backend FOLDER\fR for provider/model defaults. Use \fB--json\fR
 for structured output; system prompts are included only with \fB--show-system\fR.
 .TP
 .B ask
-Send a single prompt.
+Send a single prompt. Use \fB--json\fR for a structured one-shot response with
+profile, model, and token usage when the provider reports it.
 .TP
 .B chat
 Start an interactive CLI chat.
@@ -68,8 +72,8 @@ output.
 .TP
 .B stats
 Show local history inventory without message content. Counts sessions,
-messages, folders, tags, profiles, and models. Use \fB--json\fR for
-structured output.
+messages, folders, tags, profiles, models, and stored provider token usage
+when available. Use \fB--json\fR for structured output.
 .TP
 .B context
 Estimate one session's next-request context size without message content.
@@ -113,6 +117,11 @@ Create a local ZIP backup containing a consistent SQLite history copy,
 \fIconfig.redacted.toml\fR, and \fImanifest.json\fR. Raw API keys and envfiles are
 not included.
 .TP
+.B packaging/linux/install-telachat.sh
+When run from a source checkout or release bundle, install the zipapp, launchers,
+manpages, Freedesktop desktop entry, icon, and optional desktop shortcut under a
+configurable Linux prefix.
+.TP
 .B restore, import-backup
 Import the history from a Telachat backup ZIP into the existing SQLite database.
 Existing sessions are not overwritten; imported sessions receive new IDs. Use
@@ -121,6 +130,10 @@ Existing sessions are not overwritten; imported sessions receive new IDs. Use
 .B doctor
 Check profile configuration and the configured API. Use \fB--json\fR for
 redacted structured output.
+.TP
+.B skill-watchdog
+Compact oversized Codex Skill frontmatter descriptions to a loader-compatible
+length while preserving the Skill body. Use \fB--json\fR for structured output.
 .TP
 .B gtk, gui
 Start the GTK desktop frontend.
@@ -132,22 +145,24 @@ Start the Tk desktop frontend.
 telachat doctor --chat
 telachat --version
 telachat models
-telachat models --live -p tki --json
+telachat models --live -p huggingface --json
 telachat config-check
 telachat config-check --strict
-telachat config-check --profile tki --strict
+telachat config-check --profile huggingface --strict
 telachat config-check --json
 telachat doctor --json --chat
+telachat skill-watchdog --json
 telachat theme dark
 telachat chat
 /theme dracula
-telachat ask -p tki "Hallo"
+telachat ask -p huggingface -m TKI "Hallo"
 telachat ask -p openai -m gpt-5.5 --reasoning-effort high "Hallo"
+telachat ask --json "Hallo"
 telachat templates
 telachat templates --json
 telachat ask --template summarize "Langer Text"
 telachat folders --create Arbeit --system "Antworte projektbezogen."
-telachat folders --set-backend Arbeit tki Qwen/Qwen2.5-1.5B-Instruct
+telachat folders --set-backend Arbeit huggingface TKI
 telachat sessions --json
 telachat stats --json
 telachat context SESSION_ID --json
@@ -178,6 +193,7 @@ completes the current command.
 .PP
 .nf
 /help
+/shortcuts
 /new [Titel]
 /rename TITLE
 /delete
@@ -208,6 +224,7 @@ completes the current command.
 /find TEXT
 /provider NAME
 /model NAME
+/models [live]
 /permissions
 /left
 /system [prompt]

@@ -30,6 +30,10 @@ class ThemeTests(unittest.TestCase):
                 "ocean",
                 "forest",
                 "rose",
+                "graphite-glass",
+                "liquid-chrome",
+                "black-ice",
+                "brushed-steel",
             ),
             choices,
         )
@@ -57,6 +61,10 @@ class ThemeTests(unittest.TestCase):
             "solarized": "solarized-light",
             "gruvbox-dark": "gruvbox",
             "oceanic": "ocean",
+            "glass": "graphite-glass",
+            "chrome": "liquid-chrome",
+            "ice": "black-ice",
+            "metallic": "brushed-steel",
         }
         for raw, expected in cases.items():
             with self.subTest(raw=raw):

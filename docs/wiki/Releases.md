@@ -1,5 +1,223 @@
 # Releases
 
+## Unreleased
+
+## 0.57.1 - 2026-05-26
+
+- Stellt die sichtbare Seitenleistenaktion `Neu` in Tk und GTK wieder her,
+  waehrend `Regenerieren` und `Check` als Schnellaktionen erhalten bleiben.
+- Richtet die Tk-Seitenleistenzeilen ueber Konstanten aus, damit die Chatliste
+  nach der zusaetzlichen Schnellaktionszeile weiter korrekt mitwaechst.
+
+## 0.57.0 - 2026-05-26
+
+- Ergaenzt eine gemeinsame Tastenkuerzel-Hilfe fuer CLI, Tk und GTK ueber
+  `/shortcuts` und Alias `/keys`.
+- Ergaenzt `Ctrl+/` im GUI-Prompt, um die Tastenkuerzel-Uebersicht direkt zu
+  oeffnen.
+
+## 0.56.0 - 2026-05-26
+
+- Baut den Tk- und GTK-Chatkopf zu einem kompakten, mittigen Titel mit linken
+  und rechten Pfeil-Toggles fuer die Seitenbereiche um.
+- Ermoeglicht das Umbenennen der aktuellen Unterhaltung per Doppelklick auf
+  den mittigen Titel.
+- Verschiebt die sichtbare Seitenleistenaktion `Regenerieren` an die alte
+  `Neu`-Position; neue Unterhaltungen bleiben ueber Menue, Slash-Befehl und
+  Kontextfluesse erreichbar.
+- Fuegt `AGENTS.md` als kompakten Repository-Leitfaden fuer zukuenftige
+  Contributors und Coding Agents hinzu.
+
+## 0.55.0 - 2026-05-26
+
+- Fuegt in Tk und GTK kopierbare Fehlerfenster fuer Providerfehler hinzu,
+  damit lange Codex-/OpenAI-/HuggingFace-Fehlermeldungen markiert und kopiert
+  werden koennen.
+
+## 0.54.3 - 2026-05-26
+
+- Ueberspringt die Linux-Shell-Starter-Ausfuehrung auf Windows-CI, behaelt die
+  Installer-Abdeckung aber auf POSIX-Hosts bei.
+- Erhaelt die runtime-seitige `$SNAP`-Mountvariable in generierten
+  Snap-Startern und ergaenzt einen Regressionstest dafuer.
+
+## 0.54.2 - 2026-05-26
+
+- Macht die RPM-Build-Verzeichnisanlage POSIX-sh-kompatibel, damit
+  Ubuntu/dash-CI-Runner den erwarteten `dist/rpm/SOURCES`-Baum erzeugen.
+
+## 0.54.1 - 2026-05-26
+
+- Macht RPM-Builds auf Nicht-RPM-CI-Hosts robuster, indem das Build-Script
+  RPM-Datenbank-Abhaengigkeitspruefungen ueberspringt, die Spec-Metadaten aber
+  beibehaelt.
+- Verbessert den Linux-Packaging-Test, damit entfernte RPM-Buildfehler stdout
+  und stderr anzeigen.
+
+## 0.54.0 - 2026-05-26
+
+- Ergaenzt einen Linux-Installer, der Zipapp, Starter, Manpages,
+  Freedesktop-Desktopdatei, Icon und optionale Desktop-Verknuepfung unter einem
+  waehlbaren Prefix installiert.
+- Ergaenzt RPM-Paketbau und einen periodischen Linux-Release-Packaging-Workflow.
+- Ergaenzt eine Snapcraft-Datei fuer optionale Snap-Builds, falls Snapcraft im
+  Build-Umfeld verfuegbar ist.
+
+## 0.53.1 - 2026-05-26
+
+- Stellt den sicheren Opt-in-Default fuer den Skill-Watchdog nach der
+  Regression in `0.53.0` wieder her.
+- Sichert den Low-Level-Hintergrundstart wieder ueber
+  `TELACHAT_ENABLE_SKILL_WATCHDOG=1`, damit Tests und GUI-Starts keine
+  externen Codex-Skill-Dateien ohne explizite Aktivierung veraendern.
+
+## 0.53.0 - 2026-05-26
+
+- Ergaenzt in Tk eine Ordner-/Chat-Exploreransicht mit aufklappbaren
+  Ordnerzeilen.
+- Fuegt ein Tk-Rechtsklickmenue fuer Chat-, Ordner- und Leerraumaktionen hinzu.
+- Laesst Tk und GTK beim Neu-Anlegen zuerst den Unterhaltungsnamen abfragen.
+- Fuegt die Skill-Watchdog-Option in den neuen Tk/GTK-Einstellungen hinzu.
+
+## 0.52.1 - 2026-05-26
+
+- Stellt temporaer den sicheren Skill-Watchdog-Default wieder her: neue
+  Konfigurationen bleiben aus, bis `skill_watchdog_enabled = true` gesetzt wird.
+- Macht die Default-Konfiguration wieder mit Python 3.11 kompatibel.
+
+## 0.52.0 - 2026-05-26
+
+- Ergaenzt ein echtes Tk-Optionsmenue und ein GTK-Preferences-Fenster fuer
+  persistente GUI-Einstellungen.
+- Speichert `app_icon`, `chat_background_image` und `skill_watchdog_enabled`
+  in `config.toml`.
+- Importiert die bereitgestellten SVG-Icons, liefert PNG-Renderings mit und
+  ergaenzt einen stuendlich rotierenden Zufallsmodus.
+- Haelt den Skill-Watchdog in Tk/GTK standardmaessig aktiv, aber abschaltbar
+  ueber GUI, `config.toml` oder `TELACHAT_DISABLE_SKILL_WATCHDOG=1`.
+
+## 0.51.1 - 2026-05-26
+
+- Korrigiert die Skill-Watchdog-Dokumentation, damit sie zum implementierten
+  Default-Start in Tk/GTK passt.
+
+## 0.51.0 - 2026-05-26
+
+- Erweitert den GUI-Theme-Katalog um metallisch/glaeserne Paletten:
+  `graphite-glass`, `liquid-chrome`, `black-ice` und `brushed-steel`.
+- Startet den Tk/GTK-Skill-Watchdog standardmaessig; abschaltbar bleibt er mit
+  `TELACHAT_DISABLE_SKILL_WATCHDOG=1`.
+
+## 0.50.0 - 2026-05-26
+
+- Ergaenzt `telachat skill-watchdog` plus Tk/GTK-Startwatchdog, der
+  ueberlange Codex-Skill-Frontmatter-Descriptions kuerzt, aber den Skill-Body
+  erhaelt.
+
+## 0.49.0 - 2026-05-26
+
+- Entfernt den doppelten Default-Provider `tki`; alte Referenzen werden weiter
+  als Alias auf `huggingface` aufgeloest.
+- Zeigt im HuggingFace-Profil den Modellalias `TKI`, sendet intern aber weiter
+  die echte Qwen-Modell-ID.
+- Profile koennen `temperature` und `top_p` aus API-Requests weglassen; das
+  OpenAI-Responses-Profil deaktiviert beide standardmaessig fuer GPT-5.x-
+  Kompatibilitaet.
+- Haertet das Windows-Packaging gegen unbrauchbare Microsoft-Store-Python-
+  Aliasse und ergaenzt ein wiederverwendbares Windows-Testskript.
+- Erzeugt versionierte portable Windows-ZIP- und NSIS-Installer-Artefakte mit
+  SHA256-Sidecars.
+- Deckt Windows-CI-Packaging und Release-Upload-Validierung ohne direkte
+  Wildcard-Uploads ab.
+- Haelt Windows-Pfadtests mit escape-aehnlichen Sequenzen in temporaeren
+  Verzeichnissen.
+
+## 0.48.1 - 2026-05-25
+
+- Ergaenzt direkte GUI-Regression-Coverage fuer `/models` und `/models live`
+  in Tk und GTK.
+- Validiert konfigurierte Profil-Headernamen und -Werte, bevor sie mit
+  API-Requests gesendet werden.
+- Ergaenzt die persistente Option `validate_profile_headers` plus Tk/GTK-
+  Einstellungen, um die strikte Standard-Headernamen-Pruefung fuer bewusst
+  ungewoehnliche Provider abzuschalten; Steuerzeichen bleiben abgelehnt.
+
+## 0.48.0 - 2026-05-25
+
+- Ergaenzt `/models [live]` im gemeinsamen Slash-Katalog, im CLI-Chat und in
+  beiden Desktop-Frontends.
+- Zeigt ohne Netzaufruf die konfigurierten Modelle des aktiven Providers oder
+  startet mit `/models live` den bestehenden Live-Modellcheck.
+- Ergaenzt Completion- und Regression-Coverage fuer den neuen interaktiven
+  Modellbefehl.
+- Enthaelt direkte Korrektur-Coverage, damit der Release-Upload-Guard auch
+  PowerShell-Fortsetzungszeilen verfolgt.
+
+## 0.47.5 - 2026-05-25
+
+- Ignoriert negative Token-Usage-Werte beim Formatieren und Persistieren von
+  Provider-Metadaten.
+- Behaelt valide Nullwerte in strukturierten Usage-Records, ohne irrefuehrende
+  Textausgabe fuer leere Detailwerte zu erzeugen.
+- Ergaenzt Regression-Coverage fuer ungueltige Usage-Metadaten in lokalen
+  Statistiken und Client-Formatierung.
+
+## 0.47.4 - 2026-05-25
+
+- Gibt aus `ChatStore.add_message()` eine gespeicherte Metadata-Kopie zurueck,
+  damit spaetere Dict-Mutationen am Aufruferobjekt den Message-Zustand nicht
+  nachtraeglich veraendern.
+- Ergaenzt Regression-Coverage, dass gespeicherte Message-Metadaten gegen
+  Mutationen an Eingabe- und Rueckgabe-Dicts isoliert bleiben.
+
+## 0.47.3 - 2026-05-25
+
+- Ergaenzt Regression-Coverage, dass Assistant-Usage-Metadaten beim Forken von
+  Sessions erhalten bleiben.
+- Ergaenzt Regression-Coverage, dass additive History-Imports Usage-Metadaten
+  aus bestehenden SQLite-Historien erhalten.
+- Ergaenzt Regression-Coverage, dass geloeschte Assistant-Nachrichten ihre
+  Usage-Metadaten im Rueckgabewert behalten.
+
+## 0.47.2 - 2026-05-25
+
+- Ergaenzt einen Workflow-Regressionstest, der rohe Wildcards direkt in
+  `gh release upload`-Kommandos verhindert.
+- Sichert damit den bei Windows-Packaging-PRs gefundenen Release-Upload-
+  Blocker dauerhaft ab.
+
+## 0.47.1 - 2026-05-25
+
+- Ergaenzt eine Legacy-SQLite-Migration fuer sehr alte `messages`-Tabellen ohne
+  `metadata`-Spalte.
+- Deckt die Migration mit einem Regressionstest ab, damit Usage-Metadaten auch
+  auf alten Historien sicher gespeichert werden koennen.
+
+## 0.47.0 - 2026-05-25
+
+- Speichert Provider-Token-Usage an Assistant-Nachrichten, wenn der Provider
+  Usage-Daten meldet.
+- `telachat stats` und `stats --json` aggregieren gespeicherte Input-/Output-/
+  Total-Tokens content-frei.
+
+## 0.46.0 - 2026-05-25
+
+- Prompt-Templates unterstuetzen jetzt `{date}`, `{time}` und `{datetime}`
+  zusaetzlich zu `{input}`.
+- `telachat templates --json` meldet die verwendeten eingebauten Variablen pro
+  Template.
+
+## 0.45.1 - 2026-05-25
+
+- Ergaenzt Regression-Coverage fuer `telachat ask --json --save`: die Session
+  wird gespeichert, `saved_session_id` wird ausgegeben, und stderr bleibt ruhig.
+
+## 0.45.0 - 2026-05-25
+
+- `telachat ask --json` gibt One-Shot-Antworten maschinenlesbar mit Provider,
+  Modell und verfuegbaren Usage-Metadaten aus.
+- Tracked-Source-Secret-Hygiene wird nun ueber einen Regressionstest bewacht.
+
 ## 0.44.0 - 2026-05-25
 
 - Zeigt Provider-Usage-Daten aus Chat-Completions- und Responses-Antworten in
