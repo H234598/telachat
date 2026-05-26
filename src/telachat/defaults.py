@@ -9,7 +9,7 @@ DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
 DEFAULT_THEME = "system"
 DEFAULT_APP_ICON = "system"
 DEFAULT_CHAT_BACKGROUND_IMAGE = ""
-DEFAULT_SKILL_WATCHDOG_ENABLED = True
+DEFAULT_SKILL_WATCHDOG_ENABLED = False
 DEFAULT_SYSTEM_PROMPT = (
     "Du bist Telachat, ein direkter, praktischer KI-Assistent. "
     "Antworte in der Sprache des Nutzers, rechne sorgfaeltig und erfinde "
@@ -19,6 +19,22 @@ DEFAULT_PROMPT_TEMPLATES = {
     "summarize": "Fasse den folgenden Inhalt strukturiert zusammen:\n\n{input}",
     "explain": "Erklaere das knapp, praktisch und mit einem Beispiel:\n\n{input}",
     "translate_de": "Uebersetze ins Deutsche und erhalte Fachbegriffe, wenn sinnvoll:\n\n{input}",
+}
+
+
+def _default_config_template(value: str) -> str:
+    return (
+        value.replace("\\", "\\\\")
+        .replace("\n", "\\n")
+        .replace('"', '\\"')
+        .replace("{", "{{")
+        .replace("}", "}}")
+    )
+
+
+_DEFAULT_CONFIG_PROMPT_TEMPLATES = {
+    name: _default_config_template(value)
+    for name, value in DEFAULT_PROMPT_TEMPLATES.items()
 }
 
 DEFAULT_CONFIG = f"""# Telachat configuration.
@@ -35,15 +51,15 @@ theme = "{DEFAULT_THEME}"
 app_icon = "{DEFAULT_APP_ICON}"
 chat_background_image = "{DEFAULT_CHAT_BACKGROUND_IMAGE}"
 validate_profile_headers = true
-skill_watchdog_enabled = true
+skill_watchdog_enabled = false
 default_system_prompt = "{DEFAULT_SYSTEM_PROMPT}"
 max_history_messages = 24
 
 [prompt_templates]
 # Supported variables: {{input}}, {{date}}, {{time}}, {{datetime}}.
-summarize = "{DEFAULT_PROMPT_TEMPLATES["summarize"].replace(chr(10), "\\n").replace("{", "{{").replace("}", "}}")}"
-explain = "{DEFAULT_PROMPT_TEMPLATES["explain"].replace(chr(10), "\\n").replace("{", "{{").replace("}", "}}")}"
-translate_de = "{DEFAULT_PROMPT_TEMPLATES["translate_de"].replace(chr(10), "\\n").replace("{", "{{").replace("}", "}}")}"
+summarize = "{_DEFAULT_CONFIG_PROMPT_TEMPLATES["summarize"]}"
+explain = "{_DEFAULT_CONFIG_PROMPT_TEMPLATES["explain"]}"
+translate_de = "{_DEFAULT_CONFIG_PROMPT_TEMPLATES["translate_de"]}"
 
 [profiles.huggingface]
 label = "HuggingFace"

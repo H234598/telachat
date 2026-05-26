@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Stellt den sicheren Skill-Watchdog-Default wieder her: neue Konfigurationen
+  bleiben aus, bis `skill_watchdog_enabled = true` gesetzt wird.
+- Macht die Default-Konfiguration wieder mit Python 3.11 kompatibel.
+
 ## 0.52.0 - 2026-05-26
 
 - Ergaenzt ein echtes Tk-Optionsmenue und ein GTK-Preferences-Fenster fuer

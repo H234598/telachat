@@ -296,9 +296,9 @@ wenn eine nicht-lokale Secret-Quelle fehlt.
 `skill-watchdog` kuerzt ueberlange Codex-Skill-Frontmatter-`description`-
 Felder auf Loader-kompatible Laenge, legt Backups als
 `SKILL.md.telachat-watchdog.bak` an und laesst den Skill-Body erhalten. Tk/GTK
-starten den Lauf beim App-Start und danach stuendlich.
-`skill_watchdog_enabled = false` in `config.toml` oder
-`TELACHAT_DISABLE_SKILL_WATCHDOG=1` deaktiviert ihn.
+starten den Lauf nur mit `skill_watchdog_enabled = true`; dann laeuft er beim
+App-Start und danach stuendlich. `TELACHAT_DISABLE_SKILL_WATCHDOG=1`
+deaktiviert ihn auch dann.
 
 Manpages:
 
