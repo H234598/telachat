@@ -57,6 +57,9 @@ sed "s|@TELACHAT_EXEC@|telachat-gui|g" packaging/linux/telachat.desktop.in \
 %{_mandir}/man1/telachat-gtk.1*
 
 %changelog
+* Tue May 26 2026 Teladi <teladi@example.invalid> - 0.73.1-1
+- Use target profile default model for GUI folder-backend profile commands.
+
 * Tue May 26 2026 Teladi <teladi@example.invalid> - 0.73.0-1
 - Add folder-backend slash command for folder default backends.
 - Keep CLI folder prompt/context updates live for the next chat request.

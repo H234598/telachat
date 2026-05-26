@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.73.1 - 2026-05-26
+
 - Laesst GUI `/folder-backend PROFILE` das Default-Modell dieses Profils
   verwenden, statt es mit dem vorher ausgewaehlten Modell zu kombinieren.
 

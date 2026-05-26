@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.73.1 - 2026-05-26
+
 - Makes GUI `/folder-backend PROFILE` use that profile's default model instead
   of pairing it with the previously selected model.
 
