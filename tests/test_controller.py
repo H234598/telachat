@@ -304,6 +304,34 @@ class ControllerTests(unittest.TestCase):
                         from_effective_prompt=True,
                     )
                     self.assertEqual(folder.system_prompt, "Projektkontext")
+                    legacy = controller.create_folder(
+                        "Legacy",
+                        system_prompt="Altkontext\n\nOrdner-Kontext:\nAltwissen",
+                        context="Altwissen",
+                    )
+                    self.assertEqual(
+                        controller.folder_system_prompt_for_edit(legacy.id),
+                        "Altkontext",
+                    )
+                    self.assertEqual(
+                        controller.folder_system_prompt(legacy.id),
+                        "Altkontext\n\nOrdner-Kontext:\nAltwissen",
+                    )
+                    self.assertEqual(
+                        controller.resolve_system_prompt(
+                            "Altkontext\n\nOrdner-Kontext:\nAltwissen",
+                            legacy.id,
+                        ),
+                        "Altkontext\n\nOrdner-Kontext:\nAltwissen",
+                    )
+                    legacy_session, _messages = controller.new_session(
+                        system_prompt=None,
+                        folder_id=legacy.id,
+                    )
+                    self.assertEqual(
+                        legacy_session.system_prompt,
+                        "Altkontext\n\nOrdner-Kontext:\nAltwissen",
+                    )
                     self.assertEqual(session.profile, "test")
                     self.assertEqual(session.model, "demo-large")
                     explicit_same, _messages = controller.new_session(
