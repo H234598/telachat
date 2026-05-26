@@ -23,6 +23,7 @@ from .commands import (
     format_context_lines,
     format_message_matches,
     format_stats_lines,
+    keyboard_shortcut_help,
     slash_command_help,
     slash_command_name_suggestions,
 )
@@ -1920,6 +1921,8 @@ def _handle_command(
         return False, cfg, profile, system_prompt, session
     if command == "/help":
         print(slash_command_help())
+    elif command == "/shortcuts":
+        print(keyboard_shortcut_help())
     elif command == "/new":
         title = rest or "Neue Unterhaltung"
         session = store.create_session(

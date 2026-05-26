@@ -29,6 +29,7 @@ class ContextEstimate:
 
 SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/help", "/help", "Befehle anzeigen", aliases=("/hilfe",)),
+    SlashCommand("/shortcuts", "/shortcuts", "Tastenkuerzel anzeigen", aliases=("/keys",)),
     SlashCommand("/new", "/new [Titel]", "Neue Session starten", aliases=("/neu",)),
     SlashCommand("/rename", "/rename TITLE", "Aktuellen Chat umbenennen"),
     SlashCommand("/delete", "/delete", "Aktuellen Chat loeschen"),
@@ -78,11 +79,28 @@ SLASH_COMMANDS: tuple[SlashCommand, ...] = (
     SlashCommand("/exit", "/exit", "Chat beenden", aliases=("/quit", "/q")),
 )
 
+KEYBOARD_SHORTCUTS: tuple[tuple[str, str], ...] = (
+    ("Shift+Enter", "Nachricht senden"),
+    ("Ctrl+Enter", "Nachricht senden"),
+    ("Tab", "Slash-Befehl vervollstaendigen"),
+    ("Esc", "Slash-Vorschlaege ausblenden"),
+    ("Ctrl+/", "Tastenkuerzel anzeigen"),
+    ("Doppelklick auf Titel", "Aktuelle Unterhaltung umbenennen"),
+)
+
 
 def slash_command_help() -> str:
     width = max(len(item.usage) for item in SLASH_COMMANDS)
     return "\n".join(
         f"{item.usage:<{width}}  {item.description}" for item in SLASH_COMMANDS
+    )
+
+
+def keyboard_shortcut_help() -> str:
+    width = max(len(keys) for keys, _description in KEYBOARD_SHORTCUTS)
+    return "\n".join(
+        f"{keys:<{width}}  {description}"
+        for keys, description in KEYBOARD_SHORTCUTS
     )
 
 

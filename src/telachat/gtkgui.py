@@ -22,6 +22,7 @@ from .commands import (
     format_message_matches,
     format_stats_lines,
     format_stats_summary,
+    keyboard_shortcut_help,
     slash_command_help,
     slash_command_suggestions,
 )
@@ -1003,6 +1004,9 @@ class GtkTelachatApp(Adw.Application):
         state: Gdk.ModifierType,
     ) -> bool:
         enter_pressed = keyval in {Gdk.KEY_Return, Gdk.KEY_KP_Enter}
+        if keyval == Gdk.KEY_slash and state & Gdk.ModifierType.CONTROL_MASK:
+            self.show_shortcuts()
+            return True
         if keyval == Gdk.KEY_Escape:
             self.hide_command_suggestions()
             return False
@@ -1508,6 +1512,8 @@ class GtkTelachatApp(Adw.Application):
             dialog.add_response("ok", "OK")
             dialog.present()
             self.status.set_text(format_stats_summary(stats))
+        elif command == "/shortcuts":
+            self.show_shortcuts()
         elif command == "/context":
             estimate = estimate_context(
                 self.messages,
@@ -1694,6 +1700,15 @@ class GtkTelachatApp(Adw.Application):
             self.settings.set_visible(not self.settings.get_visible())
         else:
             self.status.set_text(f"Unbekanntes Kommando: {command}")
+
+    def show_shortcuts(self) -> None:
+        dialog = Adw.MessageDialog.new(
+            self.window,
+            "Telachat Tastenkuerzel",
+            keyboard_shortcut_help(),
+        )
+        dialog.add_response("ok", "OK")
+        dialog.present()
 
     def on_export(self, _button: Gtk.Button) -> None:
         if not self.active_session:

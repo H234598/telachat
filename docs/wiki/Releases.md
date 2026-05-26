@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.57.0 - 2026-05-26
+
+- Ergaenzt eine gemeinsame Tastenkuerzel-Hilfe fuer CLI, Tk und GTK ueber
+  `/shortcuts` und Alias `/keys`.
+- Ergaenzt `Ctrl+/` im GUI-Prompt, um die Tastenkuerzel-Uebersicht direkt zu
+  oeffnen.
+
 ## 0.56.0 - 2026-05-26
 
 - Baut den Tk- und GTK-Chatkopf zu einem kompakten, mittigen Titel mit linken

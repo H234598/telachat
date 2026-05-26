@@ -32,6 +32,7 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
   Modellauswahl mit den gemeldeten IDs.
 - `Shift+Enter` sendet eine Nachricht.
 - `Enter` fuegt einen Zeilenumbruch ein.
+- `Ctrl+/` zeigt die Tastenkuerzel-Uebersicht.
 - Slash-Befehle zeigen beim Tippen Vorschlaege.
 - `Tab` vervollstaendigt den aktuellen Slash-Befehl.
 - `/edit-last TEXT` ersetzt die letzte Nutzernachricht und entfernt die danach

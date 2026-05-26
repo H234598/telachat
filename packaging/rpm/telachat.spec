@@ -1,5 +1,5 @@
 %global appname telachat
-%global appversion %{?_version}%{!?_version:0.56.0}
+%global appversion %{?_version}%{!?_version:0.57.0}
 
 Name:           %{appname}
 Version:        %{appversion}
@@ -57,6 +57,9 @@ sed "s|@TELACHAT_EXEC@|telachat-gui|g" packaging/linux/telachat.desktop.in \
 %{_mandir}/man1/telachat-gtk.1*
 
 %changelog
+* Tue May 26 2026 Teladi <teladi@example.invalid> - 0.57.0-1
+- Add shared shortcut help for CLI and GUI prompts.
+
 * Tue May 26 2026 Teladi <teladi@example.invalid> - 0.56.0-1
 - Add compact GUI chat headers with arrow pane toggles.
 

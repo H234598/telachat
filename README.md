@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.56.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.57.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -99,6 +99,7 @@ Im Texteingabefeld funktioniert auch eine kleine Kommandozeile:
 `Shift+Enter` schickt die Nachricht ab, normales `Enter` bleibt fuer
 Zeilenumbrueche. Beim Tippen von Slash-Befehlen zeigen GTK und Tk sofort
 Vorschlaege; `Tab` vervollstaendigt den aktuellen Befehl.
+Mit `/shortcuts` oder `Ctrl+/` zeigt Telachat die wichtigsten Tastenkuerzel.
 Mit `/edit-last TEXT` wird die letzte Nutzernachricht ersetzt und die danach
 liegende KI-Antwort entfernt; `/regen` erzeugt danach eine neue Antwort.
 Mit `/fork [TITLE]` wird die aktuelle Unterhaltung als neuer Chat kopiert, so
@@ -106,6 +107,7 @@ dass Varianten ausprobiert werden koennen, ohne den Originalverlauf zu aendern.
 
 ```text
 /help
+/shortcuts
 /new
 /rename TITLE
 /delete

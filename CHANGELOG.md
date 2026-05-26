@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.57.0 - 2026-05-26
+
+- Adds shared keyboard-shortcut help for CLI, Tk, and GTK via `/shortcuts`
+  and alias `/keys`.
+- Adds `Ctrl+/` in the GUI prompt to open the shortcut overview.
+
 ## 0.56.0 - 2026-05-26
 
 - Reworks the Tk and GTK chat header into a compact centered title with

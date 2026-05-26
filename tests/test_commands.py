@@ -12,6 +12,7 @@ from telachat.commands import (
     format_message_matches,
     format_stats_lines,
     format_stats_summary,
+    keyboard_shortcut_help,
     slash_command_help,
     slash_command_name_suggestions,
     slash_command_suggestions,
@@ -47,9 +48,17 @@ class CommandCatalogTests(unittest.TestCase):
         self.assertIn("/stats", help_text)
         self.assertIn("/context", help_text)
         self.assertIn("/doctor", help_text)
+        self.assertIn("/shortcuts", help_text)
+
+    def test_keyboard_shortcut_help_lists_prompt_controls(self) -> None:
+        help_text = keyboard_shortcut_help()
+        self.assertIn("Shift+Enter", help_text)
+        self.assertIn("Ctrl+/", help_text)
+        self.assertIn("Slash-Befehl", help_text)
 
     def test_command_name_suggestions_include_aliases(self) -> None:
         self.assertIn("/permissions", slash_command_name_suggestions("/per"))
+        self.assertIn("/keys", slash_command_name_suggestions("/ke"))
         self.assertIn("/theme", slash_command_name_suggestions("/the"))
         self.assertIn("/stats", slash_command_name_suggestions("/sta"))
         self.assertIn("/models", slash_command_name_suggestions("/mod"))
@@ -58,6 +67,7 @@ class CommandCatalogTests(unittest.TestCase):
         self.assertIn("/quit", slash_command_name_suggestions("/qu"))
         self.assertEqual(canonical_slash_command("/ablegen"), "/move")
         self.assertEqual(canonical_slash_command("/edit"), "/edit-last")
+        self.assertEqual(canonical_slash_command("/keys"), "/shortcuts")
 
     def test_declared_aliases_resolve_to_canonical_commands(self) -> None:
         for command in SLASH_COMMANDS:

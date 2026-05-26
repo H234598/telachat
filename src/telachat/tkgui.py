@@ -18,6 +18,7 @@ from .commands import (
     format_message_matches,
     format_stats_lines,
     format_stats_summary,
+    keyboard_shortcut_help,
     slash_command_help,
     slash_command_suggestions,
 )
@@ -315,6 +316,7 @@ class TkTelachatApp:
         self.input_text.bind("<Control-KP_Enter>", self._send_from_shortcut)
         self.input_text.bind("<Shift-Return>", self._send_from_shortcut)
         self.input_text.bind("<Shift-KP_Enter>", self._send_from_shortcut)
+        self.input_text.bind("<Control-slash>", self._show_shortcuts_from_shortcut)
         self.input_text.bind("<KeyRelease>", self.on_input_changed)
         self.input_text.bind("<Tab>", self.complete_slash_command)
         self.input_text.bind("<Escape>", self.hide_command_suggestions)
@@ -943,6 +945,13 @@ class TkTelachatApp:
         self.send_message()
         return "break"
 
+    def _show_shortcuts_from_shortcut(self, _event: object) -> str:
+        self.show_shortcuts()
+        return "break"
+
+    def show_shortcuts(self) -> None:
+        messagebox.showinfo("Telachat Tastenkuerzel", keyboard_shortcut_help())
+
     def on_input_changed(self, event: object) -> None:
         key = getattr(event, "keysym", "")
         if key in {"Tab", "Return", "KP_Enter", "Escape", "Shift_L", "Shift_R", "Control_L", "Control_R"}:
@@ -1522,6 +1531,8 @@ class TkTelachatApp:
                 "\n".join(format_stats_lines(stats, include_database=False)),
             )
             self.set_status(format_stats_summary(stats))
+        elif command == "/shortcuts":
+            self.show_shortcuts()
         elif command == "/context":
             estimate = estimate_context(
                 self.messages,

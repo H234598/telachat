@@ -118,6 +118,7 @@ telachat import-folder projekt.json --dry-run --json
 Im interaktiven Chat funktionieren unter anderem:
 
 ```text
+/shortcuts
 /new
 /rename TITLE
 /delete
@@ -152,6 +153,7 @@ Im interaktiven Chat funktionieren unter anderem:
 Wenn `telachat chat` in einem echten Terminal laeuft, vervollstaendigt `Tab`
 Slash-Befehle und Kontextwerte wie Provider, Modelle, Templates, Ordner,
 Session-Referenzen und Sortiermodi.
+`/shortcuts` zeigt die wichtigsten Tastaturbefehle.
 `/edit-last TEXT` ersetzt die letzte Nutzernachricht, entfernt danach liegende
 Antworten und laesst dich mit `/regen` neu generieren.
 `/fork [TITLE]` kopiert den aktuellen Chat in eine neue Session und laedt diese

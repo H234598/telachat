@@ -1513,6 +1513,7 @@ X-Test-Header = "yes"
                         "/provider openai",
                         "/models",
                         "/models live",
+                        "/shortcuts",
                         "/model gpt-5.5",
                         "/doctor",
                         "/theme dracula",
@@ -1540,6 +1541,7 @@ X-Test-Header = "yes"
                 self.assertIn("Aktiv: openai", text)
                 self.assertIn("/models: configured (gpt-5.5", text)
                 self.assertIn("/models: live (gpt-test)", text)
+                self.assertIn("Shift+Enter", text)
                 self.assertIn("Modell: gpt-5.5", text)
                 self.assertIn("/models: ok (gpt-test)", text)
                 self.assertIn("Theme gesetzt: dracula", text)
