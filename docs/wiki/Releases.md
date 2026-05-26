@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.70.4 - 2026-05-26
+
 - Erweitert den GitHub-Actions-Node-24-Opt-in auf alle Workflows mit
   JavaScript-Actions, einschliesslich der Windows-Paketjobs.
 

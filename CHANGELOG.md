@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.70.4 - 2026-05-26
+
 - Extends the GitHub Actions Node 24 opt-in to every workflow that uses
   JavaScript actions, including Windows packaging jobs.
 

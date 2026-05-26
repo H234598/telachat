@@ -168,10 +168,18 @@ class GitHubWorkflowTests(unittest.TestCase):
         failures: list[str] = []
         for workflow in _workflow_files():
             text = workflow.read_text(encoding="utf-8")
-            if "uses:" in text and 'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"' not in text:
+            javascript_actions = {
+                action.lower()
+                for action, _ref in USES_RE.findall(text)
+                if action.lower() in NODE24_MINIMUMS
+            }
+            if (
+                javascript_actions
+                and 'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"' not in text
+            ):
                 failures.append(
-                    f"{workflow.relative_to(ROOT)} uses JavaScript actions without "
-                    "forcing the Node 24 runtime."
+                    f"{workflow.relative_to(ROOT)} uses JavaScript actions "
+                    f"{sorted(javascript_actions)} without forcing the Node 24 runtime."
                 )
 
         self.assertEqual([], failures)
