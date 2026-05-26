@@ -137,12 +137,21 @@ class _FakeRoot:
     def __init__(self) -> None:
         self.destroyed = False
         self.after_calls: list[tuple[int, object]] = []
+        self.clipboard: list[str] = []
+        self.clipboard_cleared = False
 
     def destroy(self) -> None:
         self.destroyed = True
 
     def after(self, delay_ms: int, callback: object) -> None:
         self.after_calls.append((delay_ms, callback))
+
+    def clipboard_clear(self) -> None:
+        self.clipboard_cleared = True
+        self.clipboard.clear()
+
+    def clipboard_append(self, text: str) -> None:
+        self.clipboard.append(text)
 
 
 class _FakeButton:
@@ -602,6 +611,18 @@ class GuiImportTests(unittest.TestCase):
         showerror.assert_not_called()
         self.assertEqual(app.root.after_calls[0][0], 100)
 
+    def test_tk_copy_to_clipboard_updates_clipboard_and_status(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        root = _FakeRoot()
+        statuses: list[str] = []
+        app = SimpleNamespace(root=root, set_status=lambda text: statuses.append(text))
+
+        module.TkTelachatApp.copy_to_clipboard(app, "failed to load skill")
+
+        self.assertTrue(root.clipboard_cleared)
+        self.assertEqual(root.clipboard, ["failed to load skill"])
+        self.assertEqual(statuses, ["In Zwischenablage kopiert."])
+
     def test_tk_exit_alias_closes_window(self) -> None:
         module = importlib.import_module("telachat.tkgui")
         root = _FakeRoot()
@@ -969,6 +990,43 @@ class GuiImportTests(unittest.TestCase):
         self.assertEqual(result, module.GLib.SOURCE_REMOVE)
         self.assertEqual(finished, [(12, "Fehler")])
         self.assertEqual(shown_errors, ["failed to load skill\nexceeds maximum"])
+
+    def test_gtk_copy_to_clipboard_updates_clipboard_and_status(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+
+        class FakeClipboard:
+            def __init__(self) -> None:
+                self.values: list[str] = []
+
+            def set(self, text: str) -> None:
+                self.values.append(text)
+
+        class FakeDisplay:
+            def __init__(self, clipboard: FakeClipboard) -> None:
+                self.clipboard = clipboard
+
+            def get_clipboard(self) -> FakeClipboard:
+                return self.clipboard
+
+        clipboard = FakeClipboard()
+        app = SimpleNamespace(status=_FakeText(""))
+
+        with mock.patch.object(
+            module.Gdk.Display,
+            "get_default",
+            return_value=FakeDisplay(clipboard),
+        ):
+            module.GtkTelachatApp.copy_to_clipboard(app, "failed to load skill")
+
+        self.assertEqual(clipboard.values, ["failed to load skill"])
+        self.assertEqual(app.status.get_text(), "In Zwischenablage kopiert.")
 
     def test_gtk_exit_alias_closes_window(self) -> None:
         with warnings.catch_warnings():
