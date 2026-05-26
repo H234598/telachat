@@ -808,6 +808,29 @@ stream = false
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_skill_watchdog_command_compacts_oversized_descriptions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            skill = Path(tmp) / "plugin" / "skills" / "demo" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text(
+                "---\nname: demo\ndescription: |\n  "
+                + ("x" * 1100)
+                + "\n---\n# Demo\n",
+                encoding="utf-8",
+            )
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                self.assertEqual(
+                    main(["skill-watchdog", "--root", str(Path(tmp)), "--json"]),
+                    0,
+                )
+
+            payload = json.loads(out.getvalue())
+            self.assertEqual(payload["compacted"], 1)
+            self.assertEqual(payload["errors"], [])
+            self.assertIn("Telachat-safe", skill.read_text(encoding="utf-8"))
+
     def test_folders_command_manages_system_prompts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")

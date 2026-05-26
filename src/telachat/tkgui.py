@@ -21,11 +21,13 @@ from .client import format_token_usage
 from .config import ConfigError, redact_secret
 from .controller import TelachatController
 from .model_choices import merge_model_choices
+from .skill_watchdog import start_skill_watchdog
 from .store import Message, Session
 
 
 class TkTelachatApp:
     def __init__(self) -> None:
+        start_skill_watchdog()
         self.controller = TelachatController()
         self.theme = self.controller.theme()
         self.active_session: Session | None = None

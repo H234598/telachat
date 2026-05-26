@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.50.0 - 2026-05-26
+
+- Ergaenzt `telachat skill-watchdog` plus Tk/GTK-Startwatchdog, der
+  ueberlange Codex-Skill-Frontmatter-Descriptions kuerzt, aber den Skill-Body
+  erhaelt.
+
 ## 0.49.0 - 2026-05-26
 
 - Entfernt den doppelten Default-Provider `tki`; alte Referenzen werden weiter

@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-26" "Telachat 0.49.0" "User Commands"
+.TH TELACHAT 1 "2026-05-26" "Telachat 0.50.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -125,6 +125,10 @@ Existing sessions are not overwritten; imported sessions receive new IDs. Use
 Check profile configuration and the configured API. Use \fB--json\fR for
 redacted structured output.
 .TP
+.B skill-watchdog
+Compact oversized Codex Skill frontmatter descriptions to a loader-compatible
+length while preserving the Skill body. Use \fB--json\fR for structured output.
+.TP
 .B gtk, gui
 Start the GTK desktop frontend.
 .TP
@@ -141,6 +145,7 @@ telachat config-check --strict
 telachat config-check --profile huggingface --strict
 telachat config-check --json
 telachat doctor --json --chat
+telachat skill-watchdog --json
 telachat theme dark
 telachat chat
 /theme dracula

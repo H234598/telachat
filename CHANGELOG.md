@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.50.0 - 2026-05-26
+
+- Add a Codex Skill watchdog command and Tk/GTK startup watcher that compacts oversized Skill frontmatter descriptions while preserving the Skill body.
+
 ## 0.49.0 - 2026-05-26
 
 - Remove the duplicate default `tki` provider while keeping it as a legacy alias for stored sessions and folder backends.

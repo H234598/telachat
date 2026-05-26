@@ -25,9 +25,13 @@
 - `telachat.cli`
   - `init`, `profiles`, `models`, `config-check`, `theme`, `ask`, `chat`,
     `sessions`, `stats`, `archive`, `unarchive`, `tags`, `export`,
-    `export-folder`, `backup`, `restore`, `doctor`.
+    `export-folder`, `backup`, `restore`, `doctor`, `skill-watchdog`.
   - Interactive `chat` installs optional Readline completion for slash commands
     and context values when stdin is a TTY.
+- `telachat.skill_watchdog`
+  - Scans local Codex skill roots, compacts oversized frontmatter
+    `description` fields, preserves full skill bodies, and writes sidecar
+    backups before changing a Skill file.
 - `telachat.commands`
   - Shared slash-command catalog for CLI help and GUI autocomplete.
   - Theme names are completed from the central theme catalog for `/theme`.
@@ -119,6 +123,9 @@ usage, GTK and Tk include input/output/total token counts in the response status
 The shared command path includes `/edit-last TEXT`, which updates the latest
 user message and removes later messages before `/regen` creates a replacement
 answer.
+Tk and GTK start the Codex Skill watchdog once at launch; it then repeats
+hourly in a daemon thread. This keeps oversized plugin descriptions below the
+local Codex loader limit without deleting the detailed Skill body.
 `/fork [TITLE]` and `telachat fork` copy a session into an independent history
 branch while preserving provider, model, folder, system prompt, and messages.
 Saved sessions store both provider and model. Loading a session restores those

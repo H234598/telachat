@@ -32,6 +32,22 @@ passen. Steuerzeichen in Headerwerten und parser-gefaehrliche Headernamen
 werden ebenso wie nicht-portable Headernamen weiter abgelehnt. In Tk und GTK
 ist dieselbe Option im rechten Einstellungsbereich verfuegbar.
 
+## Codex-Skill-Watchdog
+
+Der Codex-Skill-Watchdog scannt standardmaessig `~/.codex/plugins/cache`,
+`~/.codex/.tmp/plugins/plugins`, `~/.codex/skills` und `~/.agents/skills`,
+kuerzt nur ueberlange Frontmatter-`description`-Felder auf unter 1024 Zeichen
+und schreibt vor der ersten Aenderung ein `SKILL.md.telachat-watchdog.bak`.
+Der eigentliche Skill-Body bleibt erhalten. Manuell laeuft er mit:
+
+```sh
+telachat skill-watchdog --json
+```
+
+Tk und GTK starten denselben Lauf beim App-Start und danach stuendlich im
+Hintergrund. `TELACHAT_DISABLE_SKILL_WATCHDOG=1` deaktiviert ihn.
+`TELACHAT_SKILL_WATCHDOG_ROOTS` kann eine mit `:` getrennte Root-Liste setzen.
+
 Beispiele fuer Provider:
 
 - `huggingface`

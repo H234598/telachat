@@ -37,6 +37,7 @@ from .config import (
 )
 from .defaults import APP_TITLE
 from .paths import config_path, db_path, state_dir
+from .skill_watchdog import DEFAULT_DESCRIPTION_LIMIT, run_skill_watchdog
 from .store import (
     ChatStore,
     Folder,
@@ -133,6 +134,25 @@ def build_parser() -> argparse.ArgumentParser:
     p_theme = sub.add_parser("theme", help="GUI-Theme anzeigen oder setzen")
     p_theme.add_argument("theme", nargs="?", metavar="NAME", help="Theme-Name oder Alias")
     p_theme.set_defaults(func=cmd_theme)
+
+    p_skill_watchdog = sub.add_parser(
+        "skill-watchdog",
+        help="Codex-Skill-Beschreibungen auf Loader-kompatible Laenge kuerzen",
+    )
+    p_skill_watchdog.add_argument(
+        "--root",
+        action="append",
+        type=Path,
+        help="Skill-Wurzel scannen; mehrfach moeglich",
+    )
+    p_skill_watchdog.add_argument(
+        "--max-description",
+        type=int,
+        default=DEFAULT_DESCRIPTION_LIMIT,
+        help=f"Maximale description-Laenge (Standard: {DEFAULT_DESCRIPTION_LIMIT})",
+    )
+    p_skill_watchdog.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
+    p_skill_watchdog.set_defaults(func=cmd_skill_watchdog)
 
     p_templates = sub.add_parser("templates", help="Prompt-Templates anzeigen")
     p_templates.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
@@ -534,6 +554,32 @@ def cmd_theme(args: argparse.Namespace) -> int:
         marker = "*" if name == cfg.theme else " "
         print(f"{marker} {name:{width}} {label}")
     return 0
+
+
+def cmd_skill_watchdog(args: argparse.Namespace) -> int:
+    roots = tuple(args.root or ())
+    result = run_skill_watchdog(
+        roots or None,
+        description_limit=max(128, int(args.max_description)),
+    )
+    payload = {
+        "scanned": result.scanned,
+        "compacted": result.compacted,
+        "unchanged": result.unchanged,
+        "skipped": result.skipped,
+        "errors": list(result.errors),
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 1 if result.errors else 0
+    print(
+        "Skill-Watchdog: "
+        f"{result.compacted} gekuerzt, {result.unchanged} unveraendert, "
+        f"{result.skipped} uebersprungen, {len(result.errors)} Fehler."
+    )
+    for error in result.errors:
+        print(f"Fehler: {error}", file=sys.stderr)
+    return 1 if result.errors else 0
 
 
 def cmd_templates(args: argparse.Namespace) -> int:

@@ -44,6 +44,7 @@ telachat restore --dry-run /tmp/telachat-backups/FILE.zip
 telachat doctor --chat
 telachat doctor --json --chat
 telachat config-check --profile huggingface --strict
+telachat skill-watchdog --json
 python3 dist/telachat.pyz config-check --profile jan --json --strict
 telachat templates
 telachat folders --show-system
@@ -118,6 +119,8 @@ model-choice merge behavior after live model discovery. Controller and client
 tests verify that generation overrides reach the API profile and that Responses
 requests include temperature/top-p/max-output parameters. Controller and GUI
 tests also cover elapsed-time propagation for successful responses.
+Skill-watchdog tests cover compacting oversized Skill descriptions, preserving
+the body, backup creation, CLI JSON output, and unchanged/skipped files.
 Store and CLI tests cover content-free local statistics for sessions, messages,
 folders, tags, profiles, and models, plus content-free context estimates for
 single sessions.

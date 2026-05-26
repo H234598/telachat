@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.49.0`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.50.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -278,6 +278,7 @@ telachat config-check --profile huggingface --strict
 telachat config-check --json
 telachat stats --json
 telachat doctor --json --chat
+telachat skill-watchdog --json
 telachat ask --template summarize "Langer Text..."
 ```
 
@@ -287,6 +288,10 @@ Modelle und Secret-Quellen ohne
 Netzwerk/API-Anfrage und zeigt den Status der globalen Profil-Header-Pruefung.
 Secret-Werte werden nicht ausgegeben; `--strict` gibt einen Fehlercode zurueck,
 wenn eine nicht-lokale Secret-Quelle fehlt.
+`skill-watchdog` kuerzt ueberlange Codex-Skill-Frontmatter-`description`-
+Felder auf Loader-kompatible Laenge, legt Backups als
+`SKILL.md.telachat-watchdog.bak` an und laeuft beim Start der Tk/GTK-App sowie
+danach stuendlich im Hintergrund. Der Skill-Body bleibt erhalten.
 
 Manpages:
 
