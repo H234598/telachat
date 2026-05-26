@@ -285,7 +285,16 @@ class GuiImportTests(unittest.TestCase):
 
         module.TkTelachatApp.show_selected_template_preview(app)
 
-        self.assertEqual(shown, [("Vorlage: brief", "Kurz: {input}", "Vorlage angezeigt: brief")])
+        self.assertEqual(
+            shown,
+            [
+                (
+                    "Vorlage: brief",
+                    "Name: brief\nZeichen: 13\nVariablen: {input}\n\nKurz: {input}",
+                    "Vorlage angezeigt: brief",
+                )
+            ],
+        )
         self.assertEqual(statuses, [])
 
     def test_gtk_gui_imports(self) -> None:
@@ -393,7 +402,16 @@ class GuiImportTests(unittest.TestCase):
 
         module.GtkTelachatApp.on_preview_selected_template(app, object())
 
-        self.assertEqual(shown, [("Vorlage: brief", "Kurz: {input}", "Vorlage angezeigt: brief")])
+        self.assertEqual(
+            shown,
+            [
+                (
+                    "Vorlage: brief",
+                    "Name: brief\nZeichen: 13\nVariablen: {input}\n\nKurz: {input}",
+                    "Vorlage angezeigt: brief",
+                )
+            ],
+        )
         self.assertEqual(status.get_text(), "")
 
     def test_tk_refresh_sessions_uses_selected_sidebar_filters(self) -> None:

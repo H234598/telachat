@@ -28,6 +28,7 @@ from .controller import TelachatController
 from .model_choices import merge_model_choices
 from .skill_watchdog import set_runtime_skill_watchdog_enabled
 from .store import Message, Session
+from .templates import format_prompt_template_preview
 
 
 SIDEBAR_QUICK_ACTION_ROW = 18
@@ -1100,7 +1101,7 @@ class TkTelachatApp:
             return
         self.show_text_window(
             f"Vorlage: {name}",
-            template,
+            format_prompt_template_preview(name, template),
             status_text=f"Vorlage angezeigt: {name}",
         )
 

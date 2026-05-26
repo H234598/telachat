@@ -13,6 +13,20 @@ def template_variables(template: str) -> tuple[str, ...]:
     return tuple(name for name in SUPPORTED_TEMPLATE_VARIABLES if name in found)
 
 
+def format_prompt_template_preview(name: str, template: str) -> str:
+    variables = template_variables(template)
+    variable_text = ", ".join("{" + variable + "}" for variable in variables) or "keine"
+    return "\n".join(
+        [
+            f"Name: {name}",
+            f"Zeichen: {len(template)}",
+            f"Variablen: {variable_text}",
+            "",
+            template,
+        ]
+    )
+
+
 def render_prompt_template(
     template: str,
     text: str = "",

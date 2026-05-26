@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.61.0 - 2026-05-26
+
+- Adds prompt-template preview metadata for Tk and GTK: template name,
+  character count, and supported variables are shown above the template text.
+- Shares the preview formatter between both GUI frontends.
+
 ## 0.60.0 - 2026-05-26
 
 - Adds copyable prompt-template preview windows for Tk and GTK before inserting

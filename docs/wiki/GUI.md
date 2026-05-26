@@ -94,7 +94,8 @@ aktualisiertes Template gespeichert werden: in Tk ueber `Aus Eingabe speichern`
 im Kontextmenue, in GTK ueber `Speichern`.
 Ab Version `0.60.0` koennen beide GUIs Templates vor dem Einsetzen in einem
 kopierbaren Vorschaufenster anzeigen: Tk ueber das Kontextmenue, GTK ueber
-`Vorschau`.
+`Vorschau`. Ab Version `0.61.0` zeigt diese Vorschau zusaetzlich Name,
+Zeichenanzahl und erkannte Template-Variablen.
 
 Slash-Commands funktionieren ebenfalls:
 

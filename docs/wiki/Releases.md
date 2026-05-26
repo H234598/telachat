@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.61.0 - 2026-05-26
+
+- Ergaenzt Metadaten in der Prompt-Template-Vorschau: Name, Zeichenanzahl und
+  erkannte unterstuetzte Variablen stehen ueber dem Template-Text.
+- Nutzt denselben Vorschau-Formatter in Tk und GTK.
+
 ## 0.60.0 - 2026-05-26
 
 - Ergaenzt kopierbare Prompt-Template-Vorschaufenster fuer Tk und GTK, bevor

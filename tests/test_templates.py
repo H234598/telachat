@@ -3,7 +3,11 @@ from __future__ import annotations
 import unittest
 from datetime import datetime, timedelta, timezone
 
-from telachat.templates import render_prompt_template, template_variables
+from telachat.templates import (
+    format_prompt_template_preview,
+    render_prompt_template,
+    template_variables,
+)
 
 
 class PromptTemplateTests(unittest.TestCase):
@@ -29,6 +33,20 @@ class PromptTemplateTests(unittest.TestCase):
         self.assertEqual(
             template_variables("{date} {unknown} {input} {datetime}"),
             ("input", "date", "datetime"),
+        )
+
+    def test_format_prompt_template_preview_includes_metadata_and_text(self) -> None:
+        self.assertEqual(
+            format_prompt_template_preview("brief", "Kurz {input} am {date}"),
+            "\n".join(
+                [
+                    "Name: brief",
+                    "Zeichen: 22",
+                    "Variablen: {input}, {date}",
+                    "",
+                    "Kurz {input} am {date}",
+                ]
+            ),
         )
 
 
