@@ -569,7 +569,7 @@ def cmd_config_check(args: argparse.Namespace) -> int:
         )
         return 1 if args.strict and missing else 0
     if args.show_redacted:
-        print(_redacted_config_toml(cfg), end="")
+        print(_redacted_config_toml(cfg, profiles=profiles), end="")
         return 1 if args.strict and missing else 0
     print(f"{APP_TITLE} config")
     print(f"Config: {cfg.path}")
@@ -2482,7 +2482,7 @@ def _restore_summary(summary: HistoryImportSummary) -> str:
     )
 
 
-def _redacted_config_toml(cfg: object) -> str:
+def _redacted_config_toml(cfg: object, profiles: list[object] | None = None) -> str:
     lines = [
         "# Redacted Telachat config.",
         "# Secret values are not included.",
@@ -2501,7 +2501,12 @@ def _redacted_config_toml(cfg: object) -> str:
         for name, template in sorted(cfg.prompt_templates.items()):
             lines.append(f"{_toml_key(name)} = {_toml_string(template)}")
         lines.append("")
-    for name, profile in sorted(cfg.profiles.items()):
+    profile_items = (
+        [(profile.name, profile) for profile in profiles]
+        if profiles is not None
+        else sorted(cfg.profiles.items())
+    )
+    for name, profile in profile_items:
         lines.append(f"[profiles.{_toml_key(name)}]")
         lines.append(f"label = {_toml_string(profile.label)}")
         lines.append(f"base_url = {_toml_string(profile.base_url)}")
