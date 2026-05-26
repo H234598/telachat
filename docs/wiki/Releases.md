@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.73.3 - 2026-05-26
+
+- Erweitert die Fehlerbehandlung fuer Provider ohne Kompatibilitaet: Die
+  Wiederholung nach einem inkompatiblen Parameter wird robuster bei
+  `unsupported`/`invalid` Meldungen und bei quoted keys.
+
 ## 0.73.2 - 2026-05-26
 
 - Erweitert die Fehlerbehandlung fuer Provider ohne Kompatibilitaet bei

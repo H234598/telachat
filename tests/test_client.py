@@ -229,6 +229,46 @@ class ClientTests(unittest.TestCase):
         self.assertIn("top_p", request.call_args_list[0].args[2])
         self.assertNotIn("top_p", request.call_args_list[1].args[2])
 
+    def test_request_retries_when_error_uses_quotes_for_parameter(self) -> None:
+        client = OpenAICompatClient(self.profile(stream=False))
+        with mock.patch.object(
+            client,
+            "_request_json",
+            side_effect=[
+                ApiError("HTTP 400: The parameter `'top_p'` is invalid for this model"),
+                {
+                    "choices": [
+                        {"message": {"role": "assistant", "content": "Hello"}, "index": 0}
+                    ],
+                    "usage": {
+                        "prompt_tokens": 3,
+                        "completion_tokens": 2,
+                        "total_tokens": 5,
+                    },
+                },
+            ],
+        ) as request:
+            result = client.chat([{"role": "user", "content": "Hi"}])
+
+        self.assertIsInstance(result, ChatResult)
+        self.assertEqual(result.content, "Hello")
+        self.assertEqual(request.call_count, 2)
+        self.assertIn("top_p", request.call_args_list[0].args[2])
+        self.assertNotIn("top_p", request.call_args_list[1].args[2])
+
+    def test_request_does_not_retry_on_non_compatibility_error(self) -> None:
+        client = OpenAICompatClient(self.profile(stream=False))
+        expected = ApiError("HTTP 400: invalid request body")
+        with mock.patch.object(
+            client,
+            "_request_json",
+            side_effect=[expected],
+        ) as request:
+            with self.assertRaisesRegex(ApiError, "invalid request body"):
+                client.chat([{"role": "user", "content": "Hi"}])
+
+        self.assertEqual(request.call_count, 1)
+
     def test_stream_chat(self) -> None:
         client = OpenAICompatClient(self.profile(stream=True))
         result = client.chat([{"role": "user", "content": "Hi"}])

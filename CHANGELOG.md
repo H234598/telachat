@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.73.3 - 2026-05-26
+
+- Improves fallback parsing for provider incompatibility replies: requests are now
+  retried when unsupported/invalid parameter messages use mixed error wording or
+  quoted parameter names.
+
 ## 0.73.2 - 2026-05-26
 
 - Adds resilient request retries for provider-specific parameter

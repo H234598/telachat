@@ -264,7 +264,16 @@ def _trim_unsupported_parameter(
     error_message: str,
 ) -> dict[str, Any] | None:
     lowered = error_message.lower()
-    if "unsupported" not in lowered:
+    unsupported_markers = (
+        "unsupported",
+        "unsupported parameter",
+        "unrecognized",
+        "unknown",
+        "invalid parameter",
+        "invalid",
+        "not supported",
+    )
+    if not any(marker in lowered for marker in unsupported_markers):
         return None
     candidates: tuple[str, ...] = (
         "temperature",
@@ -274,6 +283,14 @@ def _trim_unsupported_parameter(
         "reasoning_effort",
         "reasoning",
     )
+    quoted_key = re.search(r"[`'\"]\s*'?([a-z0-9_]+)'?\s*[`'\"]", lowered)
+    if quoted_key:
+        candidate_key = quoted_key.group(1).strip()
+        if candidate_key in candidates and candidate_key in body:
+            reduced = dict(body)
+            reduced.pop(candidate_key, None)
+            return reduced
+
     for key in candidates:
         if key not in body:
             continue
