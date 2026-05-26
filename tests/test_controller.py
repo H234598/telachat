@@ -278,6 +278,7 @@ class ControllerTests(unittest.TestCase):
                     folder = controller.create_folder(
                         "Projekt",
                         system_prompt="Projektkontext",
+                        context="Projektwissen",
                         default_profile="test",
                         default_model="demo-large",
                     )
@@ -285,7 +286,10 @@ class ControllerTests(unittest.TestCase):
                         system_prompt=None,
                         folder_id=folder.id,
                     )
-                    self.assertEqual(session.system_prompt, "Projektkontext")
+                    self.assertEqual(
+                        session.system_prompt,
+                        "Projektkontext\n\nOrdner-Kontext:\nProjektwissen",
+                    )
                     self.assertEqual(session.profile, "test")
                     self.assertEqual(session.model, "demo-large")
                     explicit_same, _messages = controller.new_session(

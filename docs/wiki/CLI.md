@@ -100,12 +100,13 @@ telachat tags SESSION_ID --set projekt inbox
 telachat tags SESSION_ID --clear
 telachat tags --json
 telachat fork SESSION_ID --title "Variante A"
-telachat folders --create Projekt --system "Projektkontext"
+telachat folders --create Projekt --system "Projektkontext" --context "Projektwissen"
 telachat folders --set-system Projekt "Neuer Projektkontext"
+telachat folders --set-context Projekt "Aktueller Wissensstand"
 telachat folders --set-backend Projekt huggingface TKI
 telachat folders --clear-backend Projekt
-telachat folders --show-system
-telachat folders --json --show-system
+telachat folders --show-system --show-context
+telachat folders --json --show-system --show-context
 telachat export SESSION_ID
 telachat export SESSION_ID --json
 telachat import-session session.json --folder Importe

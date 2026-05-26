@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.70.0 - 2026-05-26
+
+- Adds per-folder context notes that are appended to the system prompt when
+  new chats are created inside that folder.
+- Exposes folder context management through `telachat folders --context`,
+  `--set-context`, and `--show-context`.
+- Preserves folder context notes in `export-folder --json`, `--bundle`, and
+  `import-folder`.
+
 ## 0.69.1 - 2026-05-26
 
 - Converts non-UTF-8 `import-session` and `import-folder` inputs into clear

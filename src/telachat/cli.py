@@ -196,6 +196,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_folders = sub.add_parser("folders", help="Ordner anzeigen/verwalten")
     p_folders.add_argument("--create", metavar="NAME", help="Ordner anlegen")
     p_folders.add_argument("--system", help="System-Prompt fuer --create")
+    p_folders.add_argument("--context", help="Ordner-Kontext fuer --create")
     p_folders.add_argument("--profile", help="Default-Provider fuer --create")
     p_folders.add_argument("--model", help="Default-Modell fuer --create")
     p_folders.add_argument(
@@ -203,6 +204,12 @@ def build_parser() -> argparse.ArgumentParser:
         nargs=2,
         metavar=("FOLDER", "PROMPT"),
         help="Default-Systemprompt fuer Ordner setzen",
+    )
+    p_folders.add_argument(
+        "--set-context",
+        nargs=2,
+        metavar=("FOLDER", "TEXT"),
+        help="Ordner-Kontextnotiz setzen",
     )
     p_folders.add_argument(
         "--set-backend",
@@ -219,6 +226,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--show-system",
         action="store_true",
         help="Ordner-Systemprompts voll anzeigen",
+    )
+    p_folders.add_argument(
+        "--show-context",
+        action="store_true",
+        help="Ordner-Kontextnotizen voll anzeigen",
     )
     p_folders.add_argument("--json", action="store_true", help="Maschinenlesbares JSON ausgeben")
     p_folders.set_defaults(func=cmd_folders)
@@ -746,6 +758,7 @@ def cmd_folders(args: argparse.Namespace) -> int:
             folder = store.create_folder(
                 args.create,
                 system_prompt=args.system or "",
+                context=args.context or "",
                 default_profile=profile_name,
                 default_model=model,
             )
@@ -757,6 +770,12 @@ def cmd_folders(args: argparse.Namespace) -> int:
             folder = store.update_folder_system_prompt(folder_id, prompt)
             if not args.json:
                 print(f"System-Prompt gesetzt: {folder.name}")
+        if args.set_context:
+            folder_ref, context = args.set_context
+            folder_id = _resolve_real_folder(store, folder_ref)
+            folder = store.update_folder_context(folder_id, context)
+            if not args.json:
+                print(f"Ordner-Kontext gesetzt: {folder.name}")
         if args.set_backend:
             if len(args.set_backend) not in {2, 3}:
                 raise ConfigError("--set-backend braucht: FOLDER PROFILE [MODEL]")
@@ -779,7 +798,11 @@ def cmd_folders(args: argparse.Namespace) -> int:
                 json.dumps(
                     {
                         "folders": [
-                            _folder_record(folder, include_system_prompt=args.show_system)
+                            _folder_record(
+                                folder,
+                                include_system_prompt=args.show_system,
+                                include_context=args.show_context,
+                            )
                             for folder in folders
                         ]
                     },
@@ -795,6 +818,8 @@ def cmd_folders(args: argparse.Namespace) -> int:
             markers = []
             if folder.system_prompt:
                 markers.append("system")
+            if folder.context:
+                markers.append("context")
             if folder.default_profile or folder.default_model:
                 markers.append("backend")
             marker = ",".join(markers) if markers else "-"
@@ -804,6 +829,9 @@ def cmd_folders(args: argparse.Namespace) -> int:
                 print(f"    Backend: {backend}")
             if args.show_system and folder.system_prompt:
                 print(textwrap.indent(folder.system_prompt, "    "))
+            if args.show_context and folder.context:
+                print("    Kontext:")
+                print(textwrap.indent(folder.context, "      "))
         return 0
     finally:
         store.close()
@@ -1309,13 +1337,19 @@ def _message_record(message: object) -> dict[str, object]:
     }
 
 
-def _folder_record(folder: Folder, *, include_system_prompt: bool) -> dict[str, object]:
+def _folder_record(
+    folder: Folder,
+    *,
+    include_system_prompt: bool,
+    include_context: bool = False,
+) -> dict[str, object]:
     record: dict[str, object] = {
         "id": folder.id,
         "name": folder.name,
         "created_at": folder.created_at,
         "updated_at": folder.updated_at,
         "has_system_prompt": bool(folder.system_prompt),
+        "has_context": bool(folder.context),
         "has_default_backend": bool(folder.default_profile or folder.default_model),
     }
     if folder.default_profile:
@@ -1324,6 +1358,8 @@ def _folder_record(folder: Folder, *, include_system_prompt: bool) -> dict[str, 
         record["default_model"] = folder.default_model
     if include_system_prompt:
         record["system_prompt"] = folder.system_prompt
+    if include_context:
+        record["context"] = folder.context
     return record
 
 
@@ -1361,7 +1397,7 @@ def _folder_export_record(
             "name": folder,
             "kind": "folder",
         }
-    record = _folder_record(item, include_system_prompt=True)
+    record = _folder_record(item, include_system_prompt=True, include_context=True)
     record["kind"] = "folder"
     return record
 
@@ -1475,6 +1511,7 @@ def _folder_import_target(store: ChatStore, payload: dict[str, object], override
     return store.create_folder(
         name,
         system_prompt=str(folder.get("system_prompt") or ""),
+        context=str(folder.get("context") or ""),
         default_profile=str(folder.get("default_profile") or ""),
         default_model=str(folder.get("default_model") or ""),
     )
@@ -1496,6 +1533,7 @@ def _folder_import_preview(payload: dict[str, object], override: str | None) -> 
         "name": name,
         "source": "bundle",
         "has_system_prompt": bool(folder.get("system_prompt")),
+        "has_context": bool(folder.get("context")),
         "has_default_backend": bool(folder.get("default_profile") or folder.get("default_model")),
     }
 
@@ -1786,7 +1824,11 @@ def cmd_import_folder(args: argparse.Namespace) -> int:
                 written_messages += 1
             imported_sessions.append(store.get_session(imported.id) or imported)
         if args.json:
-            folder_record = _folder_record(folder, include_system_prompt=True) if folder else None
+            folder_record = (
+                _folder_record(folder, include_system_prompt=True, include_context=True)
+                if folder
+                else None
+            )
             print(
                 json.dumps(
                     {

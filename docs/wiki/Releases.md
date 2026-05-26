@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.70.0 - 2026-05-26
+
+- Ergaenzt Ordner-Kontextnotizen, die beim Start neuer Chats in diesem Ordner
+  an den System-Prompt angehaengt werden.
+- `telachat folders --context`, `--set-context` und `--show-context` verwalten
+  diese Notizen in der CLI.
+- `export-folder --json`, `--bundle` und `import-folder` erhalten den
+  Ordner-Kontext in portablen Bundles.
+
 ## 0.69.1 - 2026-05-26
 
 - Wandelt nicht-UTF-8-kodierte `import-session`- und `import-folder`-Eingaben

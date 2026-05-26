@@ -350,9 +350,10 @@ class StoreTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             store = ChatStore(Path(tmp) / "history.sqlite3")
             try:
-                work = store.create_folder(" Arbeit ")
+                work = store.create_folder(" Arbeit ", context="Projektwissen")
                 again = store.create_folder("arbeit")
                 self.assertEqual(work.id, again.id)
+                self.assertEqual(again.context, "Projektwissen")
 
                 alpha = store.create_session(
                     title="Alpha",
@@ -607,6 +608,7 @@ class StoreTests(unittest.TestCase):
                 source_folder = source.create_folder(
                     "Arbeit",
                     system_prompt="Quellprojekt",
+                    context="Quellwissen",
                 )
                 source_session = source.create_session(
                     title="Import",
@@ -666,6 +668,7 @@ class StoreTests(unittest.TestCase):
                     {"usage": {"input_tokens": 6, "output_tokens": 4}},
                 )
                 self.assertEqual(len(target.list_folders()), 1)
+                self.assertEqual(target.list_folders()[0].context, "")
             finally:
                 source.close()
                 target.close()
@@ -885,10 +888,13 @@ class StoreTests(unittest.TestCase):
                 self.assertIsNotNone(folder)
                 assert folder is not None
                 self.assertEqual(folder.system_prompt, "")
+                self.assertEqual(folder.context, "")
                 self.assertEqual(folder.default_profile, "")
                 self.assertEqual(folder.default_model, "")
                 updated = store.update_folder_system_prompt(folder.id, "Nur Fakten.")
                 self.assertEqual(updated.system_prompt, "Nur Fakten.")
+                context = store.update_folder_context(folder.id, "Projektwissen")
+                self.assertEqual(context.context, "Projektwissen")
                 backend = store.update_folder_backend(folder.id, "tki", "qwen")
                 self.assertEqual(backend.default_profile, "tki")
                 self.assertEqual(backend.default_model, "qwen")

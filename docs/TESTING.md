@@ -20,7 +20,7 @@ make zipapp
 make linux-installer
 make linux-installer-smoke
 packaging/linux/install-telachat.sh --prefix /tmp/telachat-prefix --desktop-dir /tmp/telachat-desktop --zipapp dist/telachat.pyz
-python packaging/linux/package-cadence.py v0.69.1
+python packaging/linux/package-cadence.py v0.70.0
 man ./docs/man/telachat.1
 ```
 
@@ -66,6 +66,9 @@ python3 dist/telachat.pyz config-check --profile jan --json --strict
 telachat templates
 telachat folders --show-system
 telachat folders --json --show-system
+telachat folders --set-context Arbeit "Aktueller Wissensstand"
+telachat folders --show-system --show-context
+telachat folders --json --show-system --show-context
 telachat folders --set-backend Arbeit huggingface TKI
 telachat folders --clear-backend Arbeit
 telachat export SESSION_ID --json
@@ -107,7 +110,7 @@ On this host they can also use
 from `~/.config/telachat/config.toml`.
 
 The deterministic suite also covers folder creation, duplicate folder handling,
-folder-level system prompts, folder-level backend defaults, session moves, folder filters, pinned-chat
+folder-level system prompts, folder context notes, folder-level backend defaults, session moves, folder filters, pinned-chat
 ordering, answer regeneration, prompt templates, title sorting, content search
 across saved messages, CLI session filtering/sorting, and selective folder
 exports. It also covers per-session tags, tag filtering/search, tag import/export,

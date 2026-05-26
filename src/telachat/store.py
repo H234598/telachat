@@ -34,6 +34,7 @@ class Folder:
     created_at: int
     updated_at: int
     system_prompt: str = ""
+    context: str = ""
     default_profile: str = ""
     default_model: str = ""
 
@@ -137,6 +138,7 @@ class ChatStore:
                     created_at INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL,
                     system_prompt TEXT NOT NULL DEFAULT '',
+                    context TEXT NOT NULL DEFAULT '',
                     default_profile TEXT NOT NULL DEFAULT '',
                     default_model TEXT NOT NULL DEFAULT ''
                 );
@@ -187,6 +189,10 @@ class ChatStore:
             if "system_prompt" not in folder_columns:
                 self.db.execute(
                     "ALTER TABLE folders ADD COLUMN system_prompt TEXT NOT NULL DEFAULT ''"
+                )
+            if "context" not in folder_columns:
+                self.db.execute(
+                    "ALTER TABLE folders ADD COLUMN context TEXT NOT NULL DEFAULT ''"
                 )
             if "default_profile" not in folder_columns:
                 self.db.execute(
@@ -516,6 +522,7 @@ class ChatStore:
         name: str,
         *,
         system_prompt: str = "",
+        context: str = "",
         default_profile: str = "",
         default_model: str = "",
     ) -> Folder:
@@ -535,9 +542,9 @@ class ChatStore:
                 """
                 INSERT INTO folders(
                     id, name, created_at, updated_at,
-                    system_prompt, default_profile, default_model
+                    system_prompt, context, default_profile, default_model
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     folder_id,
@@ -545,6 +552,7 @@ class ChatStore:
                     now,
                     now,
                     system_prompt.strip(),
+                    context.strip(),
                     default_profile.strip(),
                     default_model.strip(),
                 ),
@@ -556,6 +564,7 @@ class ChatStore:
                 now,
                 now,
                 system_prompt.strip(),
+                context.strip(),
                 default_profile.strip(),
                 default_model.strip(),
             )
@@ -605,6 +614,19 @@ class ChatStore:
             self.db.execute(
                 "UPDATE folders SET system_prompt = ?, updated_at = ? WHERE id = ?",
                 (system_prompt.strip(), now, folder_id),
+            )
+            self.db.commit()
+            folder = self.get_folder(folder_id)
+            if folder is None:
+                raise KeyError(folder_id)
+            return folder
+
+    def update_folder_context(self, folder_id: str, context: str) -> Folder:
+        with self._lock:
+            now = int(time.time())
+            self.db.execute(
+                "UPDATE folders SET context = ?, updated_at = ? WHERE id = ?",
+                (context.strip(), now, folder_id),
             )
             self.db.commit()
             folder = self.get_folder(folder_id)
@@ -951,9 +973,9 @@ class ChatStore:
                     """
                     INSERT INTO folders(
                         id, name, created_at, updated_at,
-                        system_prompt, default_profile, default_model
+                        system_prompt, context, default_profile, default_model
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         folder_id,
@@ -961,6 +983,7 @@ class ChatStore:
                         int(_row_value(row, "created_at", now)),
                         int(_row_value(row, "updated_at", now)),
                         _row_value(row, "system_prompt", ""),
+                        _row_value(row, "context", ""),
                         _row_value(row, "default_profile", ""),
                         _row_value(row, "default_model", ""),
                     ),
@@ -1220,6 +1243,7 @@ def _folder_from_row(row: sqlite3.Row) -> Folder:
         created_at=row["created_at"],
         updated_at=row["updated_at"],
         system_prompt=row["system_prompt"] if "system_prompt" in row.keys() else "",
+        context=row["context"] if "context" in row.keys() else "",
         default_profile=row["default_profile"] if "default_profile" in row.keys() else "",
         default_model=row["default_model"] if "default_model" in row.keys() else "",
     )

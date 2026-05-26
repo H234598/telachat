@@ -124,7 +124,8 @@ publication as best-effort and never as a blocking paid step.
 
 - Full config editor with validation.
 - Full Markdown rendering beyond plain text display.
-- Per-folder defaults for system prompt, model and attached knowledge/context.
+- Attached files or retrieval-backed knowledge beyond plain per-folder context
+  notes.
 - Tool/function-call viewer once a backend returns structured tool calls.
 
 Implemented in 0.66.0:
@@ -144,6 +145,11 @@ Implemented in 0.69.0:
 
 - Portable `export-folder --bundle` ZIPs that contain `folder.json` and a
   manifest, plus direct `import-folder` support for those ZIPs.
+
+Implemented in 0.70.0:
+
+- Per-folder context notes that are appended to new-chat system prompts and
+  preserved in folder JSON and ZIP exports.
 
 ## Sources
 

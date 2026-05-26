@@ -227,6 +227,7 @@ class CliImportFolderTests(unittest.TestCase):
                                 "kind": "folder",
                                 "name": "Leer",
                                 "system_prompt": "Leerer Kontext",
+                                "context": "Leeres Wissen",
                                 "default_profile": "tki",
                                 "default_model": "qwen-folder",
                             },
@@ -244,6 +245,7 @@ class CliImportFolderTests(unittest.TestCase):
                 self.assertEqual(result["imported"]["sessions"], [])
                 self.assertEqual(result["imported"]["folder"]["name"], "Leer")
                 self.assertEqual(result["imported"]["folder"]["system_prompt"], "Leerer Kontext")
+                self.assertEqual(result["imported"]["folder"]["context"], "Leeres Wissen")
                 self.assertEqual(result["imported"]["folder"]["default_profile"], "tki")
                 self.assertEqual(result["imported"]["folder"]["default_model"], "qwen-folder")
 
@@ -251,6 +253,7 @@ class CliImportFolderTests(unittest.TestCase):
                 try:
                     folders = store.list_folders()
                     self.assertEqual(len(folders), 1)
+                    self.assertEqual(folders[0].context, "Leeres Wissen")
                     self.assertEqual(folders[0].default_profile, "tki")
                     self.assertEqual(folders[0].default_model, "qwen-folder")
                 finally:

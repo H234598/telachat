@@ -1035,6 +1035,8 @@ stream = false
                                 "Projekt",
                                 "--system",
                                 "Projektkontext",
+                                "--context",
+                                "Projektwissen",
                                 "--profile",
                                 "tki",
                                 "--model",
@@ -1056,12 +1058,31 @@ stream = false
                 out = io.StringIO()
                 with redirect_stdout(out):
                     self.assertEqual(
-                        main(["folders", "--set-system", "Projekt", "Nur kurz.", "--show-system"]),
+                        main(["folders", "--set-context", "Projekt", "Aktueller Wissensstand"]),
+                        0,
+                    )
+                self.assertIn("Ordner-Kontext gesetzt", out.getvalue())
+
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(
+                        main(
+                            [
+                                "folders",
+                                "--set-system",
+                                "Projekt",
+                                "Nur kurz.",
+                                "--show-system",
+                                "--show-context",
+                            ]
+                        ),
                         0,
                     )
                 text = out.getvalue()
                 self.assertIn("system", text)
+                self.assertIn("context", text)
                 self.assertIn("Nur kurz.", text)
+                self.assertIn("Aktueller Wissensstand", text)
 
                 out = io.StringIO()
                 with redirect_stdout(out):
@@ -1073,13 +1094,16 @@ stream = false
                 self.assertEqual(payload["folders"][0]["default_profile"], "huggingface")
                 self.assertEqual(payload["folders"][0]["default_model"], "qwen-alt")
                 self.assertNotIn("system_prompt", payload["folders"][0])
+                self.assertTrue(payload["folders"][0]["has_context"])
+                self.assertNotIn("context", payload["folders"][0])
 
                 out = io.StringIO()
                 with redirect_stdout(out):
-                    self.assertEqual(main(["folders", "--json", "--show-system"]), 0)
+                    self.assertEqual(main(["folders", "--json", "--show-system", "--show-context"]), 0)
                 payload = json.loads(out.getvalue())
                 self.assertEqual(payload["folders"][0]["name"], "Projekt")
                 self.assertEqual(payload["folders"][0]["system_prompt"], "Nur kurz.")
+                self.assertEqual(payload["folders"][0]["context"], "Aktueller Wissensstand")
 
                 out = io.StringIO()
                 with redirect_stdout(out):
@@ -1114,6 +1138,7 @@ stream = false
                     work = store.create_folder(
                         "Arbeit",
                         system_prompt="Projektprompt",
+                        context="Projektwissen",
                         default_profile="tki",
                         default_model="qwen-folder",
                     )
@@ -1182,6 +1207,7 @@ stream = false
                 self.assertEqual(payload["folder"]["kind"], "folder")
                 self.assertEqual(payload["folder"]["name"], "Arbeit")
                 self.assertEqual(payload["folder"]["system_prompt"], "Projektprompt")
+                self.assertEqual(payload["folder"]["context"], "Projektwissen")
                 self.assertEqual(payload["folder"]["default_profile"], "tki")
                 self.assertEqual(payload["folder"]["default_model"], "qwen-folder")
                 self.assertEqual(payload["sessions"][0]["session"]["title"], "Alpha Plan")

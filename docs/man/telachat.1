@@ -1,4 +1,4 @@
-.TH TELACHAT 1 "2026-05-26" "Telachat 0.69.1" "User Commands"
+.TH TELACHAT 1 "2026-05-26" "Telachat 0.70.0" "User Commands"
 .SH NAME
 telachat \- local CLI and desktop chat client for OpenAI-compatible APIs
 .SH SYNOPSIS
@@ -60,10 +60,12 @@ Apply a prompt template and fill custom template variables such as
 \fB--template-var\fR requires \fB--template\fR.
 .TP
 .B folders
-List or manage chat folders, folder-level system prompts, and optional
-folder-level backend defaults. Use \fB--set-backend FOLDER PROFILE [MODEL]\fR
-or \fB--clear-backend FOLDER\fR for provider/model defaults. Use \fB--json\fR
-for structured output; system prompts are included only with \fB--show-system\fR.
+List or manage chat folders, folder-level system prompts, folder context notes,
+and optional folder-level backend defaults. Use
+\fB--set-backend FOLDER PROFILE [MODEL]\fR or \fB--clear-backend FOLDER\fR for
+provider/model defaults. Use \fB--json\fR for structured output; system prompts
+and context notes are included only with \fB--show-system\fR and
+\fB--show-context\fR.
 .TP
 .B ask
 Send a single prompt. Use \fB--json\fR for a structured one-shot response with
@@ -177,7 +179,8 @@ telachat templates --set brief "Kurz: {input}"
 telachat templates --rename brief kurz
 telachat templates --delete kurz
 telachat ask --template summarize "Langer Text"
-telachat folders --create Arbeit --system "Antworte projektbezogen."
+telachat folders --create Arbeit --system "Antworte projektbezogen." --context "Projektwissen"
+telachat folders --set-context Arbeit "Aktueller Wissensstand"
 telachat folders --set-backend Arbeit huggingface TKI
 telachat sessions --json
 telachat stats --json

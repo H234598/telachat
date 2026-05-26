@@ -148,11 +148,13 @@ single `telachat.pyz` under the install prefix plus tiny launcher scripts for
 CLI, Tk, GTK and GUI-auto mode. This keeps the app portable across distros while
 still using Freedesktop desktop entries, hicolor icons and manpages where those
 standards exist.
-Folders can store a default system prompt and an optional default backend
-(`default_profile`, `default_model`). New chats created inside such a folder
-inherit that prompt/backend unless the caller explicitly overrides the prompt,
-profile, or model. GTK and Tk also apply folder backend defaults when selecting
-a folder for a new chat.
+Folders can store a default system prompt, an optional plain-text context note,
+and an optional default backend (`default_profile`, `default_model`). New chats
+created inside such a folder inherit that prompt/backend unless the caller
+explicitly overrides the prompt, profile, or model. When a folder context note
+exists, Telachat appends it below the folder/default system prompt for the new
+chat. GTK and Tk also apply folder backend defaults when selecting a folder for
+a new chat.
 
 For real credentials, prefer:
 
@@ -181,6 +183,9 @@ telachat chat
 telachat templates
 telachat templates --json
 telachat folders
+telachat folders --create FOLDER --context "Project facts"
+telachat folders --set-context FOLDER "Updated project facts"
+telachat folders --show-context
 telachat folders --set-backend FOLDER PROFILE [MODEL]
 telachat folders --clear-backend FOLDER
 telachat doctor
@@ -251,13 +256,13 @@ switch in the right settings pane.
 `templates`, `folders`, `ask`, `export`, `export-folder`, and `doctor` also
 support `--json` for agent/script consumption. JSON output is redacted where it
 contains provider configuration;
-folder system prompts are
-included only when `folders --show-system --json` is requested or when exporting
+folder system prompts and folder context notes are included only when
+`folders --show-system --show-context --json` is requested or when exporting
 that folder as a portable data bundle. `export-folder --bundle` stores the same
 `telachat.folder.v1` payload as `folder.json` in a ZIP plus a small manifest;
 it does not include `config.toml`, provider secrets, or environment files.
-Folder backend defaults are not secrets and are included in folder JSON whenever
-they are configured.
+Folder context notes and backend defaults are not secrets and are included in
+folder JSON whenever they are configured.
 
 `stats` is read-only and does not include message content. It counts sessions,
 messages by role, folders, tag assignments, profile usage, model usage, and

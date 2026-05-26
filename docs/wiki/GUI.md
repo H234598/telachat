@@ -61,9 +61,10 @@ Webserver auskommt und einfacher als lokales Bundle gebaut werden kann.
 - Chats koennen archiviert werden; der sichtbare Archivfilter wechselt
   zwischen aktiven, archivierten und allen Chats.
 - Ordner koennen umbenannt und geloescht werden.
-- Ordner koennen einen Default-Systemprompt und ein Default-Backend speichern.
-  Beim Auswaehlen eines Ordners setzen GTK und Tk den konfigurierten
-  Provider/Modell-Default fuer neue Chats.
+- Ordner koennen einen Default-Systemprompt, eine Kontextnotiz und ein
+  Default-Backend speichern. Beim Auswaehlen eines Ordners setzen GTK und Tk
+  den konfigurierten Provider/Modell-Default fuer neue Chats; vorhandene
+  Kontextnotizen werden an den Systemprompt angehaengt.
 - Chats koennen gepinnt werden.
 - Suche und Sortierung sind in der Seitenleiste verfuegbar.
 

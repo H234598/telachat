@@ -110,16 +110,18 @@ Templates unterstuetzen die eingebauten Platzhalter `{input}`, `{date}`,
 `{time}` und `{datetime}`. Wenn ein Template kein `{input}` enthaelt, haengt
 Telachat den eingegebenen Text wie bisher darunter an.
 
-## Ordner-Systemprompts
+## Ordner-Kontext
 
-Ordner-Systemprompts werden in SQLite gespeichert, nicht in `config.toml`.
-Dadurch bleiben sie Teil der lokalen Chat-Historie und koennen pro Projekt
-angepasst werden.
+Ordner-Systemprompts und Ordner-Kontextnotizen werden in SQLite gespeichert,
+nicht in `config.toml`. Dadurch bleiben sie Teil der lokalen Chat-Historie und
+koennen pro Projekt angepasst werden. Kontextnotizen werden beim Start neuer
+Chats unter den Systemprompt gehaengt.
 
 ```sh
-telachat folders --create Projekt --system "Antworte mit Projektkontext."
+telachat folders --create Projekt --system "Antworte mit Projektkontext." --context "Projektwissen."
 telachat folders --set-system Projekt "Neuer Kontext."
-telachat folders --show-system
+telachat folders --set-context Projekt "Aktueller Wissensstand."
+telachat folders --show-system --show-context
 ```
 
 ## Lokale Provider-Presets

@@ -156,6 +156,7 @@ class TelachatController:
         name: str,
         *,
         system_prompt: str = "",
+        context: str = "",
         default_profile: str = "",
         default_model: str = "",
     ) -> Folder:
@@ -166,6 +167,7 @@ class TelachatController:
         return self.store.create_folder(
             name,
             system_prompt=system_prompt,
+            context=context,
             default_profile=clean_profile,
             default_model=clean_model,
         )
@@ -174,8 +176,9 @@ class TelachatController:
         if not folder_id:
             return self.system_prompt()
         folder = self.store.get_folder(folder_id)
-        if folder and folder.system_prompt:
-            return folder.system_prompt
+        if folder:
+            base = folder.system_prompt or self.system_prompt()
+            return _with_folder_context(base, folder.context)
         return self.system_prompt()
 
     def resolve_system_prompt(self, system_prompt: str | None, folder_id: str | None) -> str:
@@ -188,6 +191,9 @@ class TelachatController:
 
     def set_folder_system_prompt(self, folder_id: str, system_prompt: str) -> Folder:
         return self.store.update_folder_system_prompt(folder_id, system_prompt)
+
+    def set_folder_context(self, folder_id: str, context: str) -> Folder:
+        return self.store.update_folder_context(folder_id, context)
 
     def folder_backend(self, folder_id: str | None) -> tuple[str, str]:
         if not folder_id:
@@ -454,3 +460,13 @@ class TelachatController:
 def _assistant_message_metadata(usage: TokenUsage | None) -> dict[str, object] | None:
     record = token_usage_record(usage)
     return {"usage": record} if record else None
+
+
+def _with_folder_context(system_prompt: str, context: str) -> str:
+    clean_context = context.strip()
+    if not clean_context:
+        return system_prompt
+    clean_system = system_prompt.strip()
+    if clean_system:
+        return f"{clean_system}\n\nOrdner-Kontext:\n{clean_context}"
+    return f"Ordner-Kontext:\n{clean_context}"

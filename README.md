@@ -4,7 +4,7 @@ Telachat ist ein kleiner lokaler Chat-Client fuer OpenAI-kompatible KI-APIs.
 Er ist auf dein `TKI`/Hugging-Face-Space-Profil voreingestellt, kann aber
 weitere Provider ueber `config.toml` nutzen.
 
-Aktuelle Version: `0.69.1`. Das Projekt nutzt Semantic Versioning; Details
+Aktuelle Version: `0.70.0`. Das Projekt nutzt Semantic Versioning; Details
 stehen in `VERSIONING.md`.
 
 ## Warum so gebaut
@@ -97,8 +97,9 @@ die Oberflaeche wieder bedienbar und ignoriert spaete Antworten oder Fehler,
 kann den bereits gestarteten Provider-Request aber nicht garantiert serverseitig
 stoppen. Bei abgebrochenen Send-Anfragen wird der abgeschickte Prompt wieder in
 den Composer gesetzt, solange dort noch nichts Neues steht.
-Ordner koennen einen eigenen Default-Systemprompt und ein Default-Backend aus
-Provider/Modell tragen, damit sie als kleine Projektkontexte funktionieren.
+Ordner koennen einen eigenen Default-Systemprompt, eine Kontextnotiz und ein
+Default-Backend aus Provider/Modell tragen, damit sie als kleine
+Projektkontexte funktionieren.
 
 Im Texteingabefeld funktioniert auch eine kleine Kommandozeile:
 `Shift+Enter` schickt die Nachricht ab, normales `Enter` bleibt fuer
@@ -279,12 +280,13 @@ verwalten:
 
 ```sh
 telachat folders
-telachat folders --create Arbeit --system "Antworte knapp und projektbezogen."
+telachat folders --create Arbeit --system "Antworte knapp." --context "Projektwissen"
 telachat folders --set-system Arbeit "Nutze den Projektkontext."
+telachat folders --set-context Arbeit "Aktueller Wissensstand"
 telachat folders --set-backend Arbeit huggingface TKI
 telachat folders --clear-backend Arbeit
-telachat folders --show-system
-telachat folders --json --show-system
+telachat folders --show-system --show-context
+telachat folders --json --show-system --show-context
 ```
 
 Prompt-Templates kommen aus `[prompt_templates]` in `config.toml` und koennen
