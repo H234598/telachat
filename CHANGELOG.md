@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keeps CLI `/folder-prompt` and `/folder-context` changes effective for the
+  current interactive chat request, matching the GUI prompt refresh behavior.
+
 ## 0.72.0 - 2026-05-26
 
 - Adds `/folder-context TEXT` to manage folder context notes directly from the

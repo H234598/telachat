@@ -1792,6 +1792,41 @@ X-Test-Header = "yes"
                 _restore_env("XDG_CONFIG_HOME", old_config)
                 _restore_env("XDG_DATA_HOME", old_data)
 
+    def test_chat_folder_context_updates_next_request_system_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old_config = os.environ.get("XDG_CONFIG_HOME")
+            old_data = os.environ.get("XDG_DATA_HOME")
+            os.environ["XDG_CONFIG_HOME"] = str(Path(tmp) / "config")
+            os.environ["XDG_DATA_HOME"] = str(Path(tmp) / "data")
+            try:
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    self.assertEqual(main(["init"]), 0)
+
+                out = io.StringIO()
+                with redirect_stdout(out), mock.patch(
+                    "builtins.input",
+                    side_effect=[
+                        "/move Arbeit",
+                        "/folder-prompt Ordnerprompt",
+                        "/folder-context Projektwissen",
+                        "Hallo",
+                        "/exit",
+                    ],
+                ), mock.patch("telachat.cli.OpenAICompatClient") as client_cls:
+                    client = client_cls.return_value
+                    client.chat.return_value = ChatResult("Antwort", {})
+                    self.assertEqual(main(["chat", "--no-stream"]), 0)
+
+                messages = client.chat.call_args.args[0]
+                self.assertEqual(
+                    messages[0]["content"],
+                    "Ordnerprompt\n\nOrdner-Kontext:\nProjektwissen",
+                )
+            finally:
+                _restore_env("XDG_CONFIG_HOME", old_config)
+                _restore_env("XDG_DATA_HOME", old_data)
+
     def test_chat_doctor_command_reports_secret_source_errors_without_exiting(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             old_config = os.environ.get("XDG_CONFIG_HOME")
