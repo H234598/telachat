@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 0.56.0 - 2026-05-26
+
+- Reworks the Tk and GTK chat header into a compact centered title with
+  left/right arrow pane toggles.
+- Lets users rename the current conversation by double-clicking the centered
+  title.
+- Moves the visible sidebar `Regenerieren` action into the old `Neu` position;
+  new conversations remain available through the menu, slash command, and
+  context flows.
+- Adds `AGENTS.md` as a compact repository guide for future contributors and
+  coding agents.
+
 ## 0.55.0 - 2026-05-26
 
 - Adds copyable Tk and GTK error windows for provider failures, so long

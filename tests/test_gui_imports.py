@@ -133,6 +133,14 @@ class _FakeWindow:
         self.closed = True
 
 
+class _FakeVisible:
+    def __init__(self, visible: bool) -> None:
+        self.visible = visible
+
+    def get_visible(self) -> bool:
+        return self.visible
+
+
 class _FakeRoot:
     def __init__(self) -> None:
         self.destroyed = False
@@ -158,13 +166,19 @@ class _FakeButton:
     def __init__(self) -> None:
         self.state = ""
         self.sensitive = True
+        self.label = ""
 
     def configure(self, **kwargs: object) -> None:
         if "state" in kwargs:
             self.state = str(kwargs["state"])
+        if "text" in kwargs:
+            self.label = str(kwargs["text"])
 
     def set_sensitive(self, value: bool) -> None:
         self.sensitive = value
+
+    def set_label(self, value: str) -> None:
+        self.label = value
 
 
 class _FakeCheckButton:
@@ -409,6 +423,40 @@ class GuiImportTests(unittest.TestCase):
         )
 
         self.assertEqual(status, "Antwort in 1.2s | Tokens: 13 in/18 out, 31 total")
+
+    def test_tk_update_active_title_uses_plain_center_title(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        app = object.__new__(module.TkTelachatApp)
+        app.active_session = SimpleNamespace(title="Projekt Alpha")
+        app.session_title = _FakeText("")
+
+        module.TkTelachatApp.update_active_title(app)
+
+        self.assertEqual(app.session_title.get_text(), "Projekt Alpha")
+
+    def test_tk_title_double_click_starts_rename(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        calls: list[str] = []
+        app = SimpleNamespace(rename_active_session=lambda: calls.append("rename"))
+
+        result = module.TkTelachatApp.on_title_double_click(app, object())
+
+        self.assertEqual(result, "break")
+        self.assertEqual(calls, ["rename"])
+
+    def test_tk_sync_pane_toggle_buttons_sets_directional_labels(self) -> None:
+        module = importlib.import_module("telachat.tkgui")
+        app = SimpleNamespace(
+            sidebar_visible=False,
+            settings_visible=True,
+            sidebar_toggle_button=_FakeButton(),
+            settings_toggle_button=_FakeButton(),
+        )
+
+        module.TkTelachatApp._sync_pane_toggle_buttons(app)
+
+        self.assertEqual(app.sidebar_toggle_button.label, "▶")
+        self.assertEqual(app.settings_toggle_button.label, "▶")
 
     def test_tk_cancelled_request_ignores_late_result(self) -> None:
         module = importlib.import_module("telachat.tkgui")
@@ -677,6 +725,65 @@ class GuiImportTests(unittest.TestCase):
         )
 
         self.assertEqual(status, "Antwort in 2.0s | Tokens: 21 in/8 out, 29 total")
+
+    def test_gtk_update_active_title_uses_plain_center_title(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        app = SimpleNamespace(
+            active_session=SimpleNamespace(title="Projekt Alpha"),
+            title_label=_FakeText(""),
+        )
+
+        module.GtkTelachatApp.update_active_title(app)
+
+        self.assertEqual(app.title_label.get_text(), "Projekt Alpha")
+
+    def test_gtk_title_double_click_starts_rename(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        calls: list[object] = []
+        button = object()
+        app = SimpleNamespace(
+            send_button=button,
+            on_rename_active_session=lambda clicked: calls.append(clicked),
+        )
+
+        module.GtkTelachatApp.on_title_pressed(app, object(), 2, 0.0, 0.0)
+
+        self.assertEqual(calls, [button])
+
+    def test_gtk_sync_pane_toggle_buttons_sets_directional_labels(self) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            try:
+                module = importlib.import_module("telachat.gtkgui")
+            except ModuleNotFoundError as exc:
+                if exc.name == "gi":
+                    self.skipTest("PyGObject is not installed in this environment")
+                raise
+        app = SimpleNamespace(
+            sidebar=_FakeVisible(False),
+            settings=_FakeVisible(True),
+            sidebar_toggle_button=_FakeButton(),
+            settings_toggle_button=_FakeButton(),
+        )
+
+        module.GtkTelachatApp.sync_pane_toggle_buttons(app)
+
+        self.assertEqual(app.sidebar_toggle_button.label, "▶")
+        self.assertEqual(app.settings_toggle_button.label, "▶")
 
     def test_gtk_cancelled_request_ignores_late_result(self) -> None:
         with warnings.catch_warnings():

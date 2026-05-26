@@ -209,7 +209,7 @@ class TkTelachatApp:
         if self.controller.prompt_templates():
             self.template_var.set(next(iter(self.controller.prompt_templates())))
 
-        ttk.Button(self.sidebar, text="Neu", command=self.new_session).grid(
+        ttk.Button(self.sidebar, text="Regenerieren", command=self.regenerate_active_session).grid(
             row=18, column=0, sticky="ew", padx=(0, 6), pady=(8, 0)
         )
         ttk.Button(self.sidebar, text="Check", command=self.doctor).grid(
@@ -255,25 +255,29 @@ class TkTelachatApp:
 
         top = ttk.Frame(self.main)
         top.grid(row=0, column=0, sticky="ew")
-        top.columnconfigure(2, weight=1)
-        ttk.Button(top, text="☰", command=self.toggle_sidebar).grid(row=0, column=0, padx=(0, 8))
-        ttk.Button(top, text="System", command=self.toggle_settings).grid(row=0, column=1, padx=(0, 8))
-        self.session_title = ttk.Label(top, text="Neue Unterhaltung", font=("Sans", 16, "bold"))
-        self.session_title.grid(row=0, column=2, sticky="w")
-        self.pin_button = ttk.Button(top, text="Pin", command=self.toggle_pin_active_session)
-        self.pin_button.grid(row=0, column=3, padx=(8, 0))
-        self.archive_button = ttk.Button(top, text="Archiv", command=self.toggle_archive_active_session)
-        self.archive_button.grid(row=0, column=4, padx=(8, 0))
-        ttk.Button(top, text="Regenerieren", command=self.regenerate_active_session).grid(
-            row=0, column=5, padx=(8, 0)
+        top.columnconfigure(1, weight=1)
+        self.sidebar_toggle_button = ttk.Button(
+            top,
+            text="◀",
+            width=2,
+            command=self.toggle_sidebar,
         )
-        ttk.Button(top, text="Titel", command=self.rename_active_session).grid(
-            row=0, column=6, padx=(8, 0)
+        self.sidebar_toggle_button.grid(row=0, column=0, sticky="w", padx=(0, 8))
+        self.session_title = ttk.Label(
+            top,
+            text="Neue Unterhaltung",
+            font=("Sans", 16, "bold"),
+            anchor="center",
         )
-        ttk.Button(top, text="Löschen", command=self.delete_active_session).grid(
-            row=0, column=7, padx=(8, 0)
+        self.session_title.grid(row=0, column=1, sticky="ew")
+        self.session_title.bind("<Double-Button-1>", self.on_title_double_click)
+        self.settings_toggle_button = ttk.Button(
+            top,
+            text="▶",
+            width=2,
+            command=self.toggle_settings,
         )
-        ttk.Button(top, text="Export", command=self.export_session).grid(row=0, column=8, padx=(8, 0))
+        self.settings_toggle_button.grid(row=0, column=2, sticky="e", padx=(8, 0))
 
         self.chat_text = tk.Text(
             self.main,
@@ -1052,15 +1056,13 @@ class TkTelachatApp:
 
     def update_active_title(self) -> None:
         if self.active_session:
-            self.session_title.configure(text=self._session_label(self.active_session).strip())
-            self.pin_button.configure(text="Unpin" if self.active_session.pinned else "Pin")
-            self.archive_button.configure(
-                text="Zurueck" if self.active_session.archived else "Archiv"
-            )
+            self.session_title.configure(text=self.active_session.title)
         else:
             self.session_title.configure(text="Neue Unterhaltung")
-            self.pin_button.configure(text="Pin")
-            self.archive_button.configure(text="Archiv")
+
+    def on_title_double_click(self, _event: object) -> str:
+        self.rename_active_session()
+        return "break"
 
     def _on_session_select(self, _event: object) -> None:
         selected = self.session_list.curselection()
@@ -1401,6 +1403,13 @@ class TkTelachatApp:
         self.paned.add(self.main, minsize=380, sticky="nsew")
         if self.settings_visible:
             self.paned.add(self.settings, minsize=240, sticky="nsew")
+        self._sync_pane_toggle_buttons()
+
+    def _sync_pane_toggle_buttons(self) -> None:
+        if hasattr(self, "sidebar_toggle_button"):
+            self.sidebar_toggle_button.configure(text="◀" if self.sidebar_visible else "▶")
+        if hasattr(self, "settings_toggle_button"):
+            self.settings_toggle_button.configure(text="▶" if self.settings_visible else "◀")
 
     def _set_initial_sashes(self) -> None:
         try:

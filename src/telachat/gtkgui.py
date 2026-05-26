@@ -86,15 +86,15 @@ class GtkTelachatApp(Adw.Application):
         title_box.append(self.header_icon)
         title_box.append(Gtk.Label(label="Telachat GTK"))
         header.set_title_widget(title_box)
-        sidebar_button = Gtk.Button(label="☰")
-        sidebar_button.connect("clicked", self.on_toggle_sidebar)
-        header.pack_start(sidebar_button)
+        self.sidebar_toggle_button = Gtk.Button(label="◀")
+        self.sidebar_toggle_button.connect("clicked", self.on_toggle_sidebar)
+        header.pack_start(self.sidebar_toggle_button)
         options_button = Gtk.Button(label="⚙")
         options_button.connect("clicked", self.on_preferences)
         header.pack_end(options_button)
-        system_button = Gtk.Button(label="System")
-        system_button.connect("clicked", self.on_toggle_settings)
-        header.pack_end(system_button)
+        self.settings_toggle_button = Gtk.Button(label="▶")
+        self.settings_toggle_button.connect("clicked", self.on_toggle_settings)
+        header.pack_end(self.settings_toggle_button)
         toolbar.add_top_bar(header)
 
         self.outer_paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
@@ -195,9 +195,9 @@ class GtkTelachatApp(Adw.Application):
 
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.sidebar.append(row)
-        new_button = Gtk.Button(label="Neu")
-        new_button.connect("clicked", self.on_new)
-        row.append(new_button)
+        regenerate_button = Gtk.Button(label="Regenerieren")
+        regenerate_button.connect("clicked", self.on_regenerate_active_session)
+        row.append(regenerate_button)
         check_button = Gtk.Button(label="Check")
         check_button.connect("clicked", self.on_doctor)
         row.append(check_button)
@@ -245,28 +245,13 @@ class GtkTelachatApp(Adw.Application):
 
         top = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         main.append(top)
-        self.title_label = Gtk.Label(label="Neue Unterhaltung", xalign=0)
+        self.title_label = Gtk.Label(label="Neue Unterhaltung", xalign=0.5)
         self.title_label.add_css_class("title-2")
         self.title_label.set_hexpand(True)
+        title_click = Gtk.GestureClick()
+        title_click.connect("pressed", self.on_title_pressed)
+        self.title_label.add_controller(title_click)
         top.append(self.title_label)
-        self.pin_button = Gtk.Button(label="Pin")
-        self.pin_button.connect("clicked", self.on_toggle_pin_active_session)
-        top.append(self.pin_button)
-        self.archive_button = Gtk.Button(label="Archiv")
-        self.archive_button.connect("clicked", self.on_toggle_archive_active_session)
-        top.append(self.archive_button)
-        regenerate_button = Gtk.Button(label="Regenerieren")
-        regenerate_button.connect("clicked", self.on_regenerate_active_session)
-        top.append(regenerate_button)
-        rename_button = Gtk.Button(label="Titel")
-        rename_button.connect("clicked", self.on_rename_active_session)
-        top.append(rename_button)
-        delete_button = Gtk.Button(label="Loeschen")
-        delete_button.connect("clicked", self.on_delete_active_session)
-        top.append(delete_button)
-        export_button = Gtk.Button(label="Export")
-        export_button.connect("clicked", self.on_export)
-        top.append(export_button)
 
         self.chat_view = Gtk.TextView()
         self.chat_view.add_css_class("telachat-text")
@@ -936,13 +921,19 @@ class GtkTelachatApp(Adw.Application):
 
     def update_active_title(self) -> None:
         if self.active_session:
-            self.title_label.set_text(self.session_label(self.active_session))
-            self.pin_button.set_label("Unpin" if self.active_session.pinned else "Pin")
-            self.archive_button.set_label("Zurueck" if self.active_session.archived else "Archiv")
+            self.title_label.set_text(self.active_session.title)
         else:
             self.title_label.set_text("Neue Unterhaltung")
-            self.pin_button.set_label("Pin")
-            self.archive_button.set_label("Archiv")
+
+    def on_title_pressed(
+        self,
+        _gesture: Gtk.GestureClick,
+        n_press: int,
+        _x: float,
+        _y: float,
+    ) -> None:
+        if n_press == 2:
+            self.on_rename_active_session(self.send_button)
 
     def on_session_selected(self, _listbox: Gtk.ListBox, row: Gtk.ListBoxRow | None) -> None:
         if row is not None and hasattr(row, "session_id"):
@@ -1393,15 +1384,24 @@ class GtkTelachatApp(Adw.Application):
 
     def on_toggle_sidebar(self, _button: Gtk.Button) -> None:
         self.sidebar.set_visible(not self.sidebar.get_visible())
+        self.sync_pane_toggle_buttons()
 
     def on_toggle_settings(self, _button: Gtk.Button) -> None:
         self.settings.set_visible(not self.settings.get_visible())
+        self.sync_pane_toggle_buttons()
 
     def _set_initial_panes(self) -> bool:
         width = max(self.window.get_width(), 1000)
         self.outer_paned.set_position(300)
         self.inner_paned.set_position(max(420, width - 620))
+        self.sync_pane_toggle_buttons()
         return GLib.SOURCE_REMOVE
+
+    def sync_pane_toggle_buttons(self) -> None:
+        if hasattr(self, "sidebar_toggle_button"):
+            self.sidebar_toggle_button.set_label("◀" if self.sidebar.get_visible() else "▶")
+        if hasattr(self, "settings_toggle_button"):
+            self.settings_toggle_button.set_label("▶" if self.settings.get_visible() else "◀")
 
     def handle_command(self, raw: str) -> None:
         command, _, rest = raw.partition(" ")

@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 0.56.0 - 2026-05-26
+
+- Baut den Tk- und GTK-Chatkopf zu einem kompakten, mittigen Titel mit linken
+  und rechten Pfeil-Toggles fuer die Seitenbereiche um.
+- Ermoeglicht das Umbenennen der aktuellen Unterhaltung per Doppelklick auf
+  den mittigen Titel.
+- Verschiebt die sichtbare Seitenleistenaktion `Regenerieren` an die alte
+  `Neu`-Position; neue Unterhaltungen bleiben ueber Menue, Slash-Befehl und
+  Kontextfluesse erreichbar.
+- Fuegt `AGENTS.md` als kompakten Repository-Leitfaden fuer zukuenftige
+  Contributors und Coding Agents hinzu.
+
 ## 0.55.0 - 2026-05-26
 
 - Fuegt in Tk und GTK kopierbare Fehlerfenster fuer Providerfehler hinzu,
